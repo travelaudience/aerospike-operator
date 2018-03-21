@@ -17,3 +17,6 @@ gen:
 run: KUBECONFIG?=$(HOME)/.kube/config
 run:
 	go run cmd/operator/main.go -debug -kubeconfig=$(KUBECONFIG)
+
+test:
+	go test ./...

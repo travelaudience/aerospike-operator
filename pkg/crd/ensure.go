@@ -42,7 +42,17 @@ const (
 
 func Ensure(extsClient extsclientset.Interface) error {
 	// create a CustomResourceDefinition object representing our crd
-	crd := &extsv1beta1.CustomResourceDefinition{
+	crd := createCRDObject()
+	// create the CustomResourceDefinition in the api
+	if err := createCRD(extsClient, crd); err != nil {
+		return err
+	}
+	// watch the crd, waiting for it to be established
+	return awaitCRD(extsClient, crd)
+}
+
+func createCRDObject() *extsv1beta1.CustomResourceDefinition {
+	return &extsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s.%s", Plural, aerospikev1alpha1.SchemeGroupVersion.Group),
 		},
@@ -56,17 +66,22 @@ func Ensure(extsClient extsclientset.Interface) error {
 			},
 		},
 	}
+}
 
-	// attempt to create our crd
-	log.WithField(logfields.Kind, Kind).Debug("creating crd")
-	if _, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd); err != nil {
+func createCRD(extsClient extsclientset.Interface, crd *extsv1beta1.CustomResourceDefinition) error {
+	// attempt to register our crd
+	log.WithField(logfields.Kind, Kind).Debug("registering crd")
+	_, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return err
 		}
-		log.WithField(logfields.Kind, Kind).Debug("crd already exists")
+		log.WithField(logfields.Kind, Kind).Debug("crd already registered")
 	}
+	return nil
+}
 
-	// watch the crd, waiting for it to be established
+func awaitCRD(extsClient extsclientset.Interface, crd *extsv1beta1.CustomResourceDefinition) error {
 	log.WithField(logfields.Kind, Kind).Debug("waiting for crd to be established")
 	w, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name==%s", crd.Name),
