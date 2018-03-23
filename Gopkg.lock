@@ -287,8 +287,8 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake"
   ]
-  revision = "ee301df91f3348585c2f9febc4f5b6e5f8b94ab5"
-  version = "kubernetes-1.9.5"
+  revision = "4b903ca6c8a2031b8f88c3d1fbefa8eb248b103c"
+  version = "kubernetes-1.9.6"
 
 [[projects]]
   name = "k8s.io/apimachinery"
@@ -459,8 +459,8 @@
     "util/integer",
     "util/workqueue"
   ]
-  revision = "cd245c62f5d575206b0164e4cd2510ad4bd3bf1a"
-  version = "kubernetes-1.9.5"
+  revision = "e56f95336983131fc477c6c241502100c80b47f9"
+  version = "kubernetes-1.9.6"
 
 [[projects]]
   name = "k8s.io/kube-openapi"
@@ -473,6 +473,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cc9b9827573ff72a61afdd12ff18ab4533e0ac6ff987c740062042a03a916ff1"
+  inputs-digest = "a209f4b49acc4c4999e1f6f9be1e711ef964985a9f82b40de699911fcc0f199f"
   solver-name = "gps-cdcl"
   solver-version = 1
