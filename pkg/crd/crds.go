@@ -23,6 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/pointers"
+	"github.com/travelaudience/aerospike-operator/pkg/utils"
 )
 
 var (
@@ -38,6 +40,86 @@ var (
 				Names: extsv1beta1.CustomResourceDefinitionNames{
 					Plural: "aerospikeclusters",
 					Kind:   "AerospikeCluster",
+				},
+				Validation: &extsv1beta1.CustomResourceValidation{
+					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
+						Properties: map[string]extsv1beta1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]extsv1beta1.JSONSchemaProps{
+									"nodeCount": {
+										Type:    "integer",
+										Maximum: pointers.NewFloat64(8),
+										Minimum: pointers.NewFloat64(1),
+									},
+									"version": {
+										Type: "string",
+										Enum: []extsv1beta1.JSON{
+											{Raw: []byte(utils.DoubleQuoted("4.0.0.4"))},
+										},
+									},
+									"namespaces": {
+										Type:     "array",
+										MaxItems: pointers.NewInt64(2),
+										MinItems: pointers.NewInt64(1),
+										Items: &extsv1beta1.JSONSchemaPropsOrArray{
+											Schema: &extsv1beta1.JSONSchemaProps{
+												Title: "namespace",
+												Type:  "object",
+												Properties: map[string]extsv1beta1.JSONSchemaProps{
+													"name": {
+														Type:      "string",
+														MinLength: pointers.NewInt64(1),
+													},
+													"replicationFactor": {
+														Type:    "integer",
+														Minimum: pointers.NewFloat64(1),
+														Maximum: pointers.NewFloat64(8),
+													},
+													"memorySize": {
+														Type:    "string",
+														Pattern: `^\d+G$`,
+													},
+													"defaultTTL": {
+														Type:    "string",
+														Pattern: `^\d+s$`,
+													},
+													"storage": {
+														Type: "object",
+														Properties: map[string]extsv1beta1.JSONSchemaProps{
+															"type": {
+																Type: "string",
+																Enum: []extsv1beta1.JSON{
+																	{Raw: []byte(utils.DoubleQuoted(aerospikev1alpha1.StorageTypeFile))},
+																	{Raw: []byte(utils.DoubleQuoted(aerospikev1alpha1.StorageTypeDevice))},
+																},
+															},
+															"size": {
+																Type:    "string",
+																Pattern: `^(20{3}|1\d{1,3}|[1-9])G$`,
+															},
+														},
+														Required: []string{
+															"type",
+															"size",
+														},
+													},
+												},
+												Required: []string{
+													"name",
+													"storage",
+												},
+											},
+										},
+									},
+								},
+								Required: []string{
+									"nodeCount",
+									"version",
+									"namespaces",
+								},
+							},
+						},
+					},
 				},
 			},
 		},

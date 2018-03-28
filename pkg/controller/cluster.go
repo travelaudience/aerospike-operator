@@ -39,6 +39,7 @@ import (
 	aerospikescheme "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned/scheme"
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
 	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 )
 
 const controllerAgentName = "aerospike"
@@ -59,7 +60,11 @@ type AerospikeClusterController struct {
 	aerospikeclientset aerospikeclientset.Interface
 
 	podsLister              corelisters.PodLister
+	configMapsLister        corelisters.ConfigMapLister
+	servicesLister          corelisters.ServiceLister
 	podsSynced              cache.InformerSynced
+	configMapsSynced        cache.InformerSynced
+	servicesSynced          cache.InformerSynced
 	aerospikeClustersLister aerospikelisters.AerospikeClusterLister
 	aerospikeClustersSynced cache.InformerSynced
 
@@ -72,6 +77,8 @@ type AerospikeClusterController struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	reconciler *reconciler.AerospikeClusterReconciler
 }
 
 // NewController returns a new aerospike controller
@@ -84,6 +91,8 @@ func NewAerospikeClusterController(
 	// obtain references to shared index informers for the Pod and AerospikeCluster
 	// types.
 	podInformer := kubeInformerFactory.Core().V1().Pods()
+	configMapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
+	serviceInformer := kubeInformerFactory.Core().V1().Services()
 	aerospikeClusterInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeClusters()
 
 	// Create event broadcaster
@@ -98,17 +107,24 @@ func NewAerospikeClusterController(
 
 	// obtain references to lister for the Pod and AerospikeClusters types
 	podsLister := podInformer.Lister()
+	configMapsLister := configMapInformer.Lister()
+	servicesLister := serviceInformer.Lister()
 	aerospikeClustersLister := aerospikeClusterInformer.Lister()
 
 	controller := &AerospikeClusterController{
 		kubeclientset:           kubeclientset,
 		aerospikeclientset:      aerospikeclientset,
 		podsLister:              podsLister,
+		configMapsLister:        configMapsLister,
+		servicesLister:          servicesLister,
 		podsSynced:              podInformer.Informer().HasSynced,
+		configMapsSynced:        configMapInformer.Informer().HasSynced,
+		servicesSynced:          serviceInformer.Informer().HasSynced,
 		aerospikeClustersLister: aerospikeClustersLister,
 		aerospikeClustersSynced: aerospikeClusterInformer.Informer().HasSynced,
 		workqueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "AerospikeClusters"),
 		recorder:                recorder,
+		reconciler:              reconciler.New(kubeclientset, aerospikeclientset, podsLister, configMapsLister, servicesLister),
 	}
 
 	log.Debug("setting up event handlers")
@@ -156,7 +172,7 @@ func (c *AerospikeClusterController) Run(threadiness int, stopCh <-chan struct{}
 
 	// Wait for the caches to be synced before starting workers
 	log.Debug("waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.podsSynced, c.aerospikeClustersSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.podsSynced, c.aerospikeClustersSynced, c.configMapsSynced, c.servicesSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -258,7 +274,10 @@ func (c *AerospikeClusterController) syncHandler(key string) error {
 		return err
 	}
 
-	// TODO AerospikeCluster reconciling
+	err = c.reconciler.MaybeReconcile(aerospikeCluster)
+	if err != nil {
+		return err
+	}
 
 	c.recorder.Event(aerospikeCluster, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil

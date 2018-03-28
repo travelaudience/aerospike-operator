@@ -21,3 +21,22 @@ func NewBool(v bool) *bool {
 	res := v
 	return &res
 }
+
+// NewFloat64 returns a pointer to a float64 holding the value of v.
+func NewFloat64(v float64) *float64 {
+	res := float64(v)
+	return &res
+}
+
+// NewInt64 returns a pointer to a int64 holding the value of v.
+func NewInt64(v int64) *int64 {
+	res := int64(v)
+	return &res
+}
+
+// NewInt64FromFloat64 returns a pointer to an int64 holding the value of v
+// after conversion to int64.
+func NewInt64FromFloat64(v float64) *int64 {
+	res := int64(v)
+	return &res
+}

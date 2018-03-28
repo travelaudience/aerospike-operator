@@ -35,10 +35,31 @@ type AerospikeCluster struct {
 
 // AerospikeClusterSpec is the spec for an AerospikeCluster resource
 type AerospikeClusterSpec struct {
+	NodeCount  int                      `json:"nodeCount"`
+	Version    string                   `json:"version"`
+	Namespaces []AerospikeNamespaceSpec `json:"namespaces"`
 }
 
 // AerospikeClusterStatus is the status for an AerospikeCluster resource
 type AerospikeClusterStatus struct {
+	NodeCount  int                      `json:"nodeCount"`
+	Version    string                   `json:"version"`
+	Namespaces []AerospikeNamespaceSpec `json:"namespaces"`
+}
+
+// AerospikeNamespaceSpec is the spec for an AerospikeNamespace object
+type AerospikeNamespaceSpec struct {
+	Name              string      `json:"name"`
+	ReplicationFactor int         `json:"replicationFactor"`
+	MemorySize        string      `json:"memorySize"`
+	DefaultTTL        string      `json:"defaultTTL"`
+	Storage           StorageSpec `json:"storage"`
+}
+
+// StorageSpec is the spec for a Storage object
+type StorageSpec struct {
+	Type string `json:"type"`
+	Size string `json:"size"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

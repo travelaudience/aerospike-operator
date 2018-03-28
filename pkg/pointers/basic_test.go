@@ -31,3 +31,24 @@ func TestNewBool(t *testing.T) {
 	assert.True(t, b1 != b3)
 	assert.True(t, *b1 != *b3)
 }
+
+func TestNewFloat64(t *testing.T) {
+	v1 := NewFloat64(1)
+	v2 := NewFloat64(1.0)
+	assert.True(t, v1 != v2)
+	assert.True(t, *v1 == *v2)
+}
+
+func TestNewInt64(t *testing.T) {
+	v1 := NewInt64(1)
+	v2 := NewInt64(1)
+	assert.True(t, v1 != v2)
+	assert.True(t, *v1 == *v2)
+}
+
+func TestNewInt64FromFloat64(t *testing.T) {
+	v1 := NewInt64FromFloat64(1.0)
+	v2 := NewInt64FromFloat64(1.0)
+	assert.True(t, v1 != v2)
+	assert.True(t, *v1 == *v2)
+}

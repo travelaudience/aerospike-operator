@@ -17,5 +17,11 @@ limitations under the License.
 package logfields
 
 const (
-	Kind = "kind"
+	Kind             = "kind"
+	CurrentSize      = "currentSize"
+	DesiredSize      = "desiredSize"
+	AerospikeCluster = "aerospikecluster"
+	Pod              = "pod"
+	Service          = "service"
+	ConfigMap        = "configmap"
 )

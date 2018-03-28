@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/travelaudience/aerospike-operator/pkg/logfields"
-	"github.com/travelaudience/aerospike-operator/pkg/meta"
+	log "github.com/sirupsen/logrus"
 	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/travelaudience/aerospike-operator/pkg/logfields"
+	"github.com/travelaudience/aerospike-operator/pkg/meta"
 )
 
 const (

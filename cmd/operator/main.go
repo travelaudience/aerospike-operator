@@ -33,6 +33,7 @@ import (
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
 	"github.com/travelaudience/aerospike-operator/pkg/controller"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
+	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/signals"
 )
 
@@ -40,12 +41,11 @@ var (
 	fs         *flag.FlagSet
 	masterURL  string
 	kubeconfig string
-	debug      bool
 )
 
 func init() {
 	fs = flag.NewFlagSet("", flag.ExitOnError)
-	fs.BoolVar(&debug, "debug", false, "Whether to enable debug logging.")
+	fs.BoolVar(&debug.DebugEnabled, "debug", false, "Whether to enable debug mode.")
 	fs.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 }
@@ -53,7 +53,7 @@ func init() {
 func main() {
 	fs.Parse(os.Args[1:])
 
-	if debug {
+	if debug.DebugEnabled {
 		log.SetLevel(log.DebugLevel)
 	}
 

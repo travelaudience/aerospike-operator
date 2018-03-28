@@ -18,11 +18,10 @@ package crd
 
 import (
 	"sync"
+	"testing"
 	"time"
 
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
-
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"

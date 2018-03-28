@@ -14,12 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package utils
 
-const (
-	//StorageTypeFile defines the file storage type for a given Aerospike namespace.
-	StorageTypeFile = "file"
-
-	//StorageTypeDevice defines the device storage type for a given Aerospike namespace.
-	StorageTypeDevice = "device"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 )
+
+// DoubleQuoted returns the provided string surrounded by double-quotes, escaping any existing
+// double-quotes.
+func DoubleQuoted(str string) string {
+	return fmt.Sprintf(`"%s"`, str)
+}
+
+// Hash creates an unique identifier for a given string.
+func Hash(s string) string {
+	h := sha256.New()
+	h.Write([]byte(s))
+	return hex.EncodeToString(h.Sum(nil))
+}

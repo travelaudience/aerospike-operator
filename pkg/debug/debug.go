@@ -14,12 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package debug
 
-const (
-	//StorageTypeFile defines the file storage type for a given Aerospike namespace.
-	StorageTypeFile = "file"
-
-	//StorageTypeDevice defines the device storage type for a given Aerospike namespace.
-	StorageTypeDevice = "device"
-)
+// DebugEnabled indicates whether we're running in debug mode.
+var DebugEnabled bool
