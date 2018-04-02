@@ -1,0 +1,220 @@
+[[toc]]
+= Design
+This document describes the design of aerospike-operator and the interactions between the custom resource definitions it introduces, its internal components and Kubernetes.
+:icons: font
+:toc:
+
+== Architecture
+
+`aerospike-operator` runs within a Kubernetes cluster and actively monitors
+changes to a number of
+https://kubernetes.io/docs/concepts/api-extension/custom-resources/[custom resources]
+it introduces:
+
+[[custom-resource-definitions]]
+* <<api-spec.adoc#aerospikecluster,`AerospikeCluster`>>: represents an Aerospike
+cluster managed by `aerospike-operator`. It specifies the version of Aerospike
+to be deployed, the number of nodes in the cluster and the list and properties
+of namespaces in the cluster.
+* <<api-spec.adoc#aerospikenamespacebackup,`AerospikeNamespaceBackup`>>:
+represents a single backup operation targeting a given Aerospike namespace, as
+well as how the backup data should be stored in a cloud storage provider.
+* <<api-spec.adoc#aerospikenamespacerestore,`AerospikeNamespaceRestore`>>:
+represents a single restore operation targeting a given Aerospike namespace, as
+well as how the source backup data should be retrieved from a cloud storage
+provider.
+
+`aerospike-operator` watches for changes to the custom resources specified
+above, as well as to Kubernetes resources it directly manages (pods, services,
+config maps and persistent volumes). For every change it gets notified about,
+`aerospike-operator` triggers a reconcilitation process and attempts to bring
+the state of the managed resources in line with the desired state. Such
+reconciliation processes live in components called _controllers_. There are
+three main controllers in `aerospike-operator`:
+
+[[controllers]]
+* *Cluster Controller:* This controller is responsible for managing an Aerospike
+  cluster based on the spec provided in an `AerospikeCluster` resource. It is
+  also responsible for managing the Aerospike namespaces in the cluster.
+* *Backup Controller:* This controller is responsible for creating backups of
+  Aerospike namespaces based on the spec provided in an
+  `AerospikeNamespaceBackup` resource.
+* *Restore Controller:* This controller is responsible for restoring backups of
+  Aerospike namespaces based on the spec provided in an
+  `AerospikeNamespaceRestore` resource.
+
+The following pictures provides a simplified overview of `aerospike-operator` 's
+internal architecture and the interactions with some of the Kubernetes resources
+used:
+
+image::img/architecture.png["Architecture"]
+
+At a high level, `aerospike-operator` manages _pods_ and _jobs_. Every pod is a
+member of a single Aerospike cluster. Pods use a _discovery service_ in order to
+bootstrap clustering. This service will tolerate unready endpoints, meaning that
+its endpoints will be updated to include the IP of a new pod as soon as this pod
+is created. After a pod has joined the cluster, it communicates directly with
+other pods in the cluster. The _client service_ is the main entrypoint for
+Aerospike clients. These clients use this service to communicate with the
+cluster and perform their day-to-day operations. This service's endpoints will
+only be updated to include the IP of a new pod when this pod is _ready_ to serve
+client requests.
+
+Jobs are responsible for backing up and restoring data in a given namespace, and
+are created as necessary when a backup or restore is requested (i.e., when an
+`AerospikeNamespaceBackup` or `AerospikeNamespaceRestore` resources are
+created). These jobs are themselves clients of the Aerospike cluster, using the
+client service to perform the backup and restore process. These jobs also
+communicate with an external cloud storage provider such as Google Cloud Storage
+in order to upload or download backup data as necessary.
+
+The following picture provides a more detailed overview of what Kubernetes
+resources are managed and used in an Aerospike cluster, as well as of the
+internal structure of pods and jobs:
+
+image::img/lifecycle.png["Lifecycle"]
+
+Every pod in a given Aerospike cluster will run two containers, the main one
+being Aerospike server. An exporter of Aerospike metrics in Prometheus format
+will run in every pod as a sidecar container, allowing for scrapping metrics
+from the node it is running on. Every pod will have a number of persistent
+volumes attached (one per Aerospike namespace). Each of these volumes are
+created and managed by `aerospike-operator` and will store the data for a single
+Aerospike namespace. A config map containing the Aerospike configuration will
+also be mounted at each pod.
+
+Jobs launched by `aerospike-operator` will run a custom container that will be
+responsible for interacting with `asbackup` or `asrestore` and with the cloud
+storage provider. As mentioned above, every job will also be given a persistent
+volume where to temporarily store backup data. A _pre-existing_ secret
+containing credentials to access the cloud storage provider will also be mounted
+in each job. This secret is _not_ managed by `aerospike-operator`, and must be
+created by the user according to a pre-established structure. Jobs communicate
+with the pods in the Aerospike cluster via the Aerospike client service in order
+to backup and restore data for a given namespace.
+
+The creation and management of the pods and jobs mentioned above is the
+responsibility of the <<controllers,controllers>>. In the next section we
+briefly describe the responsibilities of each of these controllers.
+
+<<toc,Back>>
+
+== Controllers
+
+=== Cluster Controller
+
+The _cluster controller_ is responsible for managing an Aerospike cluster based
+on the spec provided in an `AerospikeCluster` resource, and for managing the
+namespaces that exist in this cluster and the means of storage for this data.
+This includes creating or deleting pods, creating services for client access and
+peer discovery, creating and updating the underlying Aerospike configuration and
+ensuring that operations such as scaling up or down happen smoothly, taking into
+account any possible rebalancing operations that may be happening at a given
+moment. A simplified overview of this controller's mechanism of action can be
+seen in the picture below:
+
+image::img/cluster-actions.png["Cluster controller",width=50%]
+
+. When the controller starts, it registers the `AerospikeCluster` custom
+resource definition within Kubernetes, and instructs Kubernetes to notify the
+controller of any _create_, _update_ and _delete_ operations performed in
+`AerospikeCluster` resources.
+. Whenever a given `AerospikeCluster` resource is created or updated, the
+controller gets notified of the change by Kubernetes.
+. The controller then analyzes and compares the current state of the resource
+with the new desired state, taking the necessary actions in order to bring
+current and desired states in sync. This means, for instance, creating pods
+in a scale-up operation, deleting pods in a scale-down operation, creating the
+necessary services and managing the persistent volumes where namespace data will
+be stored.
+
+It should be noted that the cluster controller also watches pods belonging to a
+given Aerospike cluster. Whenever one of the pods gets terminated (e.g., due to
+an accidental delete or a node crash), `aerospike-operator` will create a new
+pod to replace it. The same happens with services, config maps and persistent
+volumes.
+
+<<toc,Back>>
+
+=== Backup Controller
+
+The _backup controller_ is responsible for creating backups of a given Aerospike
+namespace based on the spec provided in an `AerospikeNamespaceBackup` resource.
+This includes creating a Kubernetes job for every backup operation and ensuring
+this job completes successfully.
+
+image::img/backup-actions.png["Backup controller",width=50%]
+
+. When the controller starts, it registers the `AerospikeNamespaceBackup` custom
+resource definition within Kubernetes, and instructs Kubernetes to notify the
+controller of any _create_ operations performed in `AerospikeNamespaceBackup`
+resources.
+. Whenever a given `AerospikeNamespaceBackup` resource is created, the
+controller gets notified of the change by Kubernetes.
+. The controller then proceeds to provisioning a volume where to store the
+backed-up data temporarily and launching a Kubernetes job that will be
+responsible for backing-up data to this volume using `asbackup`. When `asbackup`
+finishes backing-up the namespace, data is uploaded to the cloud storage
+provider.
+
+NOTE: Backups are not deleted when the corresponding `AerospikeNamespaceBackup`
+resource is deleted. This behaviour is intentional and helps preventing
+accidental deletion of important backup data. For details on when backup data is
+deleted please refer to
+<<garbage-collection-backup-data,Garbage Collection>>.
+
+<<toc,Back>>
+
+=== Restore Controller
+
+image::img/restore-actions.png["Restore Controller",width=50%]
+
+. When the controller starts, it registers the `AerospikeNamespaceRestore`
+custom resource definition within Kubernetes, and instructs Kubernetes to notify
+the controller of any _create_ operations performed in
+`AerospikeNamespaceRestore` resources.
+. Whenever a given `AerospikeNamespaceRestore` resource is created, the
+controller gets notified of the change by Kubernetes.
+. The controller then proceeds to provisioning a volume where to download
+previously backed-up data to and proceeds to launching a Kubernetes job that
+will be responsible for actually downloading the backup data and restoring it
+using `asrestore`.
+
+<<toc,Back>>
+
+== Garbage Collection
+
+The lifecycle of most objects managed by `aerospike-operator` will be tied to
+the lifecycle of the originating
+<<custom-resource-definitions,custom resource>>. This will be achieved using
+Kubernetes
+https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents[owner references]
+and will allow for the Kubernetes
+https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/#controlling-how-the-garbage-collector-deletes-dependents[garbage collector]
+to garbage-collect most leftover resources (e.g., leftover pods when their
+originating `AerospikeCluster` is deleted).
+
+However, some resources will need to be garbage-collected in a custom fashion.
+For these resources, a custom garbage collector will be implemented. The
+garbage collector will run periodically and cleanup any leftover resources. The
+period between successive runs of the garbage collector may be configured. The
+resources targeted by the garbage collector and its behaviour with respect to
+these resources are identified in the next sections.
+
+=== Persistent volumes used for backup and restore
+
+During each run, the garbage collector will look for terminated backup and
+restore jobs originated by `AerospikeNamespaceBackup` and
+`AerospikeNamespaceRestore` resources, and cleanup any persistent volumes
+created for temporarily storing data originated by the job.
+
+[[garbage-collection-backup-data]]
+=== Backup data
+
+The `AerospikeNamespaceBackup` custom resource features a `ttl` field which
+represents the retention period for the backup data in the cloud storage
+provider. Since in most cloud storage providers the lifecycle of individuals is
+managed by a bucket-level policy, this TTL will be enforced for individual
+backups by the garbage collector. Every time the garbage collection process runs
+it looks for completed backup jobs whose TTL has expired, and deletes the
+associated backup data from the cloud storage provider.

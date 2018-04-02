@@ -1,0 +1,409 @@
+[[toc]]
+= API Types
+This document describes the types introduced by aerospike-operator.
+:icons: font
+:toc:
+
+== Base Types
+
+[[aerospikecluster]]
+=== AerospikeCluster
+
+The AerospikeCluster type represents an Aerospike cluster.
+
+|===
+| Field | Description | Scheme | Required
+| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#objectmeta-v1-meta[metav1.ObjectMeta] | true
+| spec | The specification of the Aerospike cluster. | <<aerospikeclusterspec,AerospikeClusterSpec>> | true
+|===
+
+More info:
+
+* https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#metadata
+* https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#spec-and-status
+
+==== Validations
+
+* `metadata` must be non-null.
+* `spec` must be non-null.
+
+<<toc,Back>>
+
+[[aerospikenamespacebackup]]
+=== AerospikeNamespaceBackup
+
+The AerospikeNamespaceBackup type represents a single backup operation targeting
+a single Aerospike namespace.
+
+|===
+| Field | Description | Scheme | Required
+| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#objectmeta-v1-meta[metav1.ObjectMeta] | true
+| spec | The specification of the backup operation. | <<aerospikenamespacebackupspec,AerospikeNamespaceBackupSpec>> | true
+|===
+
+More info:
+
+* https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#metadata
+* https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#spec-and-status
+* https://www.aerospike.com/docs/tools/backup
+
+==== Validations
+
+* `metadata` must be non-null.
+* `spec` must be non-null.
+
+<<toc,Back>>
+
+[[aerospikenamespacerestore]]
+=== AerospikeNamespaceRestore
+
+The AerospikeNamespaceRestore type represents a single restore operation
+targeting a single Aerospike namespace.
+
+|===
+| Field | Description | Scheme | Required
+| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#objectmeta-v1-meta[metav1.ObjectMeta] | true
+| spec | The specification of the restore operation. | <<aerospikenamespacerestorespec,AerospikeNamespaceRestoreSpec>> | true
+|===
+
+More info:
+
+* https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#metadata
+* https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#spec-and-status
+* https://www.aerospike.com/docs/tools/backup
+
+==== Validations
+
+* `metadata` must be non-null.
+* `spec` must be non-null.
+
+<<toc,Back>>
+
+== Nested Types
+
+[[aerospikeclusterspec]]
+=== AerospikeClusterSpec
+
+The AerospikeClusterSpec type specifies the desired state of an Aerospike
+cluster.
+
+|===
+| Field | Description | Scheme | Required
+| version | The version of Aerospike to be deployed. | string | true
+| nodeCount | The number of nodes in the cluster. | int32 | true
+| namespaces | The specification of the namespaces in the cluster. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
+|===
+
+==== Validations
+
+* `version` must be a supported version. Currently only `4.0.0.4` is supported.
+* `nodeCount` must be an integer between 1 and 8.
+* `namespaces` must have at least one element and at most two elements.
+
+==== Example
+
+[source,yaml]
+----
+apiVersion: aerospike.com/v1alpha1
+kind: AerospikeCluster
+metadata:
+  name: example-aerospike-cluster
+  namespace: example-namespace
+spec:
+  version: "4.0.0.4"
+  nodeCount: 3
+  namespaces:
+  - name: aerospike-namespace-0
+    replicationFactor: 2
+    memorySize: 4G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 150G
+  - name: aerospike-namespace-1
+    replicationFactor: 3
+    memorySize: 8G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 300G
+----
+
+<<toc,Back>>
+
+[[aerospikenamespacespec]]
+=== AerospikeNamespaceSpec
+
+The AerospikeNamespaceSpec type specifies the configuration for an Aerospike
+namespace.
+
+|===
+| Field | Description | Scheme | Required
+| name | The name of the Aerospike namespace. | string | true
+| replicationFactor | The number of replicas (including the master copy) for this namespace. If absent, the default value provided by Aerospike will be used. | int32 | false
+| memorySize | The amount of memory (_gigabytes_) to be used for index and data, suffixed with _G_. If absent, the default value provided by Aerospike will be used. | string | false
+| defaultTTL | Default record time-to-live (_seconds_) since it is created or last updated, suffixed with _s_. When TTL is reached, the record is deleted automatically. A TTL of `0s` means the record never expires. If absent, the default value provided by Aerospike will be used. | string | false
+| storage | Specifies how data will be stored. | <<storagespec,StorageSpec>> | true
+|===
+
+More info:
+
+* https://www.aerospike.com/docs/reference/configuration
+
+==== Validations
+
+* `name` must be a non-empty string.
+* `replicationFactor` must be an integer between 1 and
+  <<aerospikeclusterspec,`nodeCount`>> (if present).
+* `memorySize` must represent a positive quantity (if present).
+* `defaultTTL` must represent a non-negative quantity (if present).
+* `storage` must be non-null.
+
+[NOTE]
+====
+The minimum value for `replicationFactor` is 1 since, in Aerospike, the "master
+copy" counts as a replica. This contrasts with other databases where replicas
+are the number of _aditional_ copies of data that should exist. Similarly, the
+maximum value is `nodeCount` since it is the maximum number of copies that may
+exist.
+====
+
+<<toc,Back>>
+
+[[storagespec]]
+=== StorageSpec
+
+The StorageSpec type specifies how data in a given namespace will be stored.
+
+|===
+| Field | Description | Scheme | Required
+| type | The storage engine to be used for the namespace (`file` or `device`). | string | true
+| size | The size (_gigabytes_) of the persistent volume to use for storing data in this namespace, suffixed with _G_. | string | true
+|===
+
+More info:
+
+* https://www.aerospike.com/docs/reference/configuration
+
+==== Validations
+
+* `type` must be one of `file` or `device`.
+* `size` must represent a positive quantity and cannot exceed 2000G (i.e., two
+  terabytes).
+
+<<toc,Back>>
+
+[[aerospikenamespacebackupspec]]
+=== AerospikeNamespaceBackupSpec
+
+The AerospikeNamespaceBackupSpec type specifies the configuration for a backup
+operation.
+
+|===
+| Field | Description | Scheme | Required
+| target | The specification of the namespace to backup. | <<targetnamespace,TargetNamespace>> | true
+| storage | The specification of how the backup will be stored. | <<backupstoragespec,BackupStorageSpec>> | true
+| ttl | The retention period (_days_) during which to keep backup data in cloud storage, suffixed with _d_. Defaults to `0d`, meaning the backup data will be kept forever. | string | false
+|===
+
+More info:
+
+* https://www.aerospike.com/docs/tools/backup
+
+==== Validations
+
+* `target` must be non-null.
+* `storage` must be non-null.
+* `ttl` must represent a non-negative quantity.
+
+==== Example
+
+[source,yaml]
+----
+apiVersion: aerospike.com/v1alpha1
+kind: AerospikeNamespaceBackup
+metadata:
+  name: example-aerospike-backup
+  namespace: example-namespace
+spec:
+  target:
+    cluster: example-aerospike-cluster
+    namespace: example-aerospike-namespace
+  storage:
+    type: gcs
+    bucket: bucket-name
+    secret: secret-name
+  ttl: 30d
+----
+
+<<toc,Back>>
+
+[[aerospikenamespacerestorespec]]
+=== AerospikeNamespaceRestoreSpec
+
+The AerospikeNamespaceRestoreSpec type specifies the configuration for a restore
+operation.
+
+|===
+| Field | Description | Scheme | Required
+| target | The specification of the cluster and namespace the backup will be restored to. | <<targetnamespace,TargetNamespace>> | true
+| storage | The specification of how the backup will be retrieved. | <<backupstoragespec,BackupStorageSpec>> | true
+|===
+
+More info:
+
+* https://www.aerospike.com/docs/tools/backup
+
+==== Validations
+
+* `target` must be non-null.
+* `storage` must be non-null.
+
+==== Example
+
+[source,yaml]
+----
+apiVersion: aerospike.com/v1alpha1
+kind: AerospikeNamespaceRestore
+metadata:
+  name: example-aerospike-restore
+  namespace: example-namespace
+spec:
+  target:
+    cluster: example-aerospike-cluster
+    namespace: example-aerospike-namespace
+  storage:
+    type: gcs
+    bucket: bucket-name
+    secret: secret-name
+----
+
+<<toc,Back>>
+
+[[targetnamespace]]
+=== TargetNamespace
+
+The TargetNamespace type specifies the cluster and namespace a single backup or
+restore operation will target.
+
+|===
+| Field | Description | Scheme | Required
+| cluster | The name of the cluster in which the backup/restore operation will be performed. | string | true
+| namespace | The name of the namespace to backup/restore. | string | true
+|===
+
+==== Validations
+
+* `cluster` must be a non-empty string.
+* `namespace` must be a non-empty string.
+
+<<toc,Back>>
+
+[[backupstoragespec]]
+=== BackupStorageSpec
+
+The BackupStorageSpec type specifies the configuration properties for the
+storage of a backup.
+
+|===
+| Field | Description | Scheme | Required
+| type | The type of cloud storage to use for the backup (e.g., `gcs`) | string | true
+| bucket | The name of the bucket where a given backup is stored. | string | true
+| secret | The name of the secret containing credentials to access the bucket. | string | true
+|===
+
+==== Validations
+
+* `type` must be a supported type. Currently only `gcs` is supported.
+* `bucket` must be a non-empty string.
+* `secret` must be a non-empty string.
+
+<<toc,Back>>
+
+== Status Types
+
+The following base types have an associated _status_ type whose structure
+mirrors the type's _spec_:
+
+* AerospikeCluster
+* AerospikeNamespaceBackup
+* AerospikeNamespaceRestore
+
+This mirroring happens because the _status_ type is used to report information
+about a resource's most recently observed status (as described by the
+https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#spec-and-status[Kubernetes API conventions]).
+This allows users to know, at any given time, the actual state of the managed
+resources.
+
+For instance, during a scale-up operation, an AerospikeCluster resource may
+show the following:
+
+[source,yaml]
+----
+apiVersion: aerospike.com/v1alpha1
+kind: AerospikeCluster
+metadata:
+  name: example-aerospike-cluster
+  namespace: example-namespace
+spec:
+  version: "4.0.0.4"
+  nodeCount: 5
+  namespaces:
+  - name: aerospike-namespace-0
+    replicationFactor: 2
+    memorySize: 4G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 4G
+status:
+  version: "4.0.0.4"
+  nodeCount: 3
+  namespaces:
+  - name: aerospike-namespace-0
+    replicationFactor: 2
+    memorySize: 4G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 4G
+----
+
+This means that a size of 5 (i.e., `.spec.nodeCount`) was requested for the
+cluster but at the moment only 3 (i.e., `.status.nodeCount`) members have been
+created. When the size of the cluster meets the desired size the
+AerospikeCluster resource will report the following:
+
+[source,yaml]
+----
+apiVersion: aerospike.com/v1alpha1
+kind: AerospikeCluster
+metadata:
+  name: example-aerospike-cluster
+  namespace: example-namespace
+spec:
+  version: "4.0.0.4"
+  nodeCount: 5
+  namespaces:
+  - replicationFactor: 2
+    memorySize: 4G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 4G
+status:
+  version: "4.0.0.4"
+  nodeCount: 5
+  namespaces:
+  - replicationFactor: 2
+    memorySize: 4G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 4G
+----
+
+Resources are acted upon by aerospike-operator until their `.spec` and `.status`
+fields match.
+
+<<toc,Back>>
