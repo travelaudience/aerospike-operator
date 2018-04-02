@@ -33,37 +33,33 @@ import (
 	kubetesting "k8s.io/client-go/testing"
 )
 
-const (
-	crdResource = "customresourcedefinitions"
-)
-
 func TestCreateCRDFailsOnInternalError(t *testing.T) {
 	extsClient := fake.NewSimpleClientset()
-	extsClient.PrependReactor("create", crdResource, func(_ kubetesting.Action) (bool, runtime.Object, error) {
+	extsClient.PrependReactor("create", "customresourcedefinitions", func(_ kubetesting.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.NewInternalError(assert.AnError)
 	})
-	crd := createCRDObject()
-	err := createCRD(extsClient, crd)
+	r := NewCRDRegistry(extsClient)
+	err := r.createCRD(crds[0])
 	assert.Error(t, err)
 }
 
 func TestCreateCRDDoesNotFailOnAlreadyExists(t *testing.T) {
 	extsClient := fake.NewSimpleClientset()
-	extsClient.PrependReactor("create", crdResource, func(_ kubetesting.Action) (bool, runtime.Object, error) {
+	extsClient.PrependReactor("create", "customresourcedefinitions", func(_ kubetesting.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.NewAlreadyExists(schema.GroupResource{}, "")
 	})
-	crd := createCRDObject()
-	err := createCRD(extsClient, crd)
+	r := NewCRDRegistry(extsClient)
+	err := r.createCRD(crds[0])
 	assert.NoError(t, err)
 }
 
 func TestAwaitCRDWaitsForEstablishedCondition(t *testing.T) {
 	extsClient := fake.NewSimpleClientset()
 	fw := watch.NewFake()
-	extsClient.PrependWatchReactor(crdResource, func(_ kubetesting.Action) (bool, watch.Interface, error) {
+	extsClient.PrependWatchReactor("customresourcedefinitions", func(_ kubetesting.Action) (bool, watch.Interface, error) {
 		return true, fw, nil
 	})
-	crd := createCRDObject()
+	r := NewCRDRegistry(extsClient)
 
 	var (
 		wg  sync.WaitGroup
@@ -77,14 +73,14 @@ func TestAwaitCRDWaitsForEstablishedCondition(t *testing.T) {
 	t0 = time.Now()
 	go func() {
 		defer wg.Done()
-		err = awaitCRD(extsClient, crd)
+		err = r.awaitCRD(crds[0])
 		t1 = time.Now()
 	}()
 	wg.Add(1)
 
 	// wait for dt time so we can assert that awaitCRD indeed waits for the update event
 	<-time.After(dt)
-	fw.Modify(establishedCRD(crd))
+	fw.Modify(establishedCRD(crds[0]))
 	wg.Wait()
 	assert.True(t, t1.Sub(t0) >= dt)
 	assert.NoError(t, err)

@@ -80,8 +80,8 @@ func main() {
 		log.Fatalf("error building apiextensions clientset: %v", err)
 	}
 
-	if err := crd.Ensure(extsClient); err != nil {
-		log.Fatalf("error creating custom resource definition: %v", err)
+	if err := crd.NewCRDRegistry(extsClient).RegisterCRDs(); err != nil {
+		log.Fatalf("error creating custom resource definitions: %v", err)
 	}
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)

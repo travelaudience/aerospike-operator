@@ -1,2 +1,4 @@
 .idea/
+pkg/client/
 vendor/
+zz_generated.deepcopy.go
