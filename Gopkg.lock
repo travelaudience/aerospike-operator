@@ -14,6 +14,24 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  name = "github.com/aerospike/aerospike-client-go"
+  packages = [
+    ".",
+    "internal/lua",
+    "internal/lua/resources",
+    "logger",
+    "pkg/bcrypt",
+    "pkg/ripemd160",
+    "types",
+    "types/atomic",
+    "types/particle_type",
+    "types/rand",
+    "utils/buffer"
+  ]
+  revision = "9701404f4c60a6ea256595d24bf318f721a7e8b8"
+  version = "v1.32.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "782f4967f2dc4564575ca782fe2d04090b5faca8"
@@ -189,6 +207,17 @@
   packages = ["assert"]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/yuin/gopher-lua"
+  packages = [
+    ".",
+    "ast",
+    "parse",
+    "pm"
+  ]
+  revision = "84ea3a3c79b3c4b3b39606cc96f255cd63635ce0"
 
 [[projects]]
   name = "golang.org/x/crypto"
@@ -473,6 +502,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a209f4b49acc4c4999e1f6f9be1e711ef964985a9f82b40de699911fcc0f199f"
+  inputs-digest = "1bb4261d46c1c7397da9a15f38ffa08e5158d5613790b0da30373f618022c28b"
   solver-name = "gps-cdcl"
   solver-version = 1
