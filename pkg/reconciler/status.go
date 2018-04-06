@@ -36,6 +36,12 @@ type jsonPatch struct {
 
 func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
 	patch := make([]jsonPatch, 0)
+
+	pods, err := r.listPodsOwnedBy(aerospikeCluster)
+	if err != nil {
+		return err
+	}
+
 	if aerospikeCluster.Status.Version == "" {
 		patch = append(patch, jsonPatch{
 			Op:   "add",
@@ -43,6 +49,7 @@ func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1a
 			Value: map[string]interface{}{
 				"version":    aerospikeCluster.Spec.Version,
 				"namespaces": aerospikeCluster.Spec.Namespaces,
+				"nodeCount": len(pods),
 			},
 		})
 	} else {
@@ -59,10 +66,6 @@ func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1a
 				Path:  "/status/namespaces",
 				Value: aerospikeCluster.Spec.Namespaces,
 			})
-		}
-		pods, err := r.listPodsOwnedBy(aerospikeCluster)
-		if err != nil {
-			return err
 		}
 		if aerospikeCluster.Status.NodeCount != len(pods) {
 			patch = append(patch, jsonPatch{
