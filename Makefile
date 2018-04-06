@@ -16,6 +16,16 @@ dep:
 		git fetch origin && \
 		git checkout -f kubernetes-$(KUBERNETES_VERSION)
 
+docker.operator: TAG?=latest
+docker.operator: IMG?=quay.io/travelaudience/aerospike-operator
+docker.operator:
+	docker build -t $(IMG):$(TAG) -f ./Dockerfile .
+
+docker.tools: TAG?=latest
+docker.tools: IMG?=quay.io/travelaudience/aerospike-operator-tools
+docker.tools:
+	docker build -t $(IMG):$(TAG) -f ./Dockerfile.tools .
+
 fmt:
 	./hack/update-fmt.sh
 
