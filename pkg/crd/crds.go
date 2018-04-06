@@ -43,28 +43,28 @@ var (
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s.%s", "aerospikenamespacesbackups", aerospikev1alpha1.SchemeGroupVersion.Group),
+				Name: fmt.Sprintf("%s.%s", "aerospikenamespacebackups", aerospikev1alpha1.SchemeGroupVersion.Group),
 			},
 			Spec: extsv1beta1.CustomResourceDefinitionSpec{
 				Group:   aerospikev1alpha1.SchemeGroupVersion.Group,
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural: "aerospikenamespacesbackups",
+					Plural: "aerospikenamespacebackups",
 					Kind:   "AerospikeNamespaceBackup",
 				},
 			},
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s.%s", "aerospikenamespacesrestores", aerospikev1alpha1.SchemeGroupVersion.Group),
+				Name: fmt.Sprintf("%s.%s", "aerospikenamespacerestores", aerospikev1alpha1.SchemeGroupVersion.Group),
 			},
 			Spec: extsv1beta1.CustomResourceDefinitionSpec{
 				Group:   aerospikev1alpha1.SchemeGroupVersion.Group,
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural: "aerospikenamespacesrestores",
+					Plural: "aerospikenamespacerestores",
 					Kind:   "AerospikeNamespaceRestore",
 				},
 			},
