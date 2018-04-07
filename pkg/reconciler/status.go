@@ -49,7 +49,7 @@ func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1a
 			Value: map[string]interface{}{
 				"version":    aerospikeCluster.Spec.Version,
 				"namespaces": aerospikeCluster.Spec.Namespaces,
-				"nodeCount": len(pods),
+				"nodeCount":  len(pods),
 			},
 		})
 	} else {

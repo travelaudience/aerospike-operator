@@ -24,7 +24,7 @@ import (
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils"
+	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
 var (
@@ -54,7 +54,7 @@ var (
 									"version": {
 										Type: "string",
 										Enum: []extsv1beta1.JSON{
-											{Raw: []byte(utils.DoubleQuoted("4.0.0.4"))},
+											{Raw: []byte(asstrings.DoubleQuoted("4.0.0.4"))},
 										},
 									},
 									"namespaces": {
@@ -89,8 +89,8 @@ var (
 															"type": {
 																Type: "string",
 																Enum: []extsv1beta1.JSON{
-																	{Raw: []byte(utils.DoubleQuoted(aerospikev1alpha1.StorageTypeFile))},
-																	{Raw: []byte(utils.DoubleQuoted(aerospikev1alpha1.StorageTypeDevice))},
+																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeFile))},
+																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeDevice))},
 																},
 															},
 															"size": {

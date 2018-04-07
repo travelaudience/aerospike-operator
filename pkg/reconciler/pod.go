@@ -34,7 +34,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils"
+	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
 func (r *AerospikeClusterReconciler) ensureSize(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
@@ -129,8 +129,8 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", aerospikeCluster.Name, r.newPodIndex(aerospikeCluster)),
 			Labels: map[string]string{
-				labelAppKey:     labelAppVal,
-				labelClusterKey: aerospikeCluster.Name,
+				LabelAppKey:     LabelAppVal,
+				LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -144,7 +144,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 				},
 			},
 			Annotations: map[string]string{
-				configMapHashLabel: utils.Hash(configMap.Data[configFileName]),
+				configMapHashLabel: asstrings.Hash(configMap.Data[configFileName]),
 			},
 		},
 		Spec: v1.PodSpec{
@@ -266,12 +266,12 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 						LabelSelector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
 								{
-									Key:      labelAppKey,
+									Key:      LabelAppKey,
 									Operator: metav1.LabelSelectorOpIn,
-									Values:   []string{labelAppVal},
+									Values:   []string{LabelAppVal},
 								},
 								{
-									Key:      labelClusterKey,
+									Key:      LabelClusterKey,
 									Operator: metav1.LabelSelectorOpIn,
 									Values:   []string{aerospikeCluster.Name},
 								},
@@ -394,8 +394,8 @@ func (p byIndex) Swap(i, j int) {
 }
 
 func (p byIndex) Less(i, j int) bool {
-	idx1 := podIndex(p[i].Name, p[i].ObjectMeta.Labels[labelClusterKey])
-	idx2 := podIndex(p[j].Name, p[j].ObjectMeta.Labels[labelClusterKey])
+	idx1 := podIndex(p[i].Name, p[i].ObjectMeta.Labels[LabelClusterKey])
+	idx2 := podIndex(p[j].Name, p[j].ObjectMeta.Labels[LabelClusterKey])
 	return idx1 < idx2
 }
 

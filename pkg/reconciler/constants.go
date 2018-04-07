@@ -22,14 +22,14 @@ import (
 )
 
 const (
+	LabelAppKey     = "app"
+	LabelAppVal     = "aerospike"
+	LabelClusterKey = "cluster"
+
 	kind = "AerospikeCluster"
 
 	configVolumeName = "config"
 	configMountPath  = "/opt/aerospike/etc/"
-
-	labelAppKey     = "app"
-	labelAppVal     = "aerospike"
-	labelClusterKey = "cluster"
 
 	servicePort       = 3000
 	servicePortName   = "service"

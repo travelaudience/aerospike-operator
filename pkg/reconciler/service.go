@@ -38,8 +38,8 @@ func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aeros
 		ObjectMeta: metav1.ObjectMeta{
 			Name: serviceName,
 			Labels: map[string]string{
-				labelAppKey:     labelAppVal,
-				labelClusterKey: aerospikeCluster.Name,
+				LabelAppKey:     LabelAppVal,
+				LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -55,8 +55,8 @@ func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aeros
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				labelAppKey:     labelAppVal,
-				labelClusterKey: aerospikeCluster.Name,
+				LabelAppKey:     LabelAppVal,
+				LabelClusterKey: aerospikeCluster.Name,
 			},
 			Ports: []v1.ServicePort{
 				{
@@ -93,8 +93,8 @@ func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aer
 		ObjectMeta: metav1.ObjectMeta{
 			Name: serviceName,
 			Labels: map[string]string{
-				labelAppKey:     labelAppVal,
-				labelClusterKey: aerospikeCluster.Name,
+				LabelAppKey:     LabelAppVal,
+				LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -113,8 +113,8 @@ func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aer
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				labelAppKey:     labelAppVal,
-				labelClusterKey: aerospikeCluster.Name,
+				LabelAppKey:     LabelAppVal,
+				LabelClusterKey: aerospikeCluster.Name,
 			},
 			Ports: []v1.ServicePort{
 				{

@@ -29,4 +29,4 @@ gofmt -w -s ${FILES}
 # grab goimports if it is not present
 command -v goimports > /dev/null || go get golang.org/x/tools/cmd/goimports
 # goimports the target files
-goimports -w -d ${FILES}
+goimports -local github.com/travelaudience/aerospike-operator -w ${FILES}

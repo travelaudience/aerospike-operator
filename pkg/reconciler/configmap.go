@@ -31,7 +31,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils"
+	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
 func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
@@ -42,8 +42,8 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName,
 			Labels: map[string]string{
-				labelAppKey:     labelAppVal,
-				labelClusterKey: aerospikeCluster.Name,
+				LabelAppKey:     LabelAppVal,
+				LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -57,7 +57,7 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 				},
 			},
 			Annotations: map[string]string{
-				configMapHashLabel: utils.Hash(aerospikeConfig),
+				configMapHashLabel: asstrings.Hash(aerospikeConfig),
 			},
 		},
 		Data: map[string]string{configFileName: aerospikeConfig},
@@ -72,7 +72,7 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 		if err != nil {
 			return err
 		}
-		if cm.Annotations[configMapHashLabel] == utils.Hash(aerospikeConfig) {
+		if cm.Annotations[configMapHashLabel] == asstrings.Hash(aerospikeConfig) {
 			log.WithFields(log.Fields{
 				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 				logfields.ConfigMap:        configmap.Name,

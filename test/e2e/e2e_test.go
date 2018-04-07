@@ -14,23 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package utils
+package e2e
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
+	"flag"
+	"testing"
+
+	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-// DoubleQuoted returns the provided string surrounded by double-quotes, escaping any existing
-// double-quotes.
-func DoubleQuoted(str string) string {
-	return fmt.Sprintf(`"%s"`, str)
+func init() {
+	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file to be used")
+	flag.StringVar(&framework.OperatorImage, "operator-image", "quay.io/travelaudience/aerospike-operator:latest", "image of the operator to be pulled")
+	flag.Parse()
 }
 
-// Hash creates an unique identifier for a given string.
-func Hash(s string) string {
-	h := sha256.New()
-	h.Write([]byte(s))
-	return hex.EncodeToString(h.Sum(nil))
+func TestE2E(t *testing.T) {
+	RunE2ETests(t)
 }
