@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aerospike-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: aerospike-operator
+  name: aerospike-operator
+  namespace: aerospike-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aerospike-operator
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: aerospike-operator
+    spec:
+      containers:
+      - name: aerospike-operator
+        image: quay.io/travelaudience/aerospike-operator:latest
+        imagePullPolicy: Always
+        args:
+        - /usr/local/bin/aerospike-operator

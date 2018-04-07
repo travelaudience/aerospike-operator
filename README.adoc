@@ -1,0 +1,76 @@
+= aerospike-operator
+aerospike-operator manages Aerospike clusters atop Kubernetes, automating their creation and administration.
+:icons: font
+:toc:
+
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+image:https://img.shields.io/badge/status-development-blue.svg["Status"]
+image:https://quay.io/repository/travelaudience/aerospike-operator/status["Docker Repository on Quay", link="https://quay.io/repository/travelaudience/aerospike-operator"]
+
+== Prerequisites
+
+* Kubernetes 1.9+
+
+== Installing
+
+To install `aerospike-operator` in a Kubernetes cluster one should run
+
+[source,bash]
+----
+$ kubectl create -f docs/examples/aerospike-operator.yml
+namespace "aerospike-operator" created
+deployment "aerospike-operator" created
+----
+
+== Creating an Aerospike cluster
+
+To create an Aerospike cluster for testing purposes one may run
+
+[source,bash]
+----
+$ kubectl create -f docs/examples/aerospike-cluster.yml
+aerospikecluster "aerospike-cluster-0" created
+----
+
+This will create a single-node Aerospike cluster named `aerospike-cluster-0` on
+the `default` namespace. This Aerospike cluster can be reached from inside the
+Kubernetes cluster at `aerospike-cluster-0.default`.
+
+== Uninstalling
+
+To uninstall `aerospike-operator`, one should first list all existing resources:
+
+[source,bash]
+----
+$ kubectl get aerospikeclusters,aerospikenamespacebackups,aerospikenamespacerestores --all-namespaces
+NAMESPACE     NAME                                    AGE
+namespace-0   aerospikeclusters/aerospike-cluster-0   12h
+namespace-1   aerospikeclusters/aerospike-cluster-1   10h
+----
+
+One should then delete each of these resources:
+
+[source,bash]
+----
+$ kubectl -n namespace-0 delete aerospikeclusters/aerospike-cluster-0
+$ kubectl -n namespace-1 delete aerospikeclusters/aerospike-cluster-1
+----
+
+Finally, one should proceed to uninstalling `aerospike-operator` itself:
+
+[source,bash]
+----
+$ kubectl delete -f docs/examples/aerospike-operator.yml
+----
+
+== Documentation
+
+To understand the design and architecture of `aerospike-operator` one should
+have a look at the `docs/design/` directory in this repository.
