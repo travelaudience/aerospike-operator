@@ -32,11 +32,9 @@ import (
 )
 
 func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
-	serviceName := fmt.Sprintf("%s-%s", aerospikeCluster.Name, clientServiceSuffix)
-
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: serviceName,
+			Name: aerospikeCluster.Name,
 			Labels: map[string]string{
 				LabelAppKey:     LabelAppVal,
 				LabelClusterKey: aerospikeCluster.Name,
@@ -87,11 +85,9 @@ func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aeros
 }
 
 func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
-	serviceName := fmt.Sprintf("%s-%s", aerospikeCluster.Name, discoveryServiceSuffix)
-
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: serviceName,
+			Name: fmt.Sprintf("%s-%s", aerospikeCluster.Name, discoveryServiceSuffix),
 			Labels: map[string]string{
 				LabelAppKey:     LabelAppVal,
 				LabelClusterKey: aerospikeCluster.Name,

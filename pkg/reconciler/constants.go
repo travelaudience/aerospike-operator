@@ -43,7 +43,6 @@ const (
 	watchTimeout           = 15 * time.Second
 	terminationGracePeriod = 5 * time.Second
 
-	clientServiceSuffix    = "client"
 	discoveryServiceSuffix = "discovery"
 	configMapSuffix        = "config"
 
