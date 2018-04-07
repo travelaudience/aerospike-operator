@@ -21,9 +21,10 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
+	aslabels "github.com/travelaudience/aerospike-operator/pkg/utils/labels"
 )
 
+// ClusterByName returns the options for a list/watch operation that searches for a given AerospikeCluster by its name.
 func ClusterByName(name string) metav1.ListOptions {
 	set := map[string]string{
 		"metadata.name": name,
@@ -33,10 +34,12 @@ func ClusterByName(name string) metav1.ListOptions {
 	}
 }
 
+// PodsByClusterName returns the options for a list/watch operation that searches for pods belonging to a given
+// AerospikeCluster.
 func PodsByClusterName(name string) metav1.ListOptions {
 	set := map[string]string{
-		reconciler.LabelAppKey:     reconciler.LabelAppVal,
-		reconciler.LabelClusterKey: name,
+		aslabels.LabelAppKey:     aslabels.LabelAppVal,
+		aslabels.LabelClusterKey: name,
 	}
 	return metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(set).String(),

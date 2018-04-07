@@ -18,13 +18,13 @@ dep:
 		git checkout -f kubernetes-$(KUBERNETES_VERSION)
 
 .PHONY: docker.operator
-docker.operator: TAG?=latest
+docker.operator: TAG?=$(shell git describe --dirty)
 docker.operator: IMG?=quay.io/travelaudience/aerospike-operator
 docker.operator:
 	docker build -t $(IMG):$(TAG) -f ./Dockerfile .
 
 .PHONY: docker.tools
-docker.tools: TAG?=latest
+docker.tools: TAG?=$(shell git describe --dirty)
 docker.tools: IMG?=quay.io/travelaudience/aerospike-operator-tools
 docker.tools:
 	docker build -t $(IMG):$(TAG) -f ./Dockerfile.tools .
@@ -48,5 +48,7 @@ test.unit:
 	go test -v ./cmd/... ./pkg/...
 
 .PHONY: test.e2e
+test.e2e: TAG?=$(shell git describe --dirty)
+test.e2e: IMG?=quay.io/travelaudience/aerospike-operator
 test.e2e:
-	go test -v ./test/e2e -kubeconfig $(HOME)/.kube/config
+	go test -v ./test/e2e -kubeconfig $(HOME)/.kube/config -operator-image $(IMG):$(TAG)

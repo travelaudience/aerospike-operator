@@ -18,84 +18,49 @@ package reconciler
 
 import (
 	"encoding/json"
-	"reflect"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/logfields"
-	"github.com/travelaudience/aerospike-operator/pkg/meta"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
-type jsonPatch struct {
-	Op    string      `json:"op"`
-	Path  string      `json:"path"`
-	Value interface{} `json:"value"`
+// ensureStatus observes the aerospikeCluster and updates its status field accordingly
+func (r *AerospikeClusterReconciler) ensureStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+	// deepcopy aerospikeCluster so we can modify the status to later create the patch
+	new := aerospikeCluster.DeepCopy()
+	// lookup pods belonging to this aerospikeCluster
+	pods, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).List(selectors.PodsByClusterName(aerospikeCluster.Name))
+	if err != nil {
+		return err
+	}
+	// update status.nodeCount accordingly
+	new.Status.NodeCount = len(pods.Items)
+	// update status.version and status.namespaces to match spec
+	new.Status.Version = aerospikeCluster.Spec.Version
+	new.Status.Namespaces = aerospikeCluster.Spec.Namespaces
+	// update the status
+	return r.updateStatus(aerospikeCluster, new)
 }
 
-func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
-	patch := make([]jsonPatch, 0)
-
-	pods, err := r.listPodsOwnedBy(aerospikeCluster)
+// updateStatus updates the status field of the aerospikeCluster
+func (r *AerospikeClusterReconciler) updateStatus(old, new *aerospikev1alpha1.AerospikeCluster) error {
+	oldBytes, err := json.Marshal(old)
 	if err != nil {
 		return err
 	}
-
-	if aerospikeCluster.Status.Version == "" {
-		patch = append(patch, jsonPatch{
-			Op:   "add",
-			Path: "/status",
-			Value: map[string]interface{}{
-				"version":    aerospikeCluster.Spec.Version,
-				"namespaces": aerospikeCluster.Spec.Namespaces,
-				"nodeCount":  len(pods),
-			},
-		})
-	} else {
-		if aerospikeCluster.Status.Version != aerospikeCluster.Spec.Version {
-			patch = append(patch, jsonPatch{
-				Op:    "add",
-				Path:  "/status/version",
-				Value: aerospikeCluster.Spec.Version,
-			})
-		}
-		if !reflect.DeepEqual(aerospikeCluster.Status.Namespaces, aerospikeCluster.Spec.Namespaces) {
-			patch = append(patch, jsonPatch{
-				Op:    "add",
-				Path:  "/status/namespaces",
-				Value: aerospikeCluster.Spec.Namespaces,
-			})
-		}
-		if aerospikeCluster.Status.NodeCount != len(pods) {
-			patch = append(patch, jsonPatch{
-				Op:    "add",
-				Path:  "/status/nodeCount",
-				Value: len(pods),
-			})
-		}
-	}
-
-	if len(patch) == 0 {
-		log.WithFields(log.Fields{
-			logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-		}).Debug("no changes to status")
-		return nil
-	}
-
-	patchBytes, err := json.Marshal(patch)
+	newBytes, err := json.Marshal(new)
 	if err != nil {
 		return err
 	}
-
-	_, err = r.aerospikeclientset.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Patch(aerospikeCluster.Name, types.JSONPatchType, patchBytes)
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha1.AerospikeCluster{})
 	if err != nil {
 		return err
 	}
-
-	log.WithFields(log.Fields{
-		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-	}).Debug("updated status")
-
+	_, err = r.aerospikeclientset.AerospikeV1alpha1().AerospikeClusters(old.Namespace).Patch(old.Name, types.MergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }

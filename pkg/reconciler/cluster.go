@@ -72,6 +72,5 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	if err := r.ensureSize(aerospikeCluster); err != nil {
 		return err
 	}
-
-	return nil
+	return r.ensureStatus(aerospikeCluster)
 }

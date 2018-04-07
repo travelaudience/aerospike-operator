@@ -34,6 +34,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
+	aslabels "github.com/travelaudience/aerospike-operator/pkg/utils/labels"
 	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
@@ -129,8 +130,8 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", aerospikeCluster.Name, r.newPodIndex(aerospikeCluster)),
 			Labels: map[string]string{
-				LabelAppKey:     LabelAppVal,
-				LabelClusterKey: aerospikeCluster.Name,
+				aslabels.LabelAppKey:     aslabels.LabelAppVal,
+				aslabels.LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -266,12 +267,12 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 						LabelSelector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
 								{
-									Key:      LabelAppKey,
+									Key:      aslabels.LabelAppKey,
 									Operator: metav1.LabelSelectorOpIn,
-									Values:   []string{LabelAppVal},
+									Values:   []string{aslabels.LabelAppVal},
 								},
 								{
-									Key:      LabelClusterKey,
+									Key:      aslabels.LabelClusterKey,
 									Operator: metav1.LabelSelectorOpIn,
 									Values:   []string{aerospikeCluster.Name},
 								},
@@ -359,9 +360,6 @@ func (r *AerospikeClusterReconciler) scaleUp(aerospikeCluster *aerospikev1alpha1
 		if err := r.createPod(aerospikeCluster); err != nil {
 			return err
 		}
-		if err := r.updateStatus(aerospikeCluster); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -374,9 +372,6 @@ func (r *AerospikeClusterReconciler) scaleDown(aerospikeCluster *aerospikev1alph
 	sort.Sort(byIndex(pods))
 	for i := currentSize; i > desiredSize; i-- {
 		if err := r.deletePod(aerospikeCluster, pods[i-1]); err != nil {
-			return err
-		}
-		if err := r.updateStatus(aerospikeCluster); err != nil {
 			return err
 		}
 	}
@@ -394,8 +389,8 @@ func (p byIndex) Swap(i, j int) {
 }
 
 func (p byIndex) Less(i, j int) bool {
-	idx1 := podIndex(p[i].Name, p[i].ObjectMeta.Labels[LabelClusterKey])
-	idx2 := podIndex(p[j].Name, p[j].ObjectMeta.Labels[LabelClusterKey])
+	idx1 := podIndex(p[i].Name, p[i].ObjectMeta.Labels[aslabels.LabelClusterKey])
+	idx2 := podIndex(p[j].Name, p[j].ObjectMeta.Labels[aslabels.LabelClusterKey])
 	return idx1 < idx2
 }
 

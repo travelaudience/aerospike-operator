@@ -22,10 +22,6 @@ import (
 )
 
 const (
-	LabelAppKey     = "app"
-	LabelAppVal     = "aerospike"
-	LabelClusterKey = "cluster"
-
 	kind = "AerospikeCluster"
 
 	configVolumeName = "config"

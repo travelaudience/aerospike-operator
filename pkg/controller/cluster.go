@@ -274,7 +274,8 @@ func (c *AerospikeClusterController) syncHandler(key string) error {
 		return err
 	}
 
-	err = c.reconciler.MaybeReconcile(aerospikeCluster)
+	// deepcopy aerospikeCluster before reconciling so we don't possibly mutate the cache
+	err = c.reconciler.MaybeReconcile(aerospikeCluster.DeepCopy())
 	if err != nil {
 		return err
 	}
