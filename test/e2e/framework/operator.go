@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -41,6 +42,11 @@ const (
 )
 
 func (tf *TestFramework) createOperator() error {
+	if OperatorImage == "" {
+		log.Warnf("no aerospike-operator image specified, assuming a local instance")
+		return nil
+	}
+
 	if ns, err := tf.CreateRandomNamespace(); err != nil {
 		return err
 	} else {
@@ -75,6 +81,9 @@ func (tf *TestFramework) createOperator() error {
 }
 
 func (tf *TestFramework) deleteOperator() error {
+	if OperatorImage == "" {
+		return nil
+	}
 	return tf.DeleteNamespace(tf.operatorNamespace.Name)
 }
 

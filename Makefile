@@ -48,7 +48,12 @@ test.unit:
 	go test -v ./cmd/... ./pkg/...
 
 .PHONY: test.e2e
+ifeq ($(LOCAL),1)
+test.e2e: EXTRA_FLAGS:=
+else
 test.e2e: TAG?=$(shell git describe --dirty)
 test.e2e: IMG?=quay.io/travelaudience/aerospike-operator
+test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG)
+endif
 test.e2e:
-	go test -v ./test/e2e -kubeconfig $(HOME)/.kube/config -operator-image $(IMG):$(TAG)
+	go test -v ./test/e2e -kubeconfig=$(HOME)/.kube/config $(EXTRA_FLAGS)

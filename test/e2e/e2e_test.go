@@ -25,7 +25,7 @@ import (
 
 func init() {
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file to be used")
-	flag.StringVar(&framework.OperatorImage, "operator-image", "quay.io/travelaudience/aerospike-operator:latest", "image of the operator to be pulled")
+	flag.StringVar(&framework.OperatorImage, "operator-image", "", "image of the operator to be pulled")
 	flag.Parse()
 }
 
