@@ -28,6 +28,12 @@ func NewFloat64(v float64) *float64 {
 	return &res
 }
 
+// NewInt32 returns a pointer to a int32 holding the value of v.
+func NewInt32(v int32) *int32 {
+	res := int32(v)
+	return &res
+}
+
 // NewInt64 returns a pointer to a int64 holding the value of v.
 func NewInt64(v int64) *int64 {
 	res := int64(v)

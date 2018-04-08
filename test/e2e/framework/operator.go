@@ -21,6 +21,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -58,18 +59,13 @@ func (tf *TestFramework) createOperator() error {
 		return nil
 	}
 
-	w, err := tf.KubeClient.CoreV1().Pods(tf.operatorNamespace.Name).Watch(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name==%s", res.Name),
-	})
+	w, err := tf.KubeClient.CoreV1().Pods(tf.operatorNamespace.Name).Watch(selectors.ObjectByName(res.Name))
 	if err != nil {
 		return err
 	}
-	conditions := []watch.ConditionFunc{
-		func(event watch.Event) (bool, error) {
-			return event.Object.(*v1.Pod).Status.Phase == v1.PodRunning, nil
-		},
-	}
-	last, err := watch.Until(watchTimeout, w, conditions...)
+	last, err := watch.Until(watchTimeout, w, func(event watch.Event) (bool, error) {
+		return event.Object.(*v1.Pod).Status.Phase == v1.PodRunning, nil
+	})
 	if err != nil {
 		return err
 	}

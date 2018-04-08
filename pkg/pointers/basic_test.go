@@ -39,6 +39,13 @@ func TestNewFloat64(t *testing.T) {
 	assert.True(t, *v1 == *v2)
 }
 
+func TestNewInt32(t *testing.T) {
+	v1 := NewInt32(1)
+	v2 := NewInt32(1)
+	assert.True(t, v1 != v2)
+	assert.True(t, *v1 == *v2)
+}
+
 func TestNewInt64(t *testing.T) {
 	v1 := NewInt64(1)
 	v2 := NewInt64(1)

@@ -17,11 +17,19 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/watch"
 
+	"github.com/travelaudience/aerospike-operator/pkg/pointers"
+
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
@@ -48,21 +56,20 @@ var _ = Describe("AerospikeCluster", func() {
 		It("cannot be created with spec.nodeCount==0", func() {
 			testCreateAerospikeClusterWithZeroNodes(tf, ns)
 		})
-
 		It("cannot be created with spec.nodeCount==9", func() {
 			testCreateAerospikeClusterWithNineNodes(tf, ns)
 		})
-
 		It("cannot be created with len(spec.namespaces)==0", func() {
 			testCreateAerospikeClusterWithZeroNamespaces(tf, ns)
 		})
-
 		It("cannot be created with len(spec.namespaces)==3", func() {
 			testCreateAerospikeClusterWithThreeNamespaces(tf, ns)
 		})
-
 		It("is created with the provided spec.nodeCount", func() {
 			testCreateAerospikeClusterWithNodeCount(tf, ns, 1)
+		})
+		It("accepts connections on the service port", func() {
+			testConnectToAerospikeCluster(tf, ns)
 		})
 	})
 })
@@ -117,4 +124,46 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(selectors.PodsByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(len(pods.Items)).To(Equal(nodeCount))
+}
+
+func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	job, err := tf.KubeClient.BatchV1().Jobs(ns.Name).Create(&batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "asping",
+			Namespace: ns.Name,
+		},
+		Spec: batchv1.JobSpec{
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:            "aerospike-tools",
+							Image:           "quay.io/travelaudience/aerospike-operator-tools:latest",
+							ImagePullPolicy: v1.PullAlways,
+							Command: []string{
+								"asping",
+								"-target-host", fmt.Sprintf("%s.%s.svc.cluster.local", res.Name, res.Namespace),
+								"-target-port", "3000",
+							},
+						},
+					},
+					RestartPolicy: v1.RestartPolicyNever,
+				},
+			},
+			BackoffLimit: pointers.NewInt32(10),
+		},
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	w, err := tf.KubeClient.BatchV1().Jobs(job.Namespace).Watch(selectors.ObjectByName(job.Name))
+	Expect(err).NotTo(HaveOccurred())
+	last, err := watch.Until(2*time.Minute, w, func(event watch.Event) (bool, error) {
+		return event.Object.(*batchv1.Job).Status.Succeeded == 1, nil
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(last).NotTo(BeNil())
 }
