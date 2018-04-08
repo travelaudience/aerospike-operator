@@ -63,7 +63,7 @@ func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, repli
 }
 
 func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, fn watch.ConditionFunc) error {
-	w, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Watch(selectors.ClusterByName(aerospikeCluster.Name))
+	w, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Watch(selectors.ObjectByName(aerospikeCluster.Name))
 	if err != nil {
 		return err
 	}

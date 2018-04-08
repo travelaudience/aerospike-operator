@@ -24,8 +24,8 @@ import (
 	aslabels "github.com/travelaudience/aerospike-operator/pkg/utils/labels"
 )
 
-// ClusterByName returns the options for a list/watch operation that searches for a given AerospikeCluster by its name.
-func ClusterByName(name string) metav1.ListOptions {
+// ObjectByName returns the options for a list/watch operation that searches for a given object by its name.
+func ObjectByName(name string) metav1.ListOptions {
 	set := map[string]string{
 		"metadata.name": name,
 	}

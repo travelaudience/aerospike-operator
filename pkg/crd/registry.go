@@ -21,10 +21,10 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
@@ -77,31 +77,26 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 
 func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition) error {
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("waiting for crd to be established")
-	w, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name==%s", crd.Name),
-	})
+	w, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(selectors.ObjectByName(crd.Name))
 	if err != nil {
 		return err
 	}
-	conditions := []watch.ConditionFunc{
-		func(event watch.Event) (bool, error) {
-			// grab the current crd object from the event
-			obj := event.Object.(*extsv1beta1.CustomResourceDefinition)
-			// search for Established in .Status.Conditions and make sure it is True
-			// https://github.com/kubernetes/apiextensions-apiserver/blob/kubernetes-1.9.4/pkg/apis/apiextensions/types.go#L74
-			for _, cond := range obj.Status.Conditions {
-				switch cond.Type {
-				case extsv1beta1.Established:
-					if cond.Status == extsv1beta1.ConditionTrue {
-						return true, nil
-					}
+	last, err := watch.Until(watchTimeout, w, func(event watch.Event) (bool, error) {
+		// grab the current crd object from the event
+		obj := event.Object.(*extsv1beta1.CustomResourceDefinition)
+		// search for Established in .Status.Conditions and make sure it is True
+		// https://github.com/kubernetes/apiextensions-apiserver/blob/kubernetes-1.9.4/pkg/apis/apiextensions/types.go#L74
+		for _, cond := range obj.Status.Conditions {
+			switch cond.Type {
+			case extsv1beta1.Established:
+				if cond.Status == extsv1beta1.ConditionTrue {
+					return true, nil
 				}
 			}
-			// otherwise return false
-			return false, nil
-		},
-	}
-	last, err := watch.Until(watchTimeout, w, conditions...)
+		}
+		// otherwise return false
+		return false, nil
+	})
 	if err != nil {
 		return err
 	}
