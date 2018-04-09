@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 )
 
 // ensureStatus observes the aerospikeCluster and updates its status field accordingly
@@ -31,7 +31,7 @@ func (r *AerospikeClusterReconciler) ensureStatus(aerospikeCluster *aerospikev1a
 	// deepcopy aerospikeCluster so we can modify the status to later create the patch
 	new := aerospikeCluster.DeepCopy()
 	// lookup pods belonging to this aerospikeCluster
-	pods, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).List(selectors.PodsByClusterName(aerospikeCluster.Name))
+	pods, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).List(listoptions.PodsByClusterName(aerospikeCluster.Name))
 	if err != nil {
 		return err
 	}

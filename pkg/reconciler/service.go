@@ -29,7 +29,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	aslabels "github.com/travelaudience/aerospike-operator/pkg/utils/labels"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
 func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
@@ -37,8 +37,8 @@ func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aeros
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeCluster.Name,
 			Labels: map[string]string{
-				aslabels.LabelAppKey:     aslabels.LabelAppVal,
-				aslabels.LabelClusterKey: aerospikeCluster.Name,
+				selectors.LabelAppKey:     selectors.LabelAppVal,
+				selectors.LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -54,8 +54,8 @@ func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aeros
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				aslabels.LabelAppKey:     aslabels.LabelAppVal,
-				aslabels.LabelClusterKey: aerospikeCluster.Name,
+				selectors.LabelAppKey:     selectors.LabelAppVal,
+				selectors.LabelClusterKey: aerospikeCluster.Name,
 			},
 			Ports: []v1.ServicePort{
 				{
@@ -90,8 +90,8 @@ func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aer
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", aerospikeCluster.Name, discoveryServiceSuffix),
 			Labels: map[string]string{
-				aslabels.LabelAppKey:     aslabels.LabelAppVal,
-				aslabels.LabelClusterKey: aerospikeCluster.Name,
+				selectors.LabelAppKey:     selectors.LabelAppVal,
+				selectors.LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -110,8 +110,8 @@ func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aer
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				aslabels.LabelAppKey:     aslabels.LabelAppVal,
-				aslabels.LabelClusterKey: aerospikeCluster.Name,
+				selectors.LabelAppKey:     selectors.LabelAppVal,
+				selectors.LabelClusterKey: aerospikeCluster.Name,
 			},
 			Ports: []v1.ServicePort{
 				{

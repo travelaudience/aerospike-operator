@@ -23,10 +23,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -35,12 +33,13 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	aslabels "github.com/travelaudience/aerospike-operator/pkg/utils/labels"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
 func (r *AerospikeClusterReconciler) ensureSize(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
-	pods, err := r.listPodsOwnedBy(aerospikeCluster)
+	pods, err := r.listClusterPods(aerospikeCluster)
 	if err != nil {
 		return err
 	}
@@ -83,22 +82,16 @@ func (r *AerospikeClusterReconciler) ensureSize(aerospikeCluster *aerospikev1alp
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) listPodsOwnedBy(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) ([]*v1.Pod, error) {
-	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(labels.Everything())
+func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) ([]*v1.Pod, error) {
+	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(selectors.PodsByClusterName(aerospikeCluster.Name))
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*v1.Pod, 0)
-	for _, pod := range pods {
-		if metav1.IsControlledBy(pod, aerospikeCluster) {
-			res = append(res, pod)
-		}
-	}
-	return res, nil
+	return pods, nil
 }
 
 func (r *AerospikeClusterReconciler) newPodIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) int {
-	pods, err := r.listPodsOwnedBy(aerospikeCluster)
+	pods, err := r.listClusterPods(aerospikeCluster)
 	if err != nil {
 		return -1
 	}
@@ -131,8 +124,8 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", aerospikeCluster.Name, r.newPodIndex(aerospikeCluster)),
 			Labels: map[string]string{
-				aslabels.LabelAppKey:     aslabels.LabelAppVal,
-				aslabels.LabelClusterKey: aerospikeCluster.Name,
+				selectors.LabelAppKey:     selectors.LabelAppVal,
+				selectors.LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
@@ -268,12 +261,12 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 						LabelSelector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
 								{
-									Key:      aslabels.LabelAppKey,
+									Key:      selectors.LabelAppKey,
 									Operator: metav1.LabelSelectorOpIn,
-									Values:   []string{aslabels.LabelAppVal},
+									Values:   []string{selectors.LabelAppVal},
 								},
 								{
-									Key:      aslabels.LabelClusterKey,
+									Key:      selectors.LabelClusterKey,
 									Operator: metav1.LabelSelectorOpIn,
 									Values:   []string{aerospikeCluster.Name},
 								},
@@ -293,7 +286,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 	}
 
 	// watch the pod, waiting for it to enter the RUNNING state
-	w, err := r.kubeclientset.CoreV1().Pods(res.Namespace).Watch(selectors.ObjectByName(res.Name))
+	w, err := r.kubeclientset.CoreV1().Pods(res.Namespace).Watch(listoptions.ObjectByName(res.Name))
 	if err != nil {
 		return err
 	}
@@ -324,7 +317,7 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 	}
 
 	// watch the pod, waiting for it to be deleted
-	w, err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(selectors.ObjectByName(pod.Name))
+	w, err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(listoptions.ObjectByName(pod.Name))
 	if err != nil {
 		return err
 	}
@@ -356,7 +349,7 @@ func (r *AerospikeClusterReconciler) scaleUp(aerospikeCluster *aerospikev1alpha1
 }
 
 func (r *AerospikeClusterReconciler) scaleDown(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, currentSize, desiredSize int) error {
-	pods, err := r.listPodsOwnedBy(aerospikeCluster)
+	pods, err := r.listClusterPods(aerospikeCluster)
 	if err != nil {
 		return err
 	}
@@ -380,8 +373,8 @@ func (p byIndex) Swap(i, j int) {
 }
 
 func (p byIndex) Less(i, j int) bool {
-	idx1 := podIndex(p[i].Name, p[i].ObjectMeta.Labels[aslabels.LabelClusterKey])
-	idx2 := podIndex(p[j].Name, p[j].ObjectMeta.Labels[aslabels.LabelClusterKey])
+	idx1 := podIndex(p[i].Name, p[i].ObjectMeta.Labels[selectors.LabelClusterKey])
+	idx2 := podIndex(p[j].Name, p[j].ObjectMeta.Labels[selectors.LabelClusterKey])
 	return idx1 < idx2
 }
 

@@ -31,7 +31,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	aslabels "github.com/travelaudience/aerospike-operator/pkg/utils/labels"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
@@ -43,8 +43,8 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName,
 			Labels: map[string]string{
-				aslabels.LabelAppKey:     aslabels.LabelAppVal,
-				aslabels.LabelClusterKey: aerospikeCluster.Name,
+				selectors.LabelAppKey:     selectors.LabelAppVal,
+				selectors.LabelClusterKey: aerospikeCluster.Name,
 			},
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{

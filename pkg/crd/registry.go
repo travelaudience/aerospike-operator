@@ -21,7 +21,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 )
 
 const (
@@ -77,7 +77,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 
 func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition) error {
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("waiting for crd to be established")
-	w, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(selectors.ObjectByName(crd.Name))
+	w, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(listoptions.ObjectByName(crd.Name))
 	if err != nil {
 		return err
 	}

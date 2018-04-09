@@ -22,17 +22,15 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/watch"
-
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
+	"github.com/travelaudience/aerospike-operator/pkg/pointers"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
@@ -121,7 +119,7 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 	err = tf.WaitForClusterNodeCount(res, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(selectors.PodsByClusterName(res.Name))
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(len(pods.Items)).To(Equal(nodeCount))
 }
@@ -159,7 +157,7 @@ func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	w, err := tf.KubeClient.BatchV1().Jobs(job.Namespace).Watch(selectors.ObjectByName(job.Name))
+	w, err := tf.KubeClient.BatchV1().Jobs(job.Namespace).Watch(listoptions.ObjectByName(job.Name))
 	Expect(err).NotTo(HaveOccurred())
 	last, err := watch.Until(2*time.Minute, w, func(event watch.Event) (bool, error) {
 		return event.Object.(*batchv1.Job).Status.Succeeded == 1, nil

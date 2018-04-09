@@ -21,11 +21,11 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 )
 
@@ -59,7 +59,7 @@ func (tf *TestFramework) createOperator() error {
 		return nil
 	}
 
-	w, err := tf.KubeClient.CoreV1().Pods(tf.operatorNamespace.Name).Watch(selectors.ObjectByName(res.Name))
+	w, err := tf.KubeClient.CoreV1().Pods(tf.operatorNamespace.Name).Watch(listoptions.ObjectByName(res.Name))
 	if err != nil {
 		return err
 	}

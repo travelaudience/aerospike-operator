@@ -19,12 +19,12 @@ package framework
 import (
 	"fmt"
 
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
 const (
@@ -63,7 +63,7 @@ func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, repli
 }
 
 func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, fn watch.ConditionFunc) error {
-	w, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Watch(selectors.ObjectByName(aerospikeCluster.Name))
+	w, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Watch(listoptions.ObjectByName(aerospikeCluster.Name))
 	if err != nil {
 		return err
 	}

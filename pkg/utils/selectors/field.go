@@ -14,13 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package labels
+package selectors
 
-const (
-	// LabelAppKey represents the name of the "app" label added to every pod.
-	LabelAppKey = "app"
-	// LabelAppVal represents the value of the "app" label added to every pod.
-	LabelAppVal = "aerospike"
-	// LabelClusterKey respresents the name of the "cluster" label added to every pod.
-	LabelClusterKey = "cluster"
+import (
+	"k8s.io/apimachinery/pkg/fields"
 )
+
+// ObjectByName returns a selector that matches an object by its name.
+func ObjectByName(name string) fields.Selector {
+	set := map[string]string{
+		"metadata.name": name,
+	}
+	return fields.SelectorFromSet(set)
+}

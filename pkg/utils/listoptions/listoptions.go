@@ -14,34 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package selectors
+package listoptions
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 
-	aslabels "github.com/travelaudience/aerospike-operator/pkg/utils/labels"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
 // ObjectByName returns the options for a list/watch operation that searches for a given object by its name.
 func ObjectByName(name string) metav1.ListOptions {
-	set := map[string]string{
-		"metadata.name": name,
-	}
 	return metav1.ListOptions{
-		FieldSelector: fields.SelectorFromSet(set).String(),
+		FieldSelector: selectors.ObjectByName(name).String(),
 	}
 }
 
 // PodsByClusterName returns the options for a list/watch operation that searches for pods belonging to a given
 // AerospikeCluster.
 func PodsByClusterName(name string) metav1.ListOptions {
-	set := map[string]string{
-		aslabels.LabelAppKey:     aslabels.LabelAppVal,
-		aslabels.LabelClusterKey: name,
-	}
 	return metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(set).String(),
+		LabelSelector: selectors.PodsByClusterName(name).String(),
 	}
 }
