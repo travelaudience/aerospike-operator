@@ -3,6 +3,61 @@ kind: Namespace
 metadata:
   name: aerospike-operator
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aerospike-operator
+  namespace: aerospike-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aerospike-operator
+rules:
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - create
+  - watch
+- apiGroups: [""]
+  resources:
+  - configmaps
+  - pods
+  - services
+  verbs:
+  - create
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - aerospike.com
+  resources:
+  - aerospikeclusters
+  verbs:
+  - list
+  - patch
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aerospike-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aerospike-operator
+subjects:
+- kind: ServiceAccount
+  name: aerospike-operator
+  namespace: aerospike-operator
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,3 +85,4 @@ spec:
         imagePullPolicy: Always
         args:
         - /usr/local/bin/aerospike-operator
+      serviceAccountName: aerospike-operator

@@ -37,9 +37,10 @@ var (
 const (
 	watchTimeout = 15 * time.Second
 
-	containerName = "aerospike-operator"
-	nameLabel     = "name"
-	operatorCmd   = "/usr/local/bin/aerospike-operator"
+	containerName      = "aerospike-operator"
+	nameLabel          = "name"
+	operatorCmd        = "/usr/local/bin/aerospike-operator"
+	serviceAccountName = "aerospike-operator"
 )
 
 func (tf *TestFramework) createOperator() error {
@@ -101,7 +102,8 @@ func createPodObj(namespace string) *v1.Pod {
 					Command:         []string{operatorCmd},
 				},
 			},
-			RestartPolicy: v1.RestartPolicyNever,
+			RestartPolicy:      v1.RestartPolicyNever,
+			ServiceAccountName: serviceAccountName,
 		},
 	}
 }
