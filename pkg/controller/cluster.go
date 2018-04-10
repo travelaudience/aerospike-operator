@@ -44,14 +44,6 @@ import (
 
 const controllerAgentName = "aerospike"
 
-const (
-	// SuccessSynced is used as part of the Event 'reason' when a AerospikeCluster is synced
-	SuccessSynced = "Synced"
-	// MessageResourceSynced is the message used for an Event fired when a AerospikeCluster
-	// is synced successfully
-	MessageResourceSynced = "AerospikeCluster synced successfully"
-)
-
 // AerospikeClusterController is the controller implementation for AerospikeCluster resources
 type AerospikeClusterController struct {
 	// kubeclientset is a standard kubernetes clientset
@@ -124,7 +116,7 @@ func NewAerospikeClusterController(
 		aerospikeClustersSynced: aerospikeClusterInformer.Informer().HasSynced,
 		workqueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "AerospikeClusters"),
 		recorder:                recorder,
-		reconciler:              reconciler.New(kubeclientset, aerospikeclientset, podsLister, configMapsLister, servicesLister),
+		reconciler:              reconciler.New(kubeclientset, aerospikeclientset, podsLister, configMapsLister, servicesLister, recorder),
 	}
 
 	log.Debug("setting up event handlers")
@@ -279,8 +271,6 @@ func (c *AerospikeClusterController) syncHandler(key string) error {
 	if err != nil {
 		return err
 	}
-
-	c.recorder.Event(aerospikeCluster, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }
 

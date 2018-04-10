@@ -28,6 +28,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
+
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
@@ -62,6 +64,9 @@ var _ = Describe("AerospikeCluster", func() {
 		})
 		It("cannot be created with len(spec.namespaces)==3", func() {
 			testCreateAerospikeClusterWithThreeNamespaces(tf, ns)
+		})
+		It("cannot be created if spec.namespaces.replicationFactor[*] > spec.nodeCount", func() {
+			testCreateAerospikeClusterWithInvalidReplicationFactor(tf, ns)
 		})
 		It("is created with the provided spec.nodeCount", func() {
 			testCreateAerospikeClusterWithNodeCount(tf, ns, 1)
@@ -108,6 +113,24 @@ func testCreateAerospikeClusterWithThreeNamespaces(tf *framework.TestFramework, 
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsInvalid(err)).To(BeTrue())
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("spec.namespaces.*should have at most 2 items")))
+}
+
+func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFramework, ns *v1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{
+		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", aerospikeCluster.Spec.NodeCount+1, 1, 0, 1),
+	}
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	w, err := tf.KubeClient.CoreV1().Events(ns.Name).Watch(listoptions.ObjectByField("involvedObject.uid", string(res.UID)))
+	Expect(err).NotTo(HaveOccurred())
+	last, err := watch.Until(2*time.Minute, w, func(event watch.Event) (bool, error) {
+		return event.Object.(*v1.Event).Reason == events.ReasonValidationError, nil
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(last).NotTo(BeNil())
 }
 
 func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {

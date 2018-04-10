@@ -19,9 +19,10 @@ package framework
 import (
 	"fmt"
 
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
