@@ -206,7 +206,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 					},
 				},
 				{
-					Name:            "aerospike-tools",
+					Name:            "asprobe",
 					Image:           "quay.io/travelaudience/aerospike-operator-tools:latest",
 					ImagePullPolicy: v1.PullAlways,
 					Command: []string{
@@ -218,7 +218,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 					},
 					Ports: []v1.ContainerPort{
 						{
-							Name:          asprobeName,
+							Name:          "asprobe",
 							ContainerPort: asprobePort,
 						},
 					},
@@ -234,6 +234,30 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 						TimeoutSeconds:      2,
 						PeriodSeconds:       15,
 						FailureThreshold:    3,
+					},
+				},
+				{
+					Name:            "asprom",
+					Image:           "quay.io/travelaudience/aerospike-operator-tools:latest",
+					ImagePullPolicy: v1.PullAlways,
+					Command: []string{
+						"asprom",
+					},
+					Ports: []v1.ContainerPort{
+						{
+							Name:          "http",
+							ContainerPort: aspromPort,
+						},
+					},
+					LivenessProbe: &v1.Probe{
+						Handler: v1.Handler{
+							HTTPGet: &v1.HTTPGetAction{
+								Path: "/metrics",
+								Port: intstr.IntOrString{
+									IntVal: aspromPort,
+								},
+							},
+						},
 					},
 				},
 			},

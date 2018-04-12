@@ -119,6 +119,11 @@ func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aer
 					Port:       heartbeatPort,
 					TargetPort: intstr.IntOrString{StrVal: heartbeatPortName},
 				},
+				{
+					Name:       aspromPortName,
+					Port:       aspromPort,
+					TargetPort: intstr.IntOrString{StrVal: aspromPortName},
+				},
 			},
 			ClusterIP: v1.ClusterIPNone,
 		},

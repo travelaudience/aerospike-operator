@@ -62,8 +62,10 @@ const (
 	nsFilePath             = "filePath"
 	nsDevicePath           = "devicePath"
 
-	asprobeName = "http"
 	asprobePort = 8080
+
+	aspromPortName = "prometheus"
+	aspromPort     = 9145
 )
 
 var asConfigTemplate = template.Must(template.New("aerospike-config").Parse(aerospikeConfig))
