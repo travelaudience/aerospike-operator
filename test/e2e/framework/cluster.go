@@ -85,3 +85,16 @@ func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1al
 		return obj.Status.NodeCount == nodeCount, nil
 	})
 }
+
+func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, nodeCount int) error {
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	res.Spec.NodeCount = nodeCount
+	res, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(res.Namespace).Update(res)
+	if err != nil {
+		return err
+	}
+	return tf.WaitForClusterNodeCount(res, nodeCount)
+}

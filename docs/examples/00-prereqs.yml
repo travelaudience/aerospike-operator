@@ -24,10 +24,25 @@ rules:
 - apiGroups: [""]
   resources:
   - configmaps
-  - pods
+  - persistentvolumeclaims
   - services
   verbs:
   - create
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs:
+  - delete
+  - create
+  - list
+  - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs:
   - list
   - watch
 - apiGroups: [""]

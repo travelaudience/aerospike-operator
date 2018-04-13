@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	listersv1 "k8s.io/client-go/listers/core/v1"
+	storagelistersv1 "k8s.io/client-go/listers/storage/v1"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
@@ -35,6 +36,8 @@ type AerospikeClusterReconciler struct {
 	podsLister         listersv1.PodLister
 	configMapsLister   listersv1.ConfigMapLister
 	servicesLister     listersv1.ServiceLister
+	pvcsLister         listersv1.PersistentVolumeClaimLister
+	scsLister          storagelistersv1.StorageClassLister
 	recorder           record.EventRecorder
 }
 
@@ -43,6 +46,8 @@ func New(kubeclientset kubernetes.Interface,
 	podsLister listersv1.PodLister,
 	configMapsLister listersv1.ConfigMapLister,
 	servicesLister listersv1.ServiceLister,
+	pvcsLister listersv1.PersistentVolumeClaimLister,
+	scsLister storagelistersv1.StorageClassLister,
 	recorder record.EventRecorder) *AerospikeClusterReconciler {
 	return &AerospikeClusterReconciler{
 		kubeclientset:      kubeclientset,
@@ -50,6 +55,8 @@ func New(kubeclientset kubernetes.Interface,
 		podsLister:         podsLister,
 		configMapsLister:   configMapsLister,
 		servicesLister:     servicesLister,
+		pvcsLister:         pvcsLister,
+		scsLister:          scsLister,
 		recorder:           recorder,
 	}
 }

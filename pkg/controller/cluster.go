@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	storagelisters "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -54,9 +55,13 @@ type AerospikeClusterController struct {
 	podsLister              corelisters.PodLister
 	configMapsLister        corelisters.ConfigMapLister
 	servicesLister          corelisters.ServiceLister
+	pvcsLister              corelisters.PersistentVolumeClaimLister
+	scsLister               storagelisters.StorageClassLister
 	podsSynced              cache.InformerSynced
 	configMapsSynced        cache.InformerSynced
 	servicesSynced          cache.InformerSynced
+	pvcsSynced              cache.InformerSynced
+	scsSynced               cache.InformerSynced
 	aerospikeClustersLister aerospikelisters.AerospikeClusterLister
 	aerospikeClustersSynced cache.InformerSynced
 
@@ -86,6 +91,8 @@ func NewAerospikeClusterController(
 	configMapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
 	serviceInformer := kubeInformerFactory.Core().V1().Services()
 	aerospikeClusterInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeClusters()
+	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
+	scInformer := kubeInformerFactory.Storage().V1().StorageClasses()
 
 	// Create event broadcaster
 	// Add aerospike types to the default Kubernetes Scheme so Events can be
@@ -98,10 +105,12 @@ func NewAerospikeClusterController(
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
 	// obtain references to lister for the Pod and AerospikeClusters types
+	aerospikeClustersLister := aerospikeClusterInformer.Lister()
 	podsLister := podInformer.Lister()
 	configMapsLister := configMapInformer.Lister()
 	servicesLister := serviceInformer.Lister()
-	aerospikeClustersLister := aerospikeClusterInformer.Lister()
+	pvcsLister := pvcInformer.Lister()
+	scsLister := scInformer.Lister()
 
 	controller := &AerospikeClusterController{
 		kubeclientset:           kubeclientset,
@@ -109,14 +118,18 @@ func NewAerospikeClusterController(
 		podsLister:              podsLister,
 		configMapsLister:        configMapsLister,
 		servicesLister:          servicesLister,
+		pvcsLister:              pvcsLister,
+		scsLister:               scsLister,
 		podsSynced:              podInformer.Informer().HasSynced,
 		configMapsSynced:        configMapInformer.Informer().HasSynced,
 		servicesSynced:          serviceInformer.Informer().HasSynced,
+		pvcsSynced:              pvcInformer.Informer().HasSynced,
+		scsSynced:               scInformer.Informer().HasSynced,
 		aerospikeClustersLister: aerospikeClustersLister,
 		aerospikeClustersSynced: aerospikeClusterInformer.Informer().HasSynced,
 		workqueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "AerospikeClusters"),
 		recorder:                recorder,
-		reconciler:              reconciler.New(kubeclientset, aerospikeclientset, podsLister, configMapsLister, servicesLister, recorder),
+		reconciler:              reconciler.New(kubeclientset, aerospikeclientset, podsLister, configMapsLister, servicesLister, pvcsLister, scsLister, recorder),
 	}
 
 	log.Debug("setting up event handlers")
@@ -164,7 +177,7 @@ func (c *AerospikeClusterController) Run(threadiness int, stopCh <-chan struct{}
 
 	// Wait for the caches to be synced before starting workers
 	log.Debug("waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.podsSynced, c.aerospikeClustersSynced, c.configMapsSynced, c.servicesSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.podsSynced, c.aerospikeClustersSynced, c.configMapsSynced, c.servicesSynced, c.pvcsSynced, c.scsSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 

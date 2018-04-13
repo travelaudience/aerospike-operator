@@ -27,6 +27,8 @@ const (
 	configVolumeName = "config"
 	configMountPath  = "/opt/aerospike/etc/"
 
+	namespaceVolumePrefix = "data-ns"
+
 	servicePort       = 3000
 	servicePortName   = "service"
 	heartbeatPort     = 3002
@@ -36,7 +38,7 @@ const (
 	infoPort          = 3003
 	infoPortName      = "info"
 
-	watchTimeout           = 15 * time.Second
+	watchTimeout           = 2 * time.Minute
 	terminationGracePeriod = 5 * time.Second
 
 	discoveryServiceSuffix = "discovery"
@@ -62,8 +64,7 @@ const (
 	nsFilePath             = "filePath"
 	nsDevicePath           = "devicePath"
 
-	asprobePort = 8080
-
+	asprobePort    = 8080
 	aspromPortName = "prometheus"
 	aspromPort     = 9145
 )
@@ -141,7 +142,7 @@ namespace {{.name}} {
 	storage-engine device {
 
 		{{if eq .storageType "file"}}
-			file {{.filePath}}{{.name}}.dat
+			file {{.filePath}}{{.name}}/{{.name}}.dat
 		{{else if eq .storageType "device"}}
 			device {{.devicePath}}
 		{{end}}

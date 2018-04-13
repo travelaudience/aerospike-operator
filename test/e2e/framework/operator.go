@@ -37,7 +37,7 @@ var (
 )
 
 const (
-	watchTimeout = 30 * time.Second
+	watchTimeout = 2 * time.Minute
 
 	containerName      = "aerospike-operator"
 	nameLabel          = "name"

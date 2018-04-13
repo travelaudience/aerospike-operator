@@ -27,6 +27,8 @@ const (
 	LabelAppVal = "aerospike"
 	// LabelClusterKey respresents the name of the "cluster" label added to every pod.
 	LabelClusterKey = "cluster"
+	// LabelNamespaceKey respresents the name of the "namespace" label added to every persistent volume claim.
+	LabelNamespaceKey = "namespace"
 )
 
 // PodsByClusterName returns a selector that matches all pods belonging to a given AerospikeCluster.

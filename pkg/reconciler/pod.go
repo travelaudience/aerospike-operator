@@ -303,6 +303,28 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 		}
 	}
 
+	for _, namespace := range aerospikeCluster.Spec.Namespaces {
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			Name:      fmt.Sprintf("%s-%s", namespaceVolumePrefix, namespace.Name),
+			MountPath: fmt.Sprintf("%s%s", defaultFilePath, namespace.Name),
+		})
+	}
+
+	if claims, err := r.getPersistentVolumeClaims(aerospikeCluster, pod); err != nil {
+		return err
+	} else {
+		for _, claim := range claims {
+			pod.Spec.Volumes = append(pod.Spec.Volumes, v1.Volume{
+				Name: fmt.Sprintf("%s-%s", namespaceVolumePrefix, claim.Labels[selectors.LabelNamespaceKey]),
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: claim.Name,
+					},
+				},
+			})
+		}
+	}
+
 	// create the pod
 	res, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).Create(pod)
 	if err != nil {

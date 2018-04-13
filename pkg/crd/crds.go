@@ -97,6 +97,9 @@ var (
 																Type:    "string",
 																Pattern: `^(20{3}|1\d{1,3}|[1-9])G$`,
 															},
+															"storageClassName": {
+																Type: "string",
+															},
 														},
 														Required: []string{
 															"type",

@@ -141,7 +141,7 @@ namespace.
 | Field | Description | Scheme | Required
 | name | The name of the Aerospike namespace. | string | true
 | replicationFactor | The number of replicas (including the master copy) for this namespace. If absent, the default value provided by Aerospike will be used. | int32 | false
-| memorySize | The amount of memory (_gigabytes_) to be used for index and data, suffixed with _G_. If absent, the default value provided by Aerospike will be used. | string | false
+| memorySize | The amount of memory (_gibibytes_) to be used for index and data, suffixed with _G_. If absent, the default value provided by Aerospike will be used. | string | false
 | defaultTTL | Default record time-to-live (_seconds_) since it is created or last updated, suffixed with _s_. When TTL is reached, the record is deleted automatically. A TTL of `0s` means the record never expires. If absent, the default value provided by Aerospike will be used. | string | false
 | storage | Specifies how data will be stored. | <<storagespec,StorageSpec>> | true
 |===
@@ -178,7 +178,8 @@ The StorageSpec type specifies how data in a given namespace will be stored.
 |===
 | Field | Description | Scheme | Required
 | type | The storage engine to be used for the namespace (`file` or `device`). | string | true
-| size | The size (_gigabytes_) of the persistent volume to use for storing data in this namespace, suffixed with _G_. | string | true
+| size | The size (_gibibytes_) of the persistent volume to use for storing data in this namespace, suffixed with _G_. | string | true
+| storageClassName | The name of the storage class to use to create persistent volumes. | string | false
 |===
 
 More info:

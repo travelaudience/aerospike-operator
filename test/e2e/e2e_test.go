@@ -20,6 +20,8 @@ import (
 	"flag"
 	"testing"
 
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

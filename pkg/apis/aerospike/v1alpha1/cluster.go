@@ -58,8 +58,9 @@ type AerospikeNamespaceSpec struct {
 
 // StorageSpec is the spec for a Storage object
 type StorageSpec struct {
-	Type string `json:"type"`
-	Size string `json:"size"`
+	Type             string `json:"type"`
+	Size             string `json:"size"`
+	StorageClassName string `json:"storageClassName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

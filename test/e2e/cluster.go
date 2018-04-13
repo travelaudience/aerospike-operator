@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -28,11 +29,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
-
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
@@ -73,6 +74,12 @@ var _ = Describe("AerospikeCluster", func() {
 		})
 		It("accepts connections on the service port", func() {
 			testConnectToAerospikeCluster(tf, ns)
+		})
+		It("assigns each pod a persistent volume per Aerospike namespace with the requested size", func() {
+			testVolumesSizeMatchNamespaceSpec(tf, ns, 1, 2, 4)
+		})
+		It("reuses the persistent volume of a deleted pod", func() {
+			testVolumeIsReused(tf, ns, 2)
 		})
 	})
 })
@@ -187,4 +194,84 @@ func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace
 	})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(last).NotTo(BeNil())
+}
+
+func testVolumesSizeMatchNamespaceSpec(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int, nsSize1 int, nsSize2 int) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeCount = nodeCount
+	ns1 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, nsSize1)
+	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, nsSize2)
+	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{ns1, ns2}
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, nodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(len(pods.Items)).To(Equal(nodeCount))
+
+	for _, pod := range pods.Items {
+		Expect(pod.Spec.Volumes).NotTo(BeEmpty())
+		for _, volume := range pod.Spec.Volumes {
+			if volume.VolumeSource.PersistentVolumeClaim != nil {
+				claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(volume.VolumeSource.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				claimCapacity := claim.Status.Capacity[v1.ResourceStorage]
+				capacity := strings.TrimSuffix(claimCapacity.String(), "i")
+				switch claim.Labels[selectors.LabelNamespaceKey] {
+				case ns1.Name:
+					Expect(capacity).To(Equal(ns1.Storage.Size))
+				case ns2.Name:
+					Expect(capacity).To(Equal(ns2.Storage.Size))
+				}
+			}
+		}
+	}
+
+}
+
+func testVolumeIsReused(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {
+	Expect(nodeCount).To(BeNumerically(">", 1))
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeCount = nodeCount
+	ns1 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1)
+	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{ns1}
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, nodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	pod, err := tf.KubeClient.CoreV1().Pods(ns.Name).Get(fmt.Sprintf("%s-%d", res.Name, nodeCount-1), metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	var volumeName string
+	for _, volume := range pod.Spec.Volumes {
+		if volume.VolumeSource.PersistentVolumeClaim != nil {
+			claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(volume.VolumeSource.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			volumeName = claim.Spec.VolumeName
+		}
+	}
+	Expect(volumeName).NotTo(BeEmpty())
+
+	err = tf.ScaleCluster(res, nodeCount-1)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.ScaleCluster(res, nodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	pod, err = tf.KubeClient.CoreV1().Pods(ns.Name).Get(fmt.Sprintf("%s-%d", res.Name, nodeCount-1), metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	for _, volume := range pod.Spec.Volumes {
+		if volume.VolumeSource.PersistentVolumeClaim != nil {
+			claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(volume.VolumeSource.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(claim.Spec.VolumeName).To(Equal(volumeName))
+		}
+	}
 }
