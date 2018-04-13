@@ -26,6 +26,7 @@ import (
 func init() {
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file to be used")
 	flag.StringVar(&framework.OperatorImage, "operator-image", "", "image of the operator to be pulled")
+	flag.StringVar(&framework.OperatorNamespace, "operator-namespace", "aerospike-operator", "namespace wehere to create the aerospike-operator pod")
 	flag.Parse()
 }
 

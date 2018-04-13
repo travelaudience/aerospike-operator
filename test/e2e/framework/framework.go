@@ -17,7 +17,6 @@ limitations under the License.
 package framework
 
 import (
-	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -28,7 +27,7 @@ type TestFramework struct {
 	AerospikeClient *aerospikeclientset.Clientset
 	KubeClient      *kubernetes.Clientset
 
-	operatorNamespace *v1.Namespace
+	podName string
 }
 
 func NewTestEnvironment(kubeconfigPath string) (*TestFramework, error) {

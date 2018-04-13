@@ -20,12 +20,23 @@ image:https://quay.io/repository/travelaudience/aerospike-operator/status["Docke
 
 == Installing
 
-To install `aerospike-operator` in a Kubernetes cluster one should run
+To install `aerospike-operator` in a Kubernetes cluster one should first run
 
 [source,bash]
 ----
-$ kubectl create -f docs/examples/aerospike-operator.yml
+$ kubectl create -f docs/examples/00-prereqs.yml
 namespace "aerospike-operator" created
+serviceaccount "aerospike-operator" created
+clusterrole.rbac.authorization.k8s.io "aerospike-operator" created
+clusterrolebinding.rbac.authorization.k8s.io "aerospike-operator" created
+----
+
+This will create a namespace for `aerospike-operator`, a dedicated service
+account and setup the required RBAC permissions. One should then run
+
+[source,bash]
+----
+$ kubectl create -f docs/examples/10-aerospike-operator.yml
 deployment "aerospike-operator" created
 ----
 
@@ -35,7 +46,7 @@ To create an Aerospike cluster for testing purposes one may run
 
 [source,bash]
 ----
-$ kubectl create -f docs/examples/aerospike-cluster.yml
+$ kubectl create -f docs/examples/20-aerospike-cluster.yml
 aerospikecluster "aerospike-cluster-0" created
 ----
 
@@ -67,7 +78,8 @@ Finally, one should proceed to uninstalling `aerospike-operator` itself:
 
 [source,bash]
 ----
-$ kubectl delete -f docs/examples/aerospike-operator.yml
+$ kubectl delete -f docs/examples/10-aerospike-operator.yml
+$ kubectl delete -f docs/examples/00-prereqs.yml
 ----
 
 == Documentation

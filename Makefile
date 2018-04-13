@@ -51,9 +51,10 @@ test.unit:
 ifeq ($(LOCAL),1)
 test.e2e: EXTRA_FLAGS:=
 else
+test.e2e: NAMESPACE?=aerospike-operator
 test.e2e: TAG?=$(shell git describe --dirty)
 test.e2e: IMG?=quay.io/travelaudience/aerospike-operator
-test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG)
+test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG) -operator-namespace=$(NAMESPACE)
 endif
 test.e2e:
 	go test -v ./test/e2e -kubeconfig=$(HOME)/.kube/config $(EXTRA_FLAGS)

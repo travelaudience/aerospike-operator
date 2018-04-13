@@ -32,10 +32,12 @@ import (
 var (
 	// OperatorImage is the image used to deploy aerospike-operator.
 	OperatorImage string
+	// OperatorNamespace is the namespace in which to crreate the aerospike-operator pod.
+	OperatorNamespace string
 )
 
 const (
-	watchTimeout = 15 * time.Second
+	watchTimeout = 30 * time.Second
 
 	containerName      = "aerospike-operator"
 	nameLabel          = "name"
@@ -49,18 +51,13 @@ func (tf *TestFramework) createOperator() error {
 		return nil
 	}
 
-	if ns, err := tf.CreateRandomNamespace(); err != nil {
-		return err
-	} else {
-		tf.operatorNamespace = ns
-	}
-
-	res, err := tf.KubeClient.CoreV1().Pods(tf.operatorNamespace.Name).Create(createPodObj(tf.operatorNamespace.Name))
+	res, err := tf.KubeClient.CoreV1().Pods(OperatorNamespace).Create(createPodObj())
 	if err != nil {
-		return nil
+		return err
 	}
+	tf.podName = res.Name
 
-	w, err := tf.KubeClient.CoreV1().Pods(tf.operatorNamespace.Name).Watch(listoptions.ObjectByName(res.Name))
+	w, err := tf.KubeClient.CoreV1().Pods(OperatorNamespace).Watch(listoptions.ObjectByName(tf.podName))
 	if err != nil {
 		return err
 	}
@@ -81,17 +78,17 @@ func (tf *TestFramework) deleteOperator() error {
 	if OperatorImage == "" {
 		return nil
 	}
-	return tf.DeleteNamespace(tf.operatorNamespace.Name)
+	return tf.KubeClient.CoreV1().Pods(OperatorNamespace).Delete(tf.podName, &metav1.DeleteOptions{})
 }
 
-func createPodObj(namespace string) *v1.Pod {
+func createPodObj() *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: randomNamespacePrefix,
 			Labels: map[string]string{
 				nameLabel: containerName,
 			},
-			Namespace: namespace,
+			Namespace: OperatorNamespace,
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
