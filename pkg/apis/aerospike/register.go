@@ -17,5 +17,5 @@ limitations under the License.
 package aerospike
 
 const (
-	GroupName = "aerospike.com"
+	GroupName = "aerospike.travelaudience.com"
 )

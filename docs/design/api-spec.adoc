@@ -104,7 +104,7 @@ cluster.
 
 [source,yaml]
 ----
-apiVersion: aerospike.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeCluster
 metadata:
   name: example-aerospike-cluster
@@ -221,7 +221,7 @@ More info:
 
 [source,yaml]
 ----
-apiVersion: aerospike.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeNamespaceBackup
 metadata:
   name: example-aerospike-backup
@@ -264,7 +264,7 @@ More info:
 
 [source,yaml]
 ----
-apiVersion: aerospike.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeNamespaceRestore
 metadata:
   name: example-aerospike-restore
@@ -341,7 +341,7 @@ show the following:
 
 [source,yaml]
 ----
-apiVersion: aerospike.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeCluster
 metadata:
   name: example-aerospike-cluster
@@ -377,7 +377,7 @@ AerospikeCluster resource will report the following:
 
 [source,yaml]
 ----
-apiVersion: aerospike.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeCluster
 metadata:
   name: example-aerospike-cluster

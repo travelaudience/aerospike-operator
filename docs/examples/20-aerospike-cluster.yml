@@ -1,4 +1,4 @@
-apiVersion: aerospike.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeCluster
 metadata:
   name: aerospike-cluster-0
