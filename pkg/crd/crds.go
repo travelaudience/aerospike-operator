@@ -27,19 +27,28 @@ import (
 	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
+const (
+	AerospikeClusterKind   = "AerospikeCluster"
+	AerospikeClusterPlural = "aerospikeclusters"
+)
+
+var (
+	AerospikeClusterCRDName = fmt.Sprintf("%s.%s", AerospikeClusterPlural, aerospikev1alpha1.SchemeGroupVersion.Group)
+)
+
 var (
 	crds = []*extsv1beta1.CustomResourceDefinition{
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s.%s", "aerospikeclusters", aerospikev1alpha1.SchemeGroupVersion.Group),
+				Name: AerospikeClusterCRDName,
 			},
 			Spec: extsv1beta1.CustomResourceDefinitionSpec{
 				Group:   aerospikev1alpha1.SchemeGroupVersion.Group,
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural: "aerospikeclusters",
-					Kind:   "AerospikeCluster",
+					Plural: AerospikeClusterPlural,
+					Kind:   AerospikeClusterKind,
 				},
 				Validation: &extsv1beta1.CustomResourceValidation{
 					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{

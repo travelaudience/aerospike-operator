@@ -117,10 +117,15 @@ image::img/cluster-actions.png["Cluster controller",width=50%]
 
 . When the controller starts, it registers the `AerospikeCluster` custom
 resource definition within Kubernetes, and instructs Kubernetes to notify the
-controller of any _create_, _update_ and _delete_ operations performed in
+controller of any _create_ and _update_ and _delete_ operations performed in
 `AerospikeCluster` resources.
-. Whenever a given `AerospikeCluster` resource is created or updated, the
-controller gets notified of the change by Kubernetes.
+. Whenever a given `AerospikeCluster` resource is created or updated, a
+<<webhooks,validating admission webhook>> living within `aerospike-operator` is
+called. The webhook analyses the object and decides if the operation should be
+allowed or rejected. This allows for dynamic validation of a cluster's spec and
+for providing immediate feedback about any validation errors.
+. If the operation was allowed by the webhook, the controller gets notified
+about the changes.
 . The controller then analyzes and compares the current state of the resource
 with the new desired state, taking the necessary actions in order to bring
 current and desired states in sync. This means, for instance, creating pods
@@ -218,3 +223,36 @@ managed by a bucket-level policy, this TTL will be enforced for individual
 backups by the garbage collector. Every time the garbage collection process runs
 it looks for completed backup jobs whose TTL has expired, and deletes the
 associated backup data from the cloud storage provider.
+
+<<toc,Back>>
+
+[[webhooks]]
+== Webhooks
+
+While the format of a custom resource's fields can be validated statically using
+an
+https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/#validation[OpenAPI v3 schema],
+some more involved, dynamic validations may be required for some types of custom
+resources. For example, it is a good idea to enforce that the replication factor
+for a given namespace is not larger than size of the cluster it belongs to. In
+order to achieve this, `aerospike-operator` makes use of
+https://kubernetes.io/docs/admin/extensible-admission-controllers/#admission-webhooks[validating admission webhooks]: HTTP callbacks that are called when a given object is acted
+upon (e.g., created or updated). These callbacks may be used to either accept or
+reject the action in a _synchronous_ fashion, hence providing immediate feedback
+and a better user experience.
+
+Validating admission webhooks may live either inside or outside a Kubernetes
+cluster, and they must be registered using the Kubernetes API in order to be
+called. In the case of `aerospike-operator`, introduced webhooks are exposed via
+the application itself, and are registered when the application starts (unless
+admission is explicitly disabled when starting the application, in which case no
+registration happens).
+
+=== AerospikeCluster
+
+The `aerospikeclusters.aerospike.travelaudience.com` webhook is called whenever
+a given `AerospikeCluster` resource is created or updated, and enforces that:
+
+* No namespaces have been removed or changed.
+* For every new namespace, the replication factor is less than or equal to the
+  size of the cluster.

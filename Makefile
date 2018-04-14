@@ -39,9 +39,12 @@ gen:
 	./hack/update-codegen.sh
 
 .PHONY: run
+run: POD_NAMESPACE?=aerospike-operator
 run: KUBECONFIG?=$(HOME)/.kube/config
 run:
-	go run cmd/operator/main.go -debug -kubeconfig=$(KUBECONFIG)
+	POD_NAMESPACE=$(POD_NAMESPACE) go run cmd/operator/main.go \
+	    -debug \
+	    -kubeconfig=$(KUBECONFIG)
 
 .PHONY: test.unit
 test.unit:
@@ -51,10 +54,10 @@ test.unit:
 ifeq ($(LOCAL),1)
 test.e2e: EXTRA_FLAGS:=
 else
-test.e2e: NAMESPACE?=aerospike-operator
+test.e2e: POD_NAMESPACE?=aerospike-operator
 test.e2e: TAG?=$(shell git describe --dirty)
 test.e2e: IMG?=quay.io/travelaudience/aerospike-operator
-test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG) -operator-namespace=$(NAMESPACE)
+test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG) -operator-namespace=$(POD_NAMESPACE)
 endif
 test.e2e:
-	go test -v ./test/e2e -kubeconfig=$(HOME)/.kube/config $(EXTRA_FLAGS)
+	go test -v ./test/e2e -kubeconfig=$(HOME)/.kube/config -ginkgo.flakeAttempts=3 $(EXTRA_FLAGS)

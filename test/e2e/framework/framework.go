@@ -43,7 +43,10 @@ func NewTestEnvironment(kubeconfigPath string) (*TestFramework, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &TestFramework{AerospikeClient: aerospikeClient, KubeClient: kubeClient}, nil
+	return &TestFramework{
+		AerospikeClient: aerospikeClient,
+		KubeClient:      kubeClient,
+	}, nil
 }
 
 func (tf *TestFramework) SetUp() error {

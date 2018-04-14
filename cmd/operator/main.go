@@ -28,6 +28,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/travelaudience/aerospike-operator/pkg/admission"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
 	"github.com/travelaudience/aerospike-operator/pkg/controller"
@@ -38,7 +39,6 @@ import (
 
 var (
 	fs         *flag.FlagSet
-	masterURL  string
 	kubeconfig string
 )
 
@@ -46,7 +46,8 @@ func init() {
 	fs = flag.NewFlagSet("", flag.ExitOnError)
 	fs.BoolVar(&debug.DebugEnabled, "debug", false, "Whether to enable debug mode.")
 	fs.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	fs.BoolVar(&admission.Enabled, "admission-enabled", true, "Whether to enable the validating admission webhook.")
+	fs.StringVar(&admission.ServiceName, "admission-service-name", "aerospike-operator", "The name of the service used to expose the admission webhook.")
 }
 
 func main() {
@@ -59,7 +60,7 @@ func main() {
 	// set up signals so we handle the first shutdown signal gracefully
 	stopCh := signals.SetupSignalHandler()
 
-	cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
+	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		log.Fatalf("error building kubeconfig: %v", err)
 	}
@@ -90,6 +91,9 @@ func main() {
 
 	go kubeInformerFactory.Start(stopCh)
 	go aerospikeInformerFactory.Start(stopCh)
+
+	// if --admission-enabled is true create, register and run the validating admission webhook
+	go admission.NewValidatingAdmissionWebhook(kubeClient).RegisterAndRun(stopCh)
 
 	if err = clusterController.Run(2, stopCh); err != nil {
 		log.Fatalf("error running controller: %v", err)

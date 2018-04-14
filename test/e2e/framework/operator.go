@@ -27,6 +27,7 @@ import (
 
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
 var (
@@ -38,11 +39,6 @@ var (
 
 const (
 	watchTimeout = 2 * time.Minute
-
-	containerName      = "aerospike-operator"
-	nameLabel          = "name"
-	operatorCmd        = "/usr/local/bin/aerospike-operator"
-	serviceAccountName = "aerospike-operator"
 )
 
 func (tf *TestFramework) createOperator() error {
@@ -84,23 +80,41 @@ func (tf *TestFramework) deleteOperator() error {
 func createPodObj() *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: randomNamespacePrefix,
 			Labels: map[string]string{
-				nameLabel: containerName,
+				selectors.LabelAppKey: "aerospike-operator",
 			},
-			Namespace: OperatorNamespace,
+			GenerateName: randomNamespacePrefix,
+			Namespace:    OperatorNamespace,
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name:            containerName,
+					Name:            "aerospike-operator",
 					Image:           OperatorImage,
 					ImagePullPolicy: v1.PullAlways,
-					Command:         []string{operatorCmd},
+					Ports: []v1.ContainerPort{
+						{
+							ContainerPort: 8443,
+						},
+					},
+					Env: []v1.EnvVar{
+						{
+							Name: "POD_NAMESPACE",
+							ValueFrom: &v1.EnvVarSource{
+								FieldRef: &v1.ObjectFieldSelector{
+									FieldPath: "metadata.namespace",
+								},
+							},
+						},
+					},
+					Command: []string{
+						"aerospike-operator",
+						"-debug",
+					},
 				},
 			},
 			RestartPolicy:      v1.RestartPolicyNever,
-			ServiceAccountName: serviceAccountName,
+			ServiceAccountName: "aerospike-operator",
 		},
 	}
 }

@@ -31,7 +31,6 @@ import (
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
@@ -128,16 +127,11 @@ func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFr
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", aerospikeCluster.Spec.NodeCount+1, 1, 0, 1),
 	}
 
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
-	Expect(err).NotTo(HaveOccurred())
-
-	w, err := tf.KubeClient.CoreV1().Events(ns.Name).Watch(listoptions.ObjectByField("involvedObject.uid", string(res.UID)))
-	Expect(err).NotTo(HaveOccurred())
-	last, err := watch.Until(2*time.Minute, w, func(event watch.Event) (bool, error) {
-		return event.Object.(*v1.Event).Reason == events.ReasonValidationError, nil
-	})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(last).NotTo(BeNil())
+	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).To(HaveOccurred())
+	status := err.(*errors.StatusError)
+	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
+	Expect(status.ErrStatus.Message).To(MatchRegexp("replication factor of \\d+ requested for namespace .+ but the cluster has only \\d+ nodes"))
 }
 
 func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {
