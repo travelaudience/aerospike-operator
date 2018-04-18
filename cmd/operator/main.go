@@ -93,8 +93,11 @@ func main() {
 	go aerospikeInformerFactory.Start(stopCh)
 
 	// if --admission-enabled is true create, register and run the validating admission webhook
-	go admission.NewValidatingAdmissionWebhook(kubeClient).RegisterAndRun(stopCh)
+	readyCh := make(chan interface{}, 0)
+	go admission.NewValidatingAdmissionWebhook(kubeClient).RegisterAndRun(readyCh)
 
+	// wait for the webhook to be ready to start the controller
+	<-readyCh
 	if err = clusterController.Run(2, stopCh); err != nil {
 		log.Fatalf("error running controller: %v", err)
 	}

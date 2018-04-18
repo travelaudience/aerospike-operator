@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -65,10 +66,11 @@ func NewValidatingAdmissionWebhook(kubeClient *kubernetes.Clientset) *Validating
 }
 
 // RegisterAndRun registers a validating admission webhook and starts the underlying server.
-func (s *ValidatingAdmissionWebhook) RegisterAndRun(stopCh <-chan struct{}) {
+func (s *ValidatingAdmissionWebhook) RegisterAndRun(readyCh chan interface{}) {
 	// exit early if the webhook has been disabled
 	if !Enabled {
 		log.Warn("the validating admission webhook has been disabled")
+		close(readyCh)
 		return
 	}
 
@@ -170,9 +172,19 @@ func (s *ValidatingAdmissionWebhook) RegisterAndRun(stopCh <-chan struct{}) {
 		},
 	}
 
-	// start the http server
-	if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+	// start listening on the specified port
+	l, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
 		log.Errorf("failed to start admission webhook: %v", err)
+		return
+	}
+
+	// signal that we're ready to accept connections
+	close(readyCh)
+
+	// accept incoming connections
+	if err := srv.ServeTLS(l, "", ""); err != nil && err != http.ErrServerClosed {
+		log.Errorf("failed to serve admission webhook: %v", err)
 		return
 	}
 }
