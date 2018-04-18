@@ -30,6 +30,7 @@ import (
 const (
 	AerospikeClusterKind   = "AerospikeCluster"
 	AerospikeClusterPlural = "aerospikeclusters"
+	AerospikeClusterShort  = "asc"
 )
 
 var (
@@ -47,8 +48,9 @@ var (
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural: AerospikeClusterPlural,
-					Kind:   AerospikeClusterKind,
+					Plural:     AerospikeClusterPlural,
+					Kind:       AerospikeClusterKind,
+					ShortNames: []string{AerospikeClusterShort},
 				},
 				Validation: &extsv1beta1.CustomResourceValidation{
 					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
