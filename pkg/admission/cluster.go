@@ -9,6 +9,11 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 )
 
+const (
+	// aerospikeClusterMaxNameLen represents the maximum length of an AerospikeCluster's metadata.name.
+	aerospikeClusterMaxNameLen = 52
+)
+
 func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {
 	// decode the new AerospikeCluster object
 	new, err := decodeAerospikeCluster(ar.Request.Object.Raw)
@@ -35,6 +40,10 @@ func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionRespo
 }
 
 func validateAerospikeCluster(aerospikeCluster *v1alpha1.AerospikeCluster) error {
+	// validate that the name doesn't exceed 52 characters
+	if len(aerospikeCluster.Name) > aerospikeClusterMaxNameLen {
+		return fmt.Errorf("the name of the cluster cannot exceed %d characters", aerospikeClusterMaxNameLen)
+	}
 	// validate that every namespace's replication factor is less than or equal to the cluster's node count.
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
 		if ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {

@@ -25,6 +25,7 @@ More info:
 ==== Validations
 
 * `metadata` must be non-null.
+* `metadata.name` cannot exceed 52 characters.
 * `spec` must be non-null.
 
 <<toc,Back>>

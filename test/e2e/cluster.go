@@ -53,6 +53,9 @@ var _ = Describe("AerospikeCluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("cannot be created with len(metadata.name)==53", func() {
+			testCreateAerospikeClusterWithLengthyName(tf, ns)
+		})
 		It("cannot be created with spec.nodeCount==0", func() {
 			testCreateAerospikeClusterWithZeroNodes(tf, ns)
 		})
@@ -82,6 +85,16 @@ var _ = Describe("AerospikeCluster", func() {
 		})
 	})
 })
+
+func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *v1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Name = "a-really-lengthy-name-having-more-than-fiftytwo-chars"
+	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).To(HaveOccurred())
+	status := err.(*errors.StatusError)
+	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
+	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 52 characters"))
+}
 
 func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
@@ -168,7 +181,7 @@ func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace
 							ImagePullPolicy: v1.PullAlways,
 							Command: []string{
 								"asping",
-								"-target-host", fmt.Sprintf("%s.%s.svc.cluster.local", res.Name, res.Namespace),
+								"-target-host", res.Name,
 								"-target-port", "3000",
 							},
 						},
