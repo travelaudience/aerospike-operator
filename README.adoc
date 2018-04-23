@@ -59,6 +59,7 @@ account and setup the required RBAC permissions. One should then run
 [source,bash]
 ----
 $ kubectl create -f docs/examples/10-aerospike-operator.yml
+service "aerospike-operator" created
 deployment "aerospike-operator" created
 ----
 
@@ -74,7 +75,7 @@ aerospikecluster "aerospike-cluster-0" created
 
 This will create a single-node Aerospike cluster named `aerospike-cluster-0` on
 the `default` namespace. This Aerospike cluster can be reached from inside the
-Kubernetes cluster at `aerospike-cluster-0.default`.
+Kubernetes cluster at `aerospike-cluster-0.default.svc.cluster.local`.
 
 == Uninstalling
 
