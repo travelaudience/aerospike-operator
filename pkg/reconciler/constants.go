@@ -38,7 +38,7 @@ const (
 	infoPort          = 3003
 	infoPortName      = "info"
 
-	watchTimeout           = 2 * time.Minute
+	watchTimeout           = 3 * time.Minute
 	terminationGracePeriod = 5 * time.Second
 
 	discoveryServiceSuffix = "discovery"

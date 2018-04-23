@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	randomNamespacePrefix = "aerospike-operator-e2e-"
+	randomNamespacePrefix = "as-e2e-"
 )
 
 func (tf *TestFramework) CreateRandomNamespace() (*v1.Namespace, error) {
@@ -33,6 +33,6 @@ func (tf *TestFramework) CreateRandomNamespace() (*v1.Namespace, error) {
 	})
 }
 
-func (tf *TestFramework) DeleteNamespace(name string) error {
-	return tf.KubeClient.CoreV1().Namespaces().Delete(name, metav1.NewDeleteOptions(0))
+func (tf *TestFramework) DeleteNamespace(ns *v1.Namespace) error {
+	return tf.KubeClient.CoreV1().Namespaces().Delete(ns.Name, metav1.NewDeleteOptions(0))
 }

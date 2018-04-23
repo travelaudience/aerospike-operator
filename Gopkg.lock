@@ -632,9 +632,15 @@
   ]
   revision = "f442ecb314a3679150c272e2b9713d8deed5955d"
 
+[[projects]]
+  name = "k8s.io/kubernetes"
+  packages = ["pkg/api/v1/pod"]
+  revision = "d4ab47518836c750f9949b9e0d387f20fb92260b"
+  version = "v1.10.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f9cd0789a4988792fb02d3716ce4967b02b309bd3f4363d50e9ccb31c75b5ac5"
+  inputs-digest = "b70e760a67599f66334cc3ec12d094519e3666f2b2319b1dc59e65149c98519b"
   solver-name = "gps-cdcl"
   solver-version = 1

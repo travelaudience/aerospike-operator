@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -35,10 +34,10 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
-	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
-func (r *AerospikeClusterReconciler) ensureSize(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap) error {
+	// list existing pods for the cluster
 	pods, err := r.listClusterPods(aerospikeCluster)
 	if err != nil {
 		return err
@@ -48,37 +47,51 @@ func (r *AerospikeClusterReconciler) ensureSize(aerospikeCluster *aerospikev1alp
 	currentSize := len(pods)
 	desiredSize := aerospikeCluster.Spec.NodeCount
 
-	// compare the current and desired cluster size and act accordingly
-	switch {
-	case currentSize < desiredSize:
+	// sort pods by their index
+	sort.Sort(byIndex(pods))
+
+	// scale down if necessary
+	for i := currentSize - 1; i >= desiredSize; i-- {
 		log.WithFields(log.Fields{
 			logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 			logfields.CurrentSize:      currentSize,
 			logfields.DesiredSize:      desiredSize,
-		}).Debug("must scale up")
+		}).Debugf("deleting %s", meta.Key(pods[i]))
 
-		if err := r.scaleUp(aerospikeCluster, currentSize, desiredSize); err != nil {
+		// this pod is not needed anymore, so it must be deleted
+		if err := r.safeDeletePod(aerospikeCluster, pods[i]); err != nil {
 			return err
 		}
-
-	case currentSize > desiredSize:
-		log.WithFields(log.Fields{
-			logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-			logfields.CurrentSize:      currentSize,
-			logfields.DesiredSize:      desiredSize,
-		}).Debug("must scale down")
-
-		if err := r.scaleDown(aerospikeCluster, currentSize, desiredSize); err != nil {
-			return err
-		}
-
-	default:
-		log.WithFields(log.Fields{
-			logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-			logfields.CurrentSize:      currentSize,
-			logfields.DesiredSize:      desiredSize,
-		}).Debug("no need to scale")
 	}
+
+	for i := 0; i < desiredSize; i++ {
+		if i < currentSize {
+			if configMap.Annotations[configMapHashLabel] != pods[i].Annotations[configMapHashLabel] {
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+					logfields.CurrentSize:      currentSize,
+					logfields.DesiredSize:      desiredSize,
+				}).Debugf("restarting %s", meta.Key(pods[i]))
+
+				// this pod must be restarted in order for aerospike to notice the new config
+				if err := r.safeRestartPod(aerospikeCluster, configMap, pods[i]); err != nil {
+					return err
+				}
+			}
+		} else {
+			// create a new pod in order to meet the desired size
+			if err := r.createPod(aerospikeCluster, configMap); err != nil {
+				return err
+			}
+		}
+	}
+
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+		logfields.CurrentSize:      currentSize,
+		logfields.DesiredSize:      desiredSize,
+	}).Debug("pods are up-to-date")
+
 	return nil
 }
 
@@ -101,7 +114,7 @@ func (r *AerospikeClusterReconciler) newPodIndex(aerospikeCluster *aerospikev1al
 
 	idxList := make([]int, 0)
 	for _, p := range pods {
-		idxList = append(idxList, podIndex(p.Name, aerospikeCluster.Name))
+		idxList = append(idxList, podIndex(p))
 	}
 
 	sort.Ints(idxList)
@@ -114,15 +127,14 @@ func (r *AerospikeClusterReconciler) newPodIndex(aerospikeCluster *aerospikev1al
 	return len(idxList)
 }
 
-func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
-	configMap, err := r.getConfigMap(aerospikeCluster)
-	if err != nil {
-		return err
-	}
+func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap) error {
+	return r.createPodWithIndex(aerospikeCluster, configMap, r.newPodIndex(aerospikeCluster))
+}
 
+func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) error {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%d", aerospikeCluster.Name, r.newPodIndex(aerospikeCluster)),
+			Name: fmt.Sprintf("%s-%d", aerospikeCluster.Name, index),
 			Labels: map[string]string{
 				selectors.LabelAppKey:     selectors.LabelAppVal,
 				selectors.LabelClusterKey: aerospikeCluster.Name,
@@ -139,7 +151,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 				},
 			},
 			Annotations: map[string]string{
-				configMapHashLabel: asstrings.Hash(configMap.Data[configFileName]),
+				configMapHashLabel: configMap.Annotations[configMapHashLabel],
 			},
 		},
 		Spec: v1.PodSpec{
@@ -187,7 +199,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 						},
 						InitialDelaySeconds: 3,
 						TimeoutSeconds:      2,
-						PeriodSeconds:       15,
+						PeriodSeconds:       10,
 						FailureThreshold:    3,
 					},
 					ReadinessProbe: &v1.Probe{
@@ -201,7 +213,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 						},
 						InitialDelaySeconds: 3,
 						TimeoutSeconds:      2,
-						PeriodSeconds:       15,
+						PeriodSeconds:       10,
 						FailureThreshold:    3,
 					},
 				},
@@ -232,7 +244,7 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 						},
 						InitialDelaySeconds: 3,
 						TimeoutSeconds:      2,
-						PeriodSeconds:       15,
+						PeriodSeconds:       10,
 						FailureThreshold:    3,
 					},
 				},
@@ -328,16 +340,16 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 	// create the pod
 	res, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).Create(pod)
 	if err != nil {
-		return nil
+		return err
 	}
 
-	// watch the pod, waiting for it to enter the RUNNING state
+	// watch the pod, waiting for it to enter the RUNNING state and be ready
 	w, err := r.kubeclientset.CoreV1().Pods(res.Namespace).Watch(listoptions.ObjectByName(res.Name))
 	if err != nil {
 		return err
 	}
 	last, err := watch.Until(watchTimeout, w, func(event watch.Event) (bool, error) {
-		return event.Object.(*v1.Pod).Status.Phase == v1.PodRunning, nil
+		return isPodRunningAndReady(event.Object.(*v1.Pod)), nil
 	})
 	if err != nil {
 		return err
@@ -349,13 +361,13 @@ func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alph
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 		logfields.Pod:              meta.Key(res),
-	}).Debug("pod is now running")
+	}).Debug("pod created and running")
 
 	return nil
 }
 
 func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
-	err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).Delete(pod.Name, &metav1.DeleteOptions{
+	err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{
 		GracePeriodSeconds: pointers.NewInt64FromFloat64(terminationGracePeriod.Seconds()),
 	})
 	if err != nil {
@@ -385,49 +397,16 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) scaleUp(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, currentSize, desiredSize int) error {
-	for i := currentSize; i < desiredSize; i++ {
-		if err := r.createPod(aerospikeCluster); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (r *AerospikeClusterReconciler) scaleDown(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, currentSize, desiredSize int) error {
-	pods, err := r.listClusterPods(aerospikeCluster)
-	if err != nil {
+func (r *AerospikeClusterReconciler) safeDeletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
+	if err := waitPodReadyToShutdown(pod); err != nil {
 		return err
 	}
-	sort.Sort(byIndex(pods))
-	for i := currentSize; i > desiredSize; i-- {
-		if err := r.deletePod(aerospikeCluster, pods[i-1]); err != nil {
-			return err
-		}
+	return r.deletePod(aerospikeCluster, pod)
+}
+
+func (r *AerospikeClusterReconciler) safeRestartPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, pod *v1.Pod) error {
+	if err := r.safeDeletePod(aerospikeCluster, pod); err != nil {
+		return err
 	}
-	return nil
-}
-
-type byIndex []*v1.Pod
-
-func (p byIndex) Len() int {
-	return len(p)
-}
-
-func (p byIndex) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
-}
-
-func (p byIndex) Less(i, j int) bool {
-	idx1 := podIndex(p[i].Name, p[i].ObjectMeta.Labels[selectors.LabelClusterKey])
-	idx2 := podIndex(p[j].Name, p[j].ObjectMeta.Labels[selectors.LabelClusterKey])
-	return idx1 < idx2
-}
-
-func podIndex(podName, clusterName string) int {
-	res, err := strconv.Atoi(strings.TrimPrefix(podName, fmt.Sprintf("%s-", clusterName)))
-	if err != nil {
-		return -1
-	}
-	return res
+	return r.createPodWithIndex(aerospikeCluster, configMap, podIndex(pod))
 }

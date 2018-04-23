@@ -35,11 +35,11 @@ import (
 	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
-func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*v1.ConfigMap, error) {
 	configMapName := fmt.Sprintf("%s-%s", aerospikeCluster.Name, configMapSuffix)
 	aerospikeConfig := buildConfig(aerospikeCluster)
 
-	configmap := &v1.ConfigMap{
+	desiredConfigMap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName,
 			Labels: map[string]string{
@@ -64,43 +64,49 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 		Data: map[string]string{configFileName: aerospikeConfig},
 	}
 
-	if _, err := r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Create(configmap); err != nil {
+	createdConfigMap, err := r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Create(desiredConfigMap)
+	if err != nil {
 		if !errors.IsAlreadyExists(err) {
-			return err
+			return nil, err
 		}
 
-		cm, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(configMapName)
+		currentConfigMap, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(configMapName)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if cm.Annotations[configMapHashLabel] == asstrings.Hash(aerospikeConfig) {
+
+		mustResetConfig := asstrings.Hash(currentConfigMap.Data[configFileName]) != currentConfigMap.Annotations[configMapHashLabel]
+		mustRestartPods := desiredConfigMap.Annotations[configMapHashLabel] != currentConfigMap.Annotations[configMapHashLabel]
+
+		if mustResetConfig || mustRestartPods {
 			log.WithFields(log.Fields{
 				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-				logfields.ConfigMap:        configmap.Name,
-			}).Debug("configmap exists and is up to date")
-			return nil
-		} else {
-			log.WithFields(log.Fields{
-				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-				logfields.ConfigMap:        configmap.Name,
+				logfields.ConfigMap:        desiredConfigMap.Name,
 			}).Debug("configmap exists but is outdated")
 
-			if _, err = r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Update(configmap); err != nil {
-				return err
+			updatedConfigMap, err := r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Update(desiredConfigMap)
+			if err != nil {
+				return nil, err
 			}
 			log.WithFields(log.Fields{
 				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-				logfields.ConfigMap:        configmap.Name,
+				logfields.ConfigMap:        desiredConfigMap.Name,
 			}).Debug("configmap updated")
-			return nil
+			return updatedConfigMap, nil
+		} else {
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+				logfields.ConfigMap:        desiredConfigMap.Name,
+			}).Debug("configmap exists and is up to date")
+			return currentConfigMap, nil
 		}
 	}
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-		logfields.ConfigMap:        configmap.Name,
+		logfields.ConfigMap:        desiredConfigMap.Name,
 	}).Debug("configmap created")
 
-	return nil
+	return createdConfigMap, nil
 }
 
 func (r *AerospikeClusterReconciler) getConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*v1.ConfigMap, error) {

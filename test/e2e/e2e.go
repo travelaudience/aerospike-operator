@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	clustersuite "github.com/travelaudience/aerospike-operator/test/e2e/cluster"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
@@ -32,10 +33,11 @@ var (
 
 var _ = BeforeSuite(func() {
 	var err error
-	tf, err = framework.NewTestEnvironment(kubeconfig)
+	tf, err = framework.NewTestFramework(kubeconfig)
 	Expect(err).NotTo(HaveOccurred())
 	err = tf.SetUp()
 	Expect(err).NotTo(HaveOccurred())
+	clustersuite.RegisterTestFramework(tf)
 })
 
 func RunE2ETests(t *testing.T) {

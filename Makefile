@@ -51,13 +51,18 @@ test.unit:
 	go test -v ./cmd/... ./pkg/...
 
 .PHONY: test.e2e
-ifeq ($(LOCAL),1)
-test.e2e: EXTRA_FLAGS:=
-else
-test.e2e: POD_NAMESPACE?=aerospike-operator
+ifneq ($(LOCAL),1)
 test.e2e: TAG?=$(shell git describe --dirty)
 test.e2e: IMG?=quay.io/travelaudience/aerospike-operator
-test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG) -operator-namespace=$(POD_NAMESPACE)
+test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG)
 endif
+ifdef NODE_ADDRESS
+test.e2e: EXTRA_FLAGS+=-node-address=$(NODE_ADDRESS)
+endif
+test.e2e: FLAKE_ATTEMPTS?=3
+test.e2e: FOCUS?=
+test.e2e: KUBECONFIG?=$(HOME)/.kube/config
+test.e2e: TIMEOUT?=1200s
 test.e2e:
-	go test -v ./test/e2e -kubeconfig=$(HOME)/.kube/config -ginkgo.flakeAttempts=3 $(EXTRA_FLAGS)
+	-kubectl apply -f docs/examples/00-prereqs.yml
+	go test -v -timeout=$(TIMEOUT) ./test/e2e -kubeconfig=$(KUBECONFIG) -ginkgo.flakeAttempts=$(FLAKE_ATTEMPTS) -ginkgo.focus=$(FOCUS) $(EXTRA_FLAGS)

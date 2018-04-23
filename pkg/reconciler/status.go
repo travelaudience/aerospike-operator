@@ -19,10 +19,13 @@ package reconciler
 import (
 	"encoding/json"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/logfields"
+	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 )
 
@@ -62,5 +65,8 @@ func (r *AerospikeClusterReconciler) updateStatus(old, new *aerospikev1alpha1.Ae
 	if err != nil {
 		return err
 	}
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster: meta.Key(new),
+	}).Debug("status updated")
 	return nil
 }

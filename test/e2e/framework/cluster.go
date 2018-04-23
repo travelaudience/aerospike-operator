@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	clusterPrefix = "aerospike-cluster-e2e-"
+	clusterPrefix = "as-cluster-e2e-"
 )
 
 func (tf *TestFramework) NewAerospikeCluster(version string, nodeCount int, namespaces []aerospikev1alpha1.AerospikeNamespaceSpec) aerospikev1alpha1.AerospikeCluster {
@@ -69,6 +69,9 @@ func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1al
 	}
 	last, err := watch.Until(watchTimeout, w, fn)
 	if err != nil {
+		if err == watch.ErrWatchClosed {
+			return tf.WaitForClusterCondition(aerospikeCluster, fn)
+		}
 		return err
 	}
 	if last == nil {
@@ -97,4 +100,20 @@ func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha1.Aerosp
 		return err
 	}
 	return tf.WaitForClusterNodeCount(res, nodeCount)
+}
+
+func (tf *TestFramework) AddAerospikeNamespaceAndScaleAndWait(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ns aerospikev1alpha1.AerospikeNamespaceSpec, nodeCount int) error {
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	res.Spec.Namespaces = append(res.Spec.Namespaces, ns)
+	res.Spec.NodeCount = nodeCount
+	if _, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(res.Namespace).Update(res); err != nil {
+		return err
+	}
+	return tf.WaitForClusterCondition(res, func(event watch.Event) (bool, error) {
+		obj := event.Object.(*aerospikev1alpha1.AerospikeCluster)
+		return len(obj.Status.Namespaces) == len(obj.Spec.Namespaces) && obj.Status.NodeCount == nodeCount, nil
+	})
 }

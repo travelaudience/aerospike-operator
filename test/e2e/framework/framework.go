@@ -26,11 +26,9 @@ import (
 type TestFramework struct {
 	AerospikeClient *aerospikeclientset.Clientset
 	KubeClient      *kubernetes.Clientset
-
-	podName string
 }
 
-func NewTestEnvironment(kubeconfigPath string) (*TestFramework, error) {
+func NewTestFramework(kubeconfigPath string) (*TestFramework, error) {
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		return nil, err
@@ -50,9 +48,15 @@ func NewTestEnvironment(kubeconfigPath string) (*TestFramework, error) {
 }
 
 func (tf *TestFramework) SetUp() error {
+	if err := tf.createOperatorService(); err != nil {
+		return err
+	}
 	return tf.createOperator()
 }
 
 func (tf *TestFramework) TearDown() error {
+	if err := tf.deleteOperatorService(); err != nil {
+		return err
+	}
 	return tf.deleteOperator()
 }

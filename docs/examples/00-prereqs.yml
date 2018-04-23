@@ -35,6 +35,7 @@ rules:
   - services
   verbs:
   - create
+  - update
   - list
   - watch
 - apiGroups: [""]

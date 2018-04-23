@@ -22,7 +22,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
@@ -30,15 +32,18 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
-var (
-	// OperatorImage is the image used to deploy aerospike-operator.
-	OperatorImage string
-	// OperatorNamespace is the namespace in which to crreate the aerospike-operator pod.
-	OperatorNamespace string
-)
+// OperatorImage is the image used to deploy aerospike-operator.
+var OperatorImage string
 
 const (
-	watchTimeout = 2 * time.Minute
+	watchTimeout = 5 * time.Minute
+	// OperatorNamespace is the namespace in which to create the aerospike-operator pod.
+	OperatorNamespace = "aerospike-operator"
+	// OperatorNamespace is the name used for aerospike-operator pod.
+	OperatorName = "aerospike-operator"
+
+	operatorAppValue       = "aerospike-operator"
+	operatorServiceAccount = "aerospike-operator"
 )
 
 func (tf *TestFramework) createOperator() error {
@@ -51,9 +56,8 @@ func (tf *TestFramework) createOperator() error {
 	if err != nil {
 		return err
 	}
-	tf.podName = res.Name
 
-	w, err := tf.KubeClient.CoreV1().Pods(OperatorNamespace).Watch(listoptions.ObjectByName(tf.podName))
+	w, err := tf.KubeClient.CoreV1().Pods(OperatorNamespace).Watch(listoptions.ObjectByName(OperatorName))
 	if err != nil {
 		return err
 	}
@@ -66,7 +70,6 @@ func (tf *TestFramework) createOperator() error {
 	if last == nil {
 		return fmt.Errorf("no events received for %s", meta.Key(res))
 	}
-
 	return nil
 }
 
@@ -74,22 +77,57 @@ func (tf *TestFramework) deleteOperator() error {
 	if OperatorImage == "" {
 		return nil
 	}
-	return tf.KubeClient.CoreV1().Pods(OperatorNamespace).Delete(tf.podName, &metav1.DeleteOptions{})
+	return tf.KubeClient.CoreV1().Pods(OperatorNamespace).Delete(OperatorName, &metav1.DeleteOptions{})
+}
+
+func (tf *TestFramework) createOperatorService() error {
+	service := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: OperatorName,
+			Labels: map[string]string{
+				selectors.LabelAppKey: operatorAppValue,
+			},
+			Namespace: OperatorNamespace,
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				selectors.LabelAppKey: operatorAppValue,
+			},
+			Ports: []v1.ServicePort{
+				{
+					Port:       443,
+					TargetPort: intstr.IntOrString{IntVal: 8443},
+				},
+			},
+		},
+	}
+
+	if _, err := tf.KubeClient.CoreV1().Services(OperatorNamespace).Create(service); err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
+}
+
+func (tf *TestFramework) deleteOperatorService() error {
+	if OperatorImage == "" {
+		return nil
+	}
+	return tf.KubeClient.CoreV1().Services(OperatorNamespace).Delete(OperatorName, &metav1.DeleteOptions{})
 }
 
 func createPodObj() *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				selectors.LabelAppKey: "aerospike-operator",
+				selectors.LabelAppKey: operatorAppValue,
 			},
-			GenerateName: randomNamespacePrefix,
-			Namespace:    OperatorNamespace,
+			Name:      OperatorName,
+			Namespace: OperatorNamespace,
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name:            "aerospike-operator",
+					Name:            OperatorName,
 					Image:           OperatorImage,
 					ImagePullPolicy: v1.PullAlways,
 					Ports: []v1.ContainerPort{
@@ -114,7 +152,7 @@ func createPodObj() *v1.Pod {
 				},
 			},
 			RestartPolicy:      v1.RestartPolicyNever,
-			ServiceAccountName: "aerospike-operator",
+			ServiceAccountName: operatorServiceAccount,
 		},
 	}
 }

@@ -76,11 +76,6 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	if !valid {
 		return nil
 	}
-
-	// create the configmap
-	if err := r.ensureConfigMap(aerospikeCluster); err != nil {
-		return err
-	}
 	// create the client service for the cluster
 	if err := r.ensureClientService(aerospikeCluster); err != nil {
 		return err
@@ -89,8 +84,13 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	if err := r.ensureHeadlessService(aerospikeCluster); err != nil {
 		return err
 	}
+	// create/get the configmap
+	configMap, err := r.ensureConfigMap(aerospikeCluster)
+	if err != nil {
+		return err
+	}
 	// make sure that current size meets desired size
-	if err := r.ensureSize(aerospikeCluster); err != nil {
+	if err := r.ensurePods(aerospikeCluster, configMap); err != nil {
 		return err
 	}
 	return r.ensureStatus(aerospikeCluster)
