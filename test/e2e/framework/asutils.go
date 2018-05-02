@@ -28,6 +28,8 @@ type AerospikeClient struct {
 
 func NewAerospikeClient(host string, port int) (*AerospikeClient, error) {
 	c, err := as.NewClientWithPolicy(as.NewClientPolicy(), host, port)
+	// avoid i/o timeout issues (https://github.com/aerospike/aerospike-client-go/issues/229)
+	c.DefaultPolicy.SocketTimeout = 0
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +41,7 @@ func (ac *AerospikeClient) Close() {
 }
 
 func (ac *AerospikeClient) WriteSequentialIntegers(asNamespace string, n int) error {
-	for i := 0; i < n; i++ {
+	for i := 1; i <= n; i++ {
 		key, err := as.NewKey(asNamespace, "integers", i)
 		if err != nil {
 			return err
@@ -53,7 +55,7 @@ func (ac *AerospikeClient) WriteSequentialIntegers(asNamespace string, n int) er
 }
 
 func (ac *AerospikeClient) ReadSequentialIntegers(asNamespace string, n int) error {
-	for i := 0; i < n; i++ {
+	for i := 1; i <= n; i++ {
 		key, err := as.NewKey(asNamespace, "integers", i)
 		if err != nil {
 			return err
@@ -70,6 +72,25 @@ func (ac *AerospikeClient) ReadSequentialIntegers(asNamespace string, n int) err
 			}
 		}
 		return fmt.Errorf("error retrieving idx %d from namespace %s", i, asNamespace)
+	}
+	return nil
+}
+
+func (ac *AerospikeClient) WriteUntil(stop <-chan interface{}, asNamespace string) error {
+	for i := 1; ; i++ {
+		select {
+		case <-stop:
+			break
+		default:
+			key, err := as.NewKey(asNamespace, "integers", i)
+			if err != nil {
+				return err
+			}
+			data := as.NewBin("idx", i)
+			if err := ac.client.PutBins(nil, key, data); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

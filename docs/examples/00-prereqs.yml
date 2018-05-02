@@ -53,6 +53,12 @@ rules:
   verbs:
   - list
   - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - create
 - apiGroups: [""]
   resources:
   - events

@@ -79,17 +79,32 @@ var _ = Describe("AerospikeCluster", func() {
 		It("reuses the persistent volume of a deleted pod", func() {
 			testVolumeIsReused(tf, ns, 2)
 		})
+		It("has the correct number of nodes after scaling up", func() {
+			testNodeCountAfterScaling(tf, ns, 1, 3)
+		})
+		It("has the correct number of nodes after scaling down", func() {
+			testNodeCountAfterScaling(tf, ns, 3, 1)
+		})
 		It("has the same number of nodes after rolling restart", func() {
 			testNodeCountAfterRestart(tf, ns, 2)
 		})
 		It("has the correct number of nodes after rolling restart and scaling up", func() {
-			testNodeCountAfterRestartAndScale(tf, ns, 2, 3)
+			testNodeCountAfterRestartAndScaling(tf, ns, 2, 3)
 		})
 		It("has the correct number of nodes after rolling restart and scaling down", func() {
-			testNodeCountAfterRestartAndScale(tf, ns, 3, 1)
+			testNodeCountAfterRestartAndScaling(tf, ns, 3, 1)
 		})
 		It("does not lose data in a namespace after rolling restart", func() {
-			testNoDataLossAfterRestart(tf, ns, 1)
+			testNoDataLossAfterRestart(tf, ns, 2)
+		})
+		It("has no downtime during a scale up operation", func() {
+			testNoDowntimeDuringScaling(tf, ns, 2, 3)
+		})
+		It("has no downtime during a scale down operation", func() {
+			testNoDowntimeDuringScaling(tf, ns, 4, 2)
+		})
+		It("does not conflict with another AerospikeCluster", func() {
+			testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf, ns, 1)
 		})
 	})
 })

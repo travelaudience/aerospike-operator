@@ -80,6 +80,10 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	if err := r.ensureClientService(aerospikeCluster); err != nil {
 		return err
 	}
+	// create the network policy
+	if err := r.ensureNetworkPolicy(aerospikeCluster); err != nil {
+		return err
+	}
 	// create the headless service for the cluster
 	if err := r.ensureHeadlessService(aerospikeCluster); err != nil {
 		return err
