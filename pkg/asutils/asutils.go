@@ -27,17 +27,20 @@ import (
 
 const timeout = 10 * time.Second
 
-func GetClusterSize(host string, port int) (size int, err error) {
-	if conn, err := as.NewConnection(fmt.Sprintf("%s:%d", host, port), timeout); err == nil {
-		if res, err := as.RequestInfo(conn, "statistics"); err == nil {
-			if str, ok := ParseStatistics(res["statistics"])["cluster_size"]; ok {
-				size, err = strconv.Atoi(str)
-			} else {
-				err = fmt.Errorf("cluster_size is not present")
-			}
-		}
+func GetClusterSize(host string, port int) (int, error) {
+	c, err := as.NewConnection(fmt.Sprintf("%s:%d", host, port), timeout)
+	if err != nil {
+		return 0, err
 	}
-	return
+	r, err := as.RequestInfo(c, "statistics")
+	if err != nil {
+		return 0, err
+	}
+	if str, ok := parseStatistics(r["statistics"])["cluster_size"]; !ok {
+		return 0, fmt.Errorf("cluster_size is not present")
+	} else {
+		return strconv.Atoi(str)
+	}
 }
 
 // parseStatistics parses a string in the form a=b;c=d; into a map[string]string, trimming whitespace in the process.

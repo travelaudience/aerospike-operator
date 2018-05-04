@@ -112,12 +112,6 @@ func (r *AerospikeClusterReconciler) ensureNetworkPolicy(aerospikeCluster *aeros
 						{
 							Protocol: &protocolTCP,
 							Port: &intstr.IntOrString{
-								IntVal: asprobePort,
-							},
-						},
-						{
-							Protocol: &protocolTCP,
-							Port: &intstr.IntOrString{
 								IntVal: aspromPort,
 							},
 						},

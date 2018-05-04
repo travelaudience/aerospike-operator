@@ -1,0 +1,7 @@
+FROM golang:1.10.1
+WORKDIR /go/src/github.com/travelaudience/aerospike-operator
+COPY cmd/ ./cmd/
+COPY pkg/ ./pkg/
+COPY test/ ./test/
+COPY vendor/ ./vendor/
+CMD ["go", "run", "cmd/operator/main.go", "-debug"]

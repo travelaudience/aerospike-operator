@@ -17,6 +17,8 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
+
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,21 +55,11 @@ func testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf *framework.Te
 	Expect(err).NotTo(HaveOccurred())
 	Expect(asc2.Status.NodeCount).To(Equal(nodeCount))
 
-	svc1, err := tf.CreateNodePortService(asc1)
-	Expect(err).NotTo(HaveOccurred())
-	err = tf.WaitForNodePortService(svc1)
-	Expect(err).NotTo(HaveOccurred())
-
-	svc2, err := tf.CreateNodePortService(asc2)
-	Expect(err).NotTo(HaveOccurred())
-	err = tf.WaitForNodePortService(svc2)
-	Expect(err).NotTo(HaveOccurred())
-
-	size1, err := asutils.GetClusterSize(framework.NodeAddress, int(svc1.Spec.Ports[0].NodePort))
+	size1, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", asc1.Name, asc1.Namespace), 3000)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(size1).To(Equal(nodeCount))
 
-	size2, err := asutils.GetClusterSize(framework.NodeAddress, int(svc2.Spec.Ports[0].NodePort))
+	size2, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", asc2.Name, asc2.Namespace), 3000)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(size2).To(Equal(nodeCount))
 }

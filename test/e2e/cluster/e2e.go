@@ -49,7 +49,7 @@ var _ = Describe("AerospikeCluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("cannot be created with len(metadata.name)==53", func() {
+		It("cannot be created with len(metadata.name)==63", func() {
 			testCreateAerospikeClusterWithLengthyName(tf, ns)
 		})
 		It("cannot be created with spec.nodeCount==0", func() {
@@ -95,13 +95,16 @@ var _ = Describe("AerospikeCluster", func() {
 			testNodeCountAfterRestartAndScaling(tf, ns, 3, 1)
 		})
 		It("does not lose data in a namespace after rolling restart", func() {
-			testNoDataLossAfterRestart(tf, ns, 2)
+			testNoDataLossAfterRestart(tf, ns, 2, 10000)
+		})
+		It("does not lose data in a namespace after rolling restart and scale down", func() {
+			testNoDataLossAfterRestartAndScaleDown(tf, ns, 2, 100000)
 		})
 		It("has no downtime during a scale up operation", func() {
 			testNoDowntimeDuringScaling(tf, ns, 2, 3)
 		})
 		It("has no downtime during a scale down operation", func() {
-			testNoDowntimeDuringScaling(tf, ns, 4, 2)
+			testNoDowntimeDuringScaling(tf, ns, 3, 2)
 		})
 		It("does not conflict with another AerospikeCluster", func() {
 			testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf, ns, 1)

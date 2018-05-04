@@ -50,23 +50,21 @@ used:
 image::img/architecture.png["Architecture"]
 
 At a high level, `aerospike-operator` manages _pods_ and _jobs_. Every pod is a
-member of a single Aerospike cluster. Pods use a _discovery service_ in order to
-bootstrap clustering. This service will tolerate unready endpoints, meaning that
-its endpoints will be updated to include the IP of a new pod as soon as this pod
-is created. After a pod has joined the cluster, it communicates directly with
-other pods in the cluster. The _client service_ is the main entrypoint for
-Aerospike clients. These clients use this service to communicate with the
-cluster and perform their day-to-day operations. This service's endpoints will
-only be updated to include the IP of a new pod when this pod is _ready_ to serve
-client requests.
+member of a single Aerospike cluster. For every cluster `aerospike-operator`
+creates a service that is used to facilitate clustering and client access.
+Whenever a pod is created and the Aerospike process is ready to accept
+connections, the service's endpoints are updated to include the IP of the new
+pod. Similarly, when a pod is deleted the service's endpoints are updated in
+order to remove the pod's IP.
 
 Jobs are responsible for backing up and restoring data in a given namespace, and
 are created as necessary when a backup or restore is requested (i.e., when an
 `AerospikeNamespaceBackup` or `AerospikeNamespaceRestore` resources are
 created). These jobs are themselves clients of the Aerospike cluster, using the
-client service to perform the backup and restore process. These jobs also
-communicate with an external cloud storage provider such as Google Cloud Storage
-in order to upload or download backup data as necessary.
+abovementioned service to discover nodes and perform the backup and restore
+process. These jobs also communicate with an external cloud storage provider
+such as Google Cloud Storage in order to upload or download backup data as
+necessary.
 
 The following picture provides a more detailed overview of what Kubernetes
 resources are managed and used in an Aerospike cluster, as well as of the
@@ -89,9 +87,9 @@ storage provider. As mentioned above, every job will also be given a persistent
 volume where to temporarily store backup data. A _pre-existing_ secret
 containing credentials to access the cloud storage provider will also be mounted
 in each job. This secret is _not_ managed by `aerospike-operator`, and must be
-created by the user according to a pre-established structure. Jobs communicate
-with the pods in the Aerospike cluster via the Aerospike client service in order
-to backup and restore data for a given namespace.
+created by the user according to a pre-established structure. Jobs discover pods
+in the Aerospike cluster using the Aerospike service, then connecting to these
+pods in order to backup and restore data for a given namespace.
 
 The creation and management of the pods and jobs mentioned above is the
 responsibility of the <<controllers,controllers>>. In the next section we
@@ -106,12 +104,12 @@ briefly describe the responsibilities of each of these controllers.
 The _cluster controller_ is responsible for managing an Aerospike cluster based
 on the spec provided in an `AerospikeCluster` resource, and for managing the
 namespaces that exist in this cluster and the means of storage for this data.
-This includes creating or deleting pods, creating services for client access and
-peer discovery, creating and updating the underlying Aerospike configuration and
-ensuring that operations such as scaling up or down happen smoothly, taking into
-account any possible rebalancing operations that may be happening at a given
-moment. A simplified overview of this controller's mechanism of action can be
-seen in the picture below:
+This includes creating or deleting pods, creating the service used for
+clustering and discovery, creating and updating the underlying Aerospike
+configuration and ensuring that operations such as scaling up or down happen
+smoothly, taking into account any possible rebalancing operations that may be
+happening at a given moment. A simplified overview of this controller's
+mechanism of action can be seen in the picture below:
 
 image::img/cluster-actions.png["Cluster controller",width=50%]
 
@@ -130,7 +128,7 @@ about the changes.
 with the new desired state, taking the necessary actions in order to bring
 current and desired states in sync. This means, for instance, creating pods
 in a scale-up operation, deleting pods in a scale-down operation, creating the
-necessary services and managing the persistent volumes where namespace data will
+necessary service and managing the persistent volumes where namespace data will
 be stored.
 
 It should be noted that the cluster controller also watches pods belonging to a

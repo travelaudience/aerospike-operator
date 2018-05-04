@@ -11,7 +11,7 @@ import (
 
 const (
 	// aerospikeClusterMaxNameLen represents the maximum length of an AerospikeCluster's metadata.name.
-	aerospikeClusterMaxNameLen = 52
+	aerospikeClusterMaxNameLen = 62
 )
 
 func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {

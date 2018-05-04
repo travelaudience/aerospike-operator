@@ -17,10 +17,16 @@ limitations under the License.
 package framework
 
 import (
+	"time"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
+)
+
+const (
+	watchTimeout = 5 * time.Minute
 )
 
 type TestFramework struct {
@@ -45,18 +51,4 @@ func NewTestFramework(kubeconfigPath string) (*TestFramework, error) {
 		AerospikeClient: aerospikeClient,
 		KubeClient:      kubeClient,
 	}, nil
-}
-
-func (tf *TestFramework) SetUp() error {
-	if err := tf.createOperatorService(); err != nil {
-		return err
-	}
-	return tf.createOperator()
-}
-
-func (tf *TestFramework) TearDown() error {
-	if err := tf.deleteOperatorService(); err != nil {
-		return err
-	}
-	return tf.deleteOperator()
 }

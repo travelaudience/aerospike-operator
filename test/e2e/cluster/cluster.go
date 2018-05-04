@@ -17,29 +17,24 @@ limitations under the License.
 package cluster
 
 import (
-	"time"
-
 	. "github.com/onsi/gomega"
-	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
 func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Name = "a-really-lengthy-name-having-more-than-fiftytwo-chars"
+	aerospikeCluster.Name = "one-really-lengthy-cluster-name-having-more-than-sixtytwo-chars"
 	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	status := err.(*errors.StatusError)
 	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
-	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 52 characters"))
+	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 62 characters"))
 }
 
 func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1.Namespace) {
@@ -112,39 +107,10 @@ func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace
 	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
-	job, err := tf.KubeClient.BatchV1().Jobs(ns.Name).Create(&batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "asping",
-			Namespace: ns.Name,
-		},
-		Spec: batchv1.JobSpec{
-			Template: v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:            "aerospike-tools",
-							Image:           "quay.io/travelaudience/aerospike-operator-tools:latest",
-							ImagePullPolicy: v1.PullAlways,
-							Command: []string{
-								"asping",
-								"-target-host", res.Name,
-								"-target-port", "3000",
-							},
-						},
-					},
-					RestartPolicy: v1.RestartPolicyNever,
-				},
-			},
-			BackoffLimit: pointers.NewInt32(10),
-		},
-	})
+	err = tf.WaitForClusterNodeCount(res, res.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	w, err := tf.KubeClient.BatchV1().Jobs(job.Namespace).Watch(listoptions.ObjectByName(job.Name))
+	asc, err := framework.NewAerospikeClient(res)
 	Expect(err).NotTo(HaveOccurred())
-	last, err := watch.Until(2*time.Minute, w, func(event watch.Event) (bool, error) {
-		return event.Object.(*batchv1.Job).Status.Succeeded == 1, nil
-	})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(last).NotTo(BeNil())
+	Expect(asc.IsConnected()).To(BeTrue())
 }

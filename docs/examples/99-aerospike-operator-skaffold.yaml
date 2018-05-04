@@ -1,0 +1,93 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aerospike-operator-e2e
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups: [""]
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+- apiGroups: [""]
+  resources:
+  - endpoints
+  verbs:
+  - list
+  - watch
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  verbs:
+  - create
+  - list
+  - watch
+- apiGroups: ["aerospike.travelaudience.com"]
+  resources:
+  - aerospikeclusters
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aerospike-operator-e2e
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aerospike-operator-e2e
+subjects:
+- kind: ServiceAccount
+  name: aerospike-operator
+  namespace: aerospike-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: aerospike-operator
+  name: aerospike-operator
+  namespace: aerospike-operator
+spec:
+  selector:
+    app: aerospike-operator
+  ports:
+  - protocol: TCP
+    port: 443
+    targetPort: 8443
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: aerospike-operator
+  name: aerospike-operator
+  namespace: aerospike-operator
+spec:
+  containers:
+  - name: aerospike-operator
+    image: eu.gcr.io/aerospike-operator/aerospike-operator
+    ports:
+    - containerPort: 8443
+    env:
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+  serviceAccountName: aerospike-operator

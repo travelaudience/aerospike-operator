@@ -38,11 +38,12 @@ const (
 	infoPort          = 3003
 	infoPortName      = "info"
 
-	watchTimeout           = 3 * time.Minute
-	terminationGracePeriod = 5 * time.Second
+	watchCreatePodTimeout  = 3 * time.Hour
+	watchDeletePodTimeout  = 3 * time.Minute
+	terminationGracePeriod = 2 * time.Minute
+	waitMigrationsTimeout  = 1 * time.Hour
 
-	discoveryServiceSuffix = "discovery"
-	configMapSuffix        = "config"
+	podOperationFeedbackPeriod = 2 * time.Minute
 
 	configMapHashLabel = "configMapHash"
 
@@ -64,9 +65,13 @@ const (
 	nsFilePath             = "filePath"
 	nsDevicePath           = "devicePath"
 
-	asprobePort    = 8080
 	aspromPortName = "prometheus"
 	aspromPort     = 9145
+
+	asReadinessInitialDelaySeconds = 3
+	asReadinessTimeoutSeconds      = 2
+	asReadinessPeriodSeconds       = 10
+	asReadinessFailureThreshold    = 3
 )
 
 var asConfigTemplate = template.Must(template.New("aerospike-config").Parse(aerospikeConfig))
@@ -106,7 +111,7 @@ network {
 
 		mesh-seed-address-port {{.meshAddress}} {{.meshPort}}
 
-		interval 150
+		interval 100
 		timeout 10
 	}
 

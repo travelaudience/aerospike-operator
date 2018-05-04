@@ -4,13 +4,11 @@ COPY . .
 RUN go get -u github.com/golang/dep/cmd/dep
 RUN make dep
 RUN make gen
-RUN CGO_ENABLED=0 go build -a -v -ldflags="-d -s -w" -tags=netgo -installsuffix=netgo -o=/asping ./cmd/asping/main.go
 RUN CGO_ENABLED=0 go build -a -v -ldflags="-d -s -w" -tags=netgo -installsuffix=netgo -o=/asprobe ./cmd/asprobe/main.go
 WORKDIR $GOPATH/src/github.com/alicebob/asprom
 RUN git clone https://github.com/alicebob/asprom .
 RUN CGO_ENABLED=0 go build -a -v -ldflags="-d -s -w" -tags=netgo -installsuffix=netgo -o=/asprom *.go
 
 FROM alpine:3.7
-COPY --from=builder /asping /usr/local/bin/asping
 COPY --from=builder /asprobe /usr/local/bin/asprobe
 COPY --from=builder /asprom /usr/local/bin/asprom

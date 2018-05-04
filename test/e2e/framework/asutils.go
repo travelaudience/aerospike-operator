@@ -18,26 +18,43 @@ package framework
 
 import (
 	"fmt"
+	"time"
 
 	as "github.com/aerospike/aerospike-client-go"
+
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 )
 
 type AerospikeClient struct {
 	client *as.Client
 }
 
-func NewAerospikeClient(host string, port int) (*AerospikeClient, error) {
-	c, err := as.NewClientWithPolicy(as.NewClientPolicy(), host, port)
-	// avoid i/o timeout issues (https://github.com/aerospike/aerospike-client-go/issues/229)
-	c.DefaultPolicy.SocketTimeout = 0
+func NewAerospikeClient(aerospikeCluster *v1alpha1.AerospikeCluster) (*AerospikeClient, error) {
+	svc := fmt.Sprintf("%s.%s", aerospikeCluster.Name, aerospikeCluster.Namespace)
+	c, err := as.NewClientWithPolicy(as.NewClientPolicy(), svc, 3000)
 	if err != nil {
 		return nil, err
 	}
+
+	// set SocketTimeout to 0
+	// https://github.com/aerospike/aerospike-client-go/issues/227
+	// https://github.com/aerospike/aerospike-client-go/issues/229
+	c.DefaultPolicy.SocketTimeout = 0
+	c.DefaultWritePolicy.SocketTimeout = 0
+
+	c.DefaultWritePolicy.Timeout = 3 * time.Second
+	c.DefaultWritePolicy.MaxRetries = 2
+	c.DefaultWritePolicy.SleepBetweenRetries = 1 * time.Second
+
 	return &AerospikeClient{client: c}, nil
 }
 
 func (ac *AerospikeClient) Close() {
 	ac.client.Close()
+}
+
+func (ac *AerospikeClient) IsConnected() bool {
+	return ac.client.IsConnected()
 }
 
 func (ac *AerospikeClient) WriteSequentialIntegers(asNamespace string, n int) error {
@@ -72,25 +89,6 @@ func (ac *AerospikeClient) ReadSequentialIntegers(asNamespace string, n int) err
 			}
 		}
 		return fmt.Errorf("error retrieving idx %d from namespace %s", i, asNamespace)
-	}
-	return nil
-}
-
-func (ac *AerospikeClient) WriteUntil(stop <-chan interface{}, asNamespace string) error {
-	for i := 1; ; i++ {
-		select {
-		case <-stop:
-			break
-		default:
-			key, err := as.NewKey(asNamespace, "integers", i)
-			if err != nil {
-				return err
-			}
-			data := as.NewBin("idx", i)
-			if err := ac.client.PutBins(nil, key, data); err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }

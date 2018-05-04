@@ -17,8 +17,6 @@ limitations under the License.
 package reconciler
 
 import (
-	"fmt"
-
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +30,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
-func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeCluster.Name,
@@ -63,57 +61,6 @@ func (r *AerospikeClusterReconciler) ensureClientService(aerospikeCluster *aeros
 					Port:       servicePort,
 					TargetPort: intstr.IntOrString{StrVal: servicePortName},
 				},
-			},
-		},
-	}
-
-	if _, err := r.kubeclientset.CoreV1().Services(aerospikeCluster.Namespace).Create(service); err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return err
-		}
-		log.WithFields(log.Fields{
-			logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-			logfields.Service:          service.Name,
-		}).Debug("client service already exists")
-		return nil
-	}
-
-	log.WithFields(log.Fields{
-		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-		logfields.Service:          service.Name,
-	}).Debug("client service created")
-	return nil
-}
-
-func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
-	service := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%s", aerospikeCluster.Name, discoveryServiceSuffix),
-			Labels: map[string]string{
-				selectors.LabelAppKey:     selectors.LabelAppVal,
-				selectors.LabelClusterKey: aerospikeCluster.Name,
-			},
-			Namespace: aerospikeCluster.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
-					Kind:               kind,
-					Name:               aerospikeCluster.Name,
-					UID:                aerospikeCluster.UID,
-					Controller:         pointers.NewBool(true),
-					BlockOwnerDeletion: pointers.NewBool(true),
-				},
-			},
-			Annotations: map[string]string{
-				"service.alpha.kubernetes.io/tolerate-unready-endpoints": "true",
-			},
-		},
-		Spec: v1.ServiceSpec{
-			Selector: map[string]string{
-				selectors.LabelAppKey:     selectors.LabelAppVal,
-				selectors.LabelClusterKey: aerospikeCluster.Name,
-			},
-			Ports: []v1.ServicePort{
 				{
 					Name:       heartbeatPortName,
 					Port:       heartbeatPort,
@@ -136,13 +83,13 @@ func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aer
 		log.WithFields(log.Fields{
 			logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 			logfields.Service:          service.Name,
-		}).Debug("headless service already exists")
+		}).Debug("service already exists")
 		return nil
 	}
 
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 		logfields.Service:          service.Name,
-	}).Debug("headless service created")
+	}).Debug("service created")
 	return nil
 }

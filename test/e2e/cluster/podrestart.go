@@ -60,37 +60,60 @@ func testNodeCountAfterRestartAndScaling(tf *framework.TestFramework, ns *v1.Nam
 	Expect(asc.Status.NodeCount).To(Equal(finalNodeCount))
 }
 
-func testNoDataLossAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {
+func testNoDataLossAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int, nRecords int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
-	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = 2
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = tf.WaitForClusterNodeCount(asc, nodeCount)
+	err = tf.WaitForClusterNodeCount(res, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	svc, err := tf.CreateNodePortService(asc)
+	c1, err := framework.NewAerospikeClient(res)
 	Expect(err).NotTo(HaveOccurred())
-
-	err = tf.WaitForNodePortService(svc)
-	Expect(err).NotTo(HaveOccurred())
-
-	c1, err := framework.NewAerospikeClient(framework.NodeAddress, int(svc.Spec.Ports[0].NodePort))
-	Expect(err).NotTo(HaveOccurred())
-	err = c1.WriteSequentialIntegers(aerospikeCluster.Spec.Namespaces[0].Name, 10000)
+	err = c1.WriteSequentialIntegers(aerospikeCluster.Spec.Namespaces[0].Name, nRecords)
 	Expect(err).NotTo(HaveOccurred())
 	c1.Close()
 
-	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 4)
-	err = tf.AddAerospikeNamespaceAndScaleAndWait(asc, ns2, nodeCount)
+	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 2, 1, 0, 1)
+	err = tf.AddAerospikeNamespaceAndScaleAndWait(res, ns2, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = tf.WaitForNodePortService(svc)
+	c2, err := framework.NewAerospikeClient(res)
+	Expect(err).NotTo(HaveOccurred())
+	err = c2.ReadSequentialIntegers(aerospikeCluster.Spec.Namespaces[0].Name, nRecords)
+	Expect(err).NotTo(HaveOccurred())
+	c2.Close()
+}
+
+func testNoDataLossAfterRestartAndScaleDown(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int, nRecords int) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeCount = nodeCount + 1
+	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = 2
+	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
-	c2, err := framework.NewAerospikeClient(framework.NodeAddress, int(svc.Spec.Ports[0].NodePort))
+	err = tf.WaitForClusterNodeCount(asc, nodeCount+1)
 	Expect(err).NotTo(HaveOccurred())
-	err = c2.ReadSequentialIntegers(aerospikeCluster.Spec.Namespaces[0].Name, 10000)
+
+	c1, err := framework.NewAerospikeClient(asc)
+	Expect(err).NotTo(HaveOccurred())
+	err = c1.WriteSequentialIntegers(aerospikeCluster.Spec.Namespaces[0].Name, nRecords)
+	Expect(err).NotTo(HaveOccurred())
+	c1.Close()
+
+	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 2, 1, 0, 1)
+	err = tf.AddAerospikeNamespaceAndScaleAndWait(asc, ns2, nodeCount+1)
+	Expect(err).NotTo(HaveOccurred())
+
+	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	err = tf.ScaleCluster(asc, nodeCount)
+
+	c2, err := framework.NewAerospikeClient(asc)
+	Expect(err).NotTo(HaveOccurred())
+	err = c2.ReadSequentialIntegers(aerospikeCluster.Spec.Namespaces[0].Name, nRecords)
 	Expect(err).NotTo(HaveOccurred())
 	c2.Close()
 }

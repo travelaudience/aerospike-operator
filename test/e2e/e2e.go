@@ -35,8 +35,6 @@ var _ = BeforeSuite(func() {
 	var err error
 	tf, err = framework.NewTestFramework(kubeconfig)
 	Expect(err).NotTo(HaveOccurred())
-	err = tf.SetUp()
-	Expect(err).NotTo(HaveOccurred())
 	clustersuite.RegisterTestFramework(tf)
 })
 
@@ -44,8 +42,3 @@ func RunE2ETests(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "aerospike-operator e2e suite")
 }
-
-var _ = AfterSuite(func() {
-	err := tf.TearDown()
-	Expect(err).NotTo(HaveOccurred())
-})

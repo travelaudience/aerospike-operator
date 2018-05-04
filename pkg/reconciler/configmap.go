@@ -18,7 +18,6 @@ package reconciler
 
 import (
 	"bytes"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -36,12 +35,11 @@ import (
 )
 
 func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*v1.ConfigMap, error) {
-	configMapName := fmt.Sprintf("%s-%s", aerospikeCluster.Name, configMapSuffix)
 	aerospikeConfig := buildConfig(aerospikeCluster)
 
 	desiredConfigMap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName,
+			Name: aerospikeCluster.Name,
 			Labels: map[string]string{
 				selectors.LabelAppKey:     selectors.LabelAppVal,
 				selectors.LabelClusterKey: aerospikeCluster.Name,
@@ -70,7 +68,7 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 			return nil, err
 		}
 
-		currentConfigMap, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(configMapName)
+		currentConfigMap, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(desiredConfigMap.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -110,8 +108,7 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 }
 
 func (r *AerospikeClusterReconciler) getConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*v1.ConfigMap, error) {
-	configMapName := fmt.Sprintf("%s-%s", aerospikeCluster.Name, configMapSuffix)
-	res, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(configMapName)
+	res, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(aerospikeCluster.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +132,7 @@ func buildConfig(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) string {
 
 func getClusterProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, namespacesConfig []string) map[string]interface{} {
 	return map[string]interface{}{
-		clusterMeshServiceKey: fmt.Sprintf("%s-%s", aerospikeCluster.Name, discoveryServiceSuffix),
+		clusterMeshServiceKey: aerospikeCluster.Name,
 		clusterMeshPortKey:    heartbeatPort,
 		clusterNamespacesKey:  namespacesConfig,
 	}

@@ -18,6 +18,7 @@ package framework
 
 import (
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -62,15 +63,18 @@ func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, repli
 	}
 }
 
-func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, fn watch.ConditionFunc) error {
+func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, fn watch.ConditionFunc, timeout time.Duration) error {
 	w, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Watch(listoptions.ObjectByName(aerospikeCluster.Name))
 	if err != nil {
 		return err
 	}
-	last, err := watch.Until(watchTimeout, w, fn)
+	start := time.Now()
+	last, err := watch.Until(timeout, w, fn)
 	if err != nil {
 		if err == watch.ErrWatchClosed {
-			return tf.WaitForClusterCondition(aerospikeCluster, fn)
+			if t := timeout - time.Since(start); t > 0 {
+				return tf.WaitForClusterCondition(aerospikeCluster, fn, t)
+			}
 		}
 		return err
 	}
@@ -86,7 +90,7 @@ func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1al
 		obj := event.Object.(*aerospikev1alpha1.AerospikeCluster)
 		// search for the current node count
 		return obj.Status.NodeCount == nodeCount, nil
-	})
+	}, watchTimeout)
 }
 
 func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, nodeCount int) error {
@@ -115,5 +119,5 @@ func (tf *TestFramework) AddAerospikeNamespaceAndScaleAndWait(aerospikeCluster *
 	return tf.WaitForClusterCondition(res, func(event watch.Event) (bool, error) {
 		obj := event.Object.(*aerospikev1alpha1.AerospikeCluster)
 		return len(obj.Status.Namespaces) == len(obj.Spec.Namespaces) && obj.Status.NodeCount == nodeCount, nil
-	})
+	}, watchTimeout)
 }

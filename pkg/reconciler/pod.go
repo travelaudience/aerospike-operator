@@ -19,7 +19,7 @@ package reconciler
 import (
 	"fmt"
 	"sort"
-	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -32,7 +32,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
@@ -189,7 +189,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 							MountPath: configMountPath,
 						},
 					},
-					LivenessProbe: &v1.Probe{
+					ReadinessProbe: &v1.Probe{
 						Handler: v1.Handler{
 							TCPSocket: &v1.TCPSocketAction{
 								Port: intstr.IntOrString{
@@ -197,55 +197,10 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 								},
 							},
 						},
-						InitialDelaySeconds: 3,
-						TimeoutSeconds:      2,
-						PeriodSeconds:       10,
-						FailureThreshold:    3,
-					},
-					ReadinessProbe: &v1.Probe{
-						Handler: v1.Handler{
-							HTTPGet: &v1.HTTPGetAction{
-								Path: "/healthz",
-								Port: intstr.IntOrString{
-									IntVal: asprobePort,
-								},
-							},
-						},
-						InitialDelaySeconds: 3,
-						TimeoutSeconds:      2,
-						PeriodSeconds:       10,
-						FailureThreshold:    3,
-					},
-				},
-				{
-					Name:            "asprobe",
-					Image:           "quay.io/travelaudience/aerospike-operator-tools:latest",
-					ImagePullPolicy: v1.PullAlways,
-					Command: []string{
-						"asprobe",
-						"-debug",
-						"-discovery-svc", fmt.Sprintf("%s-%s", aerospikeCluster.Name, discoveryServiceSuffix),
-						"-port", strconv.Itoa(asprobePort),
-						"-target-port", strconv.Itoa(servicePort),
-					},
-					Ports: []v1.ContainerPort{
-						{
-							Name:          "asprobe",
-							ContainerPort: asprobePort,
-						},
-					},
-					LivenessProbe: &v1.Probe{
-						Handler: v1.Handler{
-							TCPSocket: &v1.TCPSocketAction{
-								Port: intstr.IntOrString{
-									IntVal: asprobePort,
-								},
-							},
-						},
-						InitialDelaySeconds: 3,
-						TimeoutSeconds:      2,
-						PeriodSeconds:       10,
-						FailureThreshold:    3,
+						InitialDelaySeconds: asReadinessInitialDelaySeconds,
+						TimeoutSeconds:      asReadinessTimeoutSeconds,
+						PeriodSeconds:       asReadinessPeriodSeconds,
+						FailureThreshold:    asReadinessFailureThreshold,
 					},
 				},
 				{
@@ -343,20 +298,34 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		return err
 	}
 
-	// watch the pod, waiting for it to enter the RUNNING state and be ready
-	w, err := r.kubeclientset.CoreV1().Pods(res.Namespace).Watch(listoptions.ObjectByName(res.Name))
-	if err != nil {
-		return err
-	}
-	last, err := watch.Until(watchTimeout, w, func(event watch.Event) (bool, error) {
+	done := make(chan bool, 1)
+	go func() {
+		ticker := time.NewTicker(podOperationFeedbackPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarting,
+					"waiting for aerospike to start on pod %s",
+					meta.Key(res),
+				)
+			case <-done:
+				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarted,
+					"aerospike started on pod %s",
+					meta.Key(res),
+				)
+				return
+			}
+		}
+	}()
+
+	err = r.waitForPodCondition(res, func(event watch.Event) (bool, error) {
 		return isPodRunningAndReady(event.Object.(*v1.Pod)), nil
-	})
+	}, watchCreatePodTimeout)
 	if err != nil {
 		return err
 	}
-	if last == nil {
-		return fmt.Errorf("no events received for pod %s", meta.Key(res))
-	}
+	close(done)
 
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
@@ -374,19 +343,11 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 		return err
 	}
 
-	// watch the pod, waiting for it to be deleted
-	w, err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(listoptions.ObjectByName(pod.Name))
-	if err != nil {
-		return err
-	}
-	last, err := watch.Until(watchTimeout, w, func(event watch.Event) (bool, error) {
+	err = r.waitForPodCondition(pod, func(event watch.Event) (bool, error) {
 		return event.Type == watch.Deleted, nil
-	})
+	}, watchDeletePodTimeout)
 	if err != nil {
 		return err
-	}
-	if last == nil {
-		return fmt.Errorf("no events received for pod %s", meta.Key(pod))
 	}
 
 	log.WithFields(log.Fields{
@@ -398,9 +359,32 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 }
 
 func (r *AerospikeClusterReconciler) safeDeletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
+	done := make(chan bool, 1)
+	go func() {
+		ticker := time.NewTicker(podOperationFeedbackPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonMigrationsFinishing,
+					"waiting for migrations to finish on pod %s",
+					meta.Key(pod),
+				)
+			case <-done:
+				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonMigrationsFinished,
+					"migrations finished on pod %s",
+					meta.Key(pod),
+				)
+				return
+			}
+		}
+	}()
+
 	if err := waitPodReadyToShutdown(pod); err != nil {
 		return err
 	}
+	close(done)
+
 	return r.deletePod(aerospikeCluster, pod)
 }
 

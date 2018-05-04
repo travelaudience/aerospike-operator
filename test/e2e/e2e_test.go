@@ -18,24 +18,14 @@ package e2e
 
 import (
 	"flag"
-	"log"
 	"testing"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
 func init() {
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file to be used")
-	flag.StringVar(&framework.OperatorImage, "operator-image", "", "image of the operator to be pulled")
-	flag.StringVar(&framework.NodeAddress, "node-address", "", "address of a kubernetes node")
 	flag.Parse()
-
-	if framework.NodeAddress == "" {
-		log.Fatalf("flag node-address must be specified")
-		return
-	}
 }
 
 func TestE2E(t *testing.T) {

@@ -17,6 +17,16 @@ dep:
 		git fetch origin && \
 		git checkout -f kubernetes-$(KUBERNETES_VERSION)
 
+.PHONY: dev
+dev: PROFILE?=minikube
+dev:
+	skaffold dev -p $(PROFILE)
+
+.PHONY: run
+run: PROFILE?=minikube
+run:
+	skaffold run -p $(PROFILE)
+
 .PHONY: docker.operator
 docker.operator: TAG?=$(shell git describe --dirty)
 docker.operator: IMG?=quay.io/travelaudience/aerospike-operator
@@ -38,31 +48,13 @@ gen: export CODEGEN_PKG=../../../k8s.io/code-generator
 gen:
 	./hack/update-codegen.sh
 
-.PHONY: run
-run: POD_NAMESPACE?=aerospike-operator
-run: KUBECONFIG?=$(HOME)/.kube/config
-run:
-	POD_NAMESPACE=$(POD_NAMESPACE) go run cmd/operator/main.go \
-	    -debug \
-	    -kubeconfig=$(KUBECONFIG)
-
 .PHONY: test.unit
 test.unit:
 	go test -v ./cmd/... ./pkg/...
 
 .PHONY: test.e2e
-ifneq ($(LOCAL),1)
-test.e2e: TAG?=$(shell git describe --dirty)
-test.e2e: IMG?=quay.io/travelaudience/aerospike-operator
-test.e2e: EXTRA_FLAGS:=-operator-image=$(IMG):$(TAG)
-endif
-ifdef NODE_ADDRESS
-test.e2e: EXTRA_FLAGS+=-node-address=$(NODE_ADDRESS)
-endif
 test.e2e: FLAKE_ATTEMPTS?=3
 test.e2e: FOCUS?=
-test.e2e: KUBECONFIG?=$(HOME)/.kube/config
-test.e2e: TIMEOUT?=1200s
+test.e2e: TIMEOUT?=1800s
 test.e2e:
-	-kubectl apply -f docs/examples/00-prereqs.yml
-	go test -v -timeout=$(TIMEOUT) ./test/e2e -kubeconfig=$(KUBECONFIG) -ginkgo.flakeAttempts=$(FLAKE_ATTEMPTS) -ginkgo.focus=$(FOCUS) $(EXTRA_FLAGS)
+	kubectl -n aerospike-operator exec aerospike-operator -- go test -v -timeout=$(TIMEOUT) ./test/e2e -ginkgo.flakeAttempts=$(FLAKE_ATTEMPTS) -ginkgo.focus=$(FOCUS) $(EXTRA_FLAGS)

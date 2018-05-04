@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -56,27 +57,44 @@ func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, 
 	err = tf.WaitForClusterNodeCount(asc, initialNodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	svc, err := tf.CreateNodePortService(asc)
-	Expect(err).NotTo(HaveOccurred())
-	err = tf.WaitForNodePortService(svc)
+	c1, err := framework.NewAerospikeClient(asc)
 	Expect(err).NotTo(HaveOccurred())
 
-	c1, err := framework.NewAerospikeClient(framework.NodeAddress, int(svc.Spec.Ports[0].NodePort))
-	Expect(err).NotTo(HaveOccurred())
-
-	var asErr error
-	stopCh := make(chan interface{})
+	// ticker will control how often we try to connect to the cluster
+	ticker := time.NewTicker(1 * time.Second)
+	// cerrCh will contain any connection errors that may occur
+	cerrCh := make(chan error)
+	// stopCh will allow us to exit the goroutine
+	stopCh := make(chan bool)
+	// periodically try to connect to the cluster while we perform the scale operation
 	go func() {
-		asErr = c1.WriteUntil(stopCh, aerospikeCluster.Spec.Namespaces[0].Name)
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				c, err := framework.NewAerospikeClient(asc)
+				if err != nil {
+					cerrCh <- err
+				}
+				if !c.IsConnected() {
+					cerrCh <- fmt.Errorf("aerospike client is not connected")
+				}
+				c.Close()
+			}
+		}
 	}()
 
 	err = tf.ScaleCluster(asc, finalNodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	// keep writing for 5 more seconds
-	time.Sleep(5 * time.Second)
-
 	close(stopCh)
+	ticker.Stop()
+	close(cerrCh)
 	c1.Close()
-	Expect(asErr).NotTo(HaveOccurred())
+
+	// expect no errors in cerrCh
+	for err := range cerrCh {
+		Expect(err).NotTo(HaveOccurred())
+	}
 }

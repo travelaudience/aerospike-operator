@@ -25,16 +25,13 @@ import (
 	as "github.com/aerospike/aerospike-client-go"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
-)
-
-const (
-	// migrationTimeout is the amount of time we will wait for migrations to complete before deleting the pod
-	migrationTimeout = 1 * time.Hour
 )
 
 type byIndex []*v1.Pod
@@ -65,6 +62,27 @@ func isPodRunningAndReady(pod *v1.Pod) bool {
 	return pod.Status.Phase == v1.PodRunning && podutil.IsPodReady(pod)
 }
 
+func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.ConditionFunc, timeout time.Duration) error {
+	w, err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(listoptions.ObjectByName(pod.Name))
+	if err != nil {
+		return err
+	}
+	start := time.Now()
+	last, err := watch.Until(timeout, w, fn)
+	if err != nil {
+		if err == watch.ErrWatchClosed {
+			if t := timeout - time.Since(start); t > 0 {
+				return r.waitForPodCondition(pod, fn, t)
+			}
+		}
+		return err
+	}
+	if last == nil {
+		return fmt.Errorf("no events received for %s", meta.Key(pod))
+	}
+	return nil
+}
+
 func waitPodReadyToShutdown(pod *v1.Pod) error {
 	client, err := as.NewClient(pod.Status.PodIP, servicePort)
 	if err != nil {
@@ -77,7 +95,7 @@ func waitPodReadyToShutdown(pod *v1.Pod) error {
 				logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
 				logfields.Pod:              meta.Key(pod),
 			}).Debug("waiting for migrations to finish")
-			return node.WaitUntillMigrationIsFinished(migrationTimeout)
+			return node.WaitUntillMigrationIsFinished(waitMigrationsTimeout)
 		}
 	}
 	return nil
