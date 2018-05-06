@@ -35,10 +35,13 @@ type AerospikeNamespaceRestore struct {
 
 // AerospikeNamespaceRestoreSpec is the spec for an AerospikeNamespaceRestore resource
 type AerospikeNamespaceRestoreSpec struct {
+	Target  TargetNamespace   `json:"target"`
+	Storage BackupStorageSpec `json:"storage"`
 }
 
 // AerospikeNamespaceRestoreStatus is the status for an AerospikeNamespaceRestore resource
 type AerospikeNamespaceRestoreStatus struct {
+	AerospikeNamespaceRestoreSpec
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

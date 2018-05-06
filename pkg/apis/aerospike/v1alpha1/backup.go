@@ -35,10 +35,27 @@ type AerospikeNamespaceBackup struct {
 
 // AerospikeNamespaceBackupSpec is the spec for an AerospikeNamespaceBackup resource
 type AerospikeNamespaceBackupSpec struct {
+	Target  TargetNamespace   `json:"target"`
+	Storage BackupStorageSpec `json:"storage"`
+	TTL     string            `json:"ttl"`
+}
+
+// TargetNamespace specifies the cluster and namespace to backup
+type TargetNamespace struct {
+	Cluster   string `json:"cluster"`
+	Namespace string `json:"namespace"`
+}
+
+// BackupStorageSpec specifies how the backup will be stored
+type BackupStorageSpec struct {
+	Type   string `json:"type"`
+	Bucket string `json:"bucket"`
+	Secret string `json:"secret"`
 }
 
 // AerospikeNamespaceBackupStatus is the status for an AerospikeNamespaceBackup resource
 type AerospikeNamespaceBackupStatus struct {
+	AerospikeNamespaceBackupSpec
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
