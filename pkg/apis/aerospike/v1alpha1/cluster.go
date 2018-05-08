@@ -42,9 +42,7 @@ type AerospikeClusterSpec struct {
 
 // AerospikeClusterStatus is the status for an AerospikeCluster resource
 type AerospikeClusterStatus struct {
-	NodeCount  int                      `json:"nodeCount"`
-	Version    string                   `json:"version"`
-	Namespaces []AerospikeNamespaceSpec `json:"namespaces"`
+	AerospikeClusterSpec
 }
 
 // AerospikeNamespaceSpec is the spec for an AerospikeNamespace object

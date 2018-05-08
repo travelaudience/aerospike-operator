@@ -19,17 +19,20 @@ package main
 import (
 	"flag"
 	"os"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/travelaudience/aerospike-operator/pkg/admission"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
+	aerospikescheme "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned/scheme"
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
 	"github.com/travelaudience/aerospike-operator/pkg/controller"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
@@ -84,13 +87,13 @@ func main() {
 		log.Fatalf("error creating custom resource definitions: %v", err)
 	}
 
+	aerospikescheme.AddToScheme(scheme.Scheme)
+
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	aerospikeInformerFactory := aerospikeinformers.NewSharedInformerFactory(aerospikeClient, time.Second*30)
 
 	clusterController := controller.NewAerospikeClusterController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
-
-	go kubeInformerFactory.Start(stopCh)
-	go aerospikeInformerFactory.Start(stopCh)
+	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeInformerFactory)
 
 	// if --admission-enabled is true create, register and run the validating admission webhook
 	readyCh := make(chan interface{}, 0)
@@ -98,7 +101,28 @@ func main() {
 
 	// wait for the webhook to be ready to start the controller
 	<-readyCh
-	if err = clusterController.Run(2, stopCh); err != nil {
-		log.Fatalf("error running controller: %v", err)
-	}
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		if err := clusterController.Run(2, stopCh); err != nil {
+			log.Error(err)
+		}
+		wg.Done()
+	}()
+
+	wg.Add(1)
+	go func() {
+		if err := backupController.Run(2, stopCh); err != nil {
+			log.Error(err)
+		}
+		wg.Done()
+	}()
+
+	go kubeInformerFactory.Start(stopCh)
+	go aerospikeInformerFactory.Start(stopCh)
+
+	log.Debug("waiting for all controllers to shut down gracefully")
+	wg.Wait()
 }
