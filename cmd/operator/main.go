@@ -94,32 +94,29 @@ func main() {
 
 	clusterController := controller.NewAerospikeClusterController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeInformerFactory)
+	restoreController := controller.NewAerospikeNamespaceRestoreController(kubeClient, aerospikeInformerFactory)
 
 	// if --admission-enabled is true create, register and run the validating admission webhook
 	readyCh := make(chan interface{}, 0)
 	go admission.NewValidatingAdmissionWebhook(kubeClient).RegisterAndRun(readyCh)
 
-	// wait for the webhook to be ready to start the controller
+	// wait for the webhook to be ready to start the controllers
 	<-readyCh
 
+	// start the controllers
 	var wg sync.WaitGroup
+	controllers := []controller.Controller{clusterController, backupController, restoreController}
+	for _, c := range controllers {
+		wg.Add(1)
+		go func(c controller.Controller) {
+			if err := c.Run(2, stopCh); err != nil {
+				log.Error(err)
+			}
+			wg.Done()
+		}(c)
+	}
 
-	wg.Add(1)
-	go func() {
-		if err := clusterController.Run(2, stopCh); err != nil {
-			log.Error(err)
-		}
-		wg.Done()
-	}()
-
-	wg.Add(1)
-	go func() {
-		if err := backupController.Run(2, stopCh); err != nil {
-			log.Error(err)
-		}
-		wg.Done()
-	}()
-
+	// start the shared informer factories
 	go kubeInformerFactory.Start(stopCh)
 	go aerospikeInformerFactory.Start(stopCh)
 

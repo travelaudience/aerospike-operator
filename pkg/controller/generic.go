@@ -32,6 +32,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+type Controller interface {
+	Run(threadiness int, stopCh <-chan struct{}) error
+}
+
 // genericController contains basic functionality that is generic to all controllers
 type genericController struct {
 	// logger is the logger that the controller will use
