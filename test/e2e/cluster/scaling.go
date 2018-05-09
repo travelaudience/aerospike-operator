@@ -60,14 +60,17 @@ func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, 
 	c1, err := framework.NewAerospikeClient(asc)
 	Expect(err).NotTo(HaveOccurred())
 
-	// ticker will control how often we try to connect to the cluster
-	ticker := time.NewTicker(1 * time.Second)
 	// cerrCh will contain any connection errors that may occur
 	cerrCh := make(chan error)
 	// stopCh will allow us to exit the goroutine
 	stopCh := make(chan bool)
 	// periodically try to connect to the cluster while we perform the scale operation
 	go func() {
+		// ticker will control how often we try to connect to the cluster
+		ticker := time.NewTicker(1 * time.Second)
+		defer close(cerrCh)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-stopCh:
@@ -76,6 +79,7 @@ func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, 
 				c, err := framework.NewAerospikeClient(asc)
 				if err != nil {
 					cerrCh <- err
+					continue
 				}
 				if !c.IsConnected() {
 					cerrCh <- fmt.Errorf("aerospike client is not connected")
@@ -89,8 +93,6 @@ func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, 
 	Expect(err).NotTo(HaveOccurred())
 
 	close(stopCh)
-	ticker.Stop()
-	close(cerrCh)
 	c1.Close()
 
 	// expect no errors in cerrCh
