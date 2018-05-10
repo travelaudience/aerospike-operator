@@ -1,0 +1,12 @@
+apiVersion: aerospike.travelaudience.com/v1alpha1
+kind: AerospikeNamespaceRestore
+metadata:
+  name: aerospike-backup-0
+spec:
+  target:
+    cluster: aerospike-cluster-0
+    namespace: aerospike-namespace-0
+  storage:
+    type: gcs
+    bucket: test-bucket
+    secret: bucket-secret

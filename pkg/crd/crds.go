@@ -31,6 +31,14 @@ const (
 	AerospikeClusterKind   = "AerospikeCluster"
 	AerospikeClusterPlural = "aerospikeclusters"
 	AerospikeClusterShort  = "asc"
+
+	AerospikeBackupKind   = "AerospikeNamespaceBackup"
+	AerospikeBackupPlural = "aerospikenamespacebackups"
+	AerospikeBackupShort  = "asbackup"
+
+	AerospikeRestoreKind   = "AerospikeNamespaceRestore"
+	AerospikeRestorePlural = "aerospikenamespacerestores"
+	AerospikeRestoreShort  = "asrestore"
 )
 
 var (
@@ -146,8 +154,68 @@ var (
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural: "aerospikenamespacebackups",
-					Kind:   "AerospikeNamespaceBackup",
+					Plural:     AerospikeBackupPlural,
+					Kind:       AerospikeBackupKind,
+					ShortNames: []string{AerospikeBackupShort},
+				},
+				Validation: &extsv1beta1.CustomResourceValidation{
+					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
+						Properties: map[string]extsv1beta1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]extsv1beta1.JSONSchemaProps{
+									"target": {
+										Type: "object",
+										Properties: map[string]extsv1beta1.JSONSchemaProps{
+											"cluster": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+											"namespace": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+										},
+										Required: []string{
+											"cluster",
+											"namespace",
+										},
+									},
+									"storage": {
+										Type: "object",
+										Properties: map[string]extsv1beta1.JSONSchemaProps{
+											"type": {
+												Type: "string",
+												Enum: []extsv1beta1.JSON{
+													{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeGCS))},
+												},
+											},
+											"bucket": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+											"secret": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+										},
+										Required: []string{
+											"type",
+											"bucket",
+											"secret",
+										},
+									},
+									"ttl": {
+										Type:    "string",
+										Pattern: `^\d+d$`,
+									},
+								},
+								Required: []string{
+									"target",
+									"storage",
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -160,8 +228,64 @@ var (
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural: "aerospikenamespacerestores",
-					Kind:   "AerospikeNamespaceRestore",
+					Plural:     AerospikeRestorePlural,
+					Kind:       AerospikeRestoreKind,
+					ShortNames: []string{AerospikeRestoreShort},
+				},
+				Validation: &extsv1beta1.CustomResourceValidation{
+					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
+						Properties: map[string]extsv1beta1.JSONSchemaProps{
+							"spec": {
+								Properties: map[string]extsv1beta1.JSONSchemaProps{
+									"target": {
+										Type: "object",
+										Properties: map[string]extsv1beta1.JSONSchemaProps{
+											"cluster": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+											"namespace": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+										},
+										Required: []string{
+											"cluster",
+											"namespace",
+										},
+									},
+									"storage": {
+										Type: "object",
+										Properties: map[string]extsv1beta1.JSONSchemaProps{
+											"type": {
+												Type: "string",
+												Enum: []extsv1beta1.JSON{
+													{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeGCS))},
+												},
+											},
+											"bucket": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+											"secret": {
+												Type:      "string",
+												MinLength: pointers.NewInt64(1),
+											},
+										},
+										Required: []string{
+											"type",
+											"bucket",
+											"secret",
+										},
+									},
+								},
+								Required: []string{
+									"target",
+									"storage",
+								},
+							},
+						},
+					},
 				},
 			},
 		},

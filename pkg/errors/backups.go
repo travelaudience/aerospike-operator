@@ -14,16 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package logfields
+package errors
 
-const (
-	Kind                  = "kind"
-	CurrentSize           = "currentSize"
-	DesiredSize           = "desiredSize"
-	AerospikeCluster      = "aerospikecluster"
-	AerospikeNamespace    = "aerospikenamespace"
-	Pod                   = "pod"
-	Service               = "service"
-	ConfigMap             = "configmap"
-	PersistentVolumeClaim = "persistentvolumeclaim"
+import "fmt"
+
+var (
+	NamespaceNotExists    = fmt.Errorf("specified aerospike namespace does not exist")
+	JobAlreadyExists      = fmt.Errorf("job already exists")
+	InvalidSecretFileName = fmt.Errorf("invalid secret filename")
+	JobFailed             = fmt.Errorf("job failed")
 )

@@ -14,16 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package logfields
+package backuphandler
+
+import "time"
 
 const (
-	Kind                  = "kind"
-	CurrentSize           = "currentSize"
-	DesiredSize           = "desiredSize"
-	AerospikeCluster      = "aerospikecluster"
-	AerospikeNamespace    = "aerospikenamespace"
-	Pod                   = "pod"
-	Service               = "service"
-	ConfigMap             = "configmap"
-	PersistentVolumeClaim = "persistentvolumeclaim"
+	bucketSecretVolumeName      = "bucket-secret-volume"
+	bucketSecretVolumeMountPath = "/creds"
+
+	operationStateKey      = "state"
+	operationStateFinished = "finished"
+
+	backupExtension = "asb.gz"
+	secretFileName  = "key.json"
+)
+
+var (
+	watchJobTimeout = time.Hour * 1
+)
+
+type actionType string
+
+var (
+	backupAction  actionType = "backup"
+	restoreAction actionType = "restore"
 )

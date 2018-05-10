@@ -16,10 +16,19 @@ limitations under the License.
 
 package v1alpha1
 
+import "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
 const (
 	//StorageTypeFile defines the file storage type for a given Aerospike namespace.
 	StorageTypeFile = "file"
 
 	//StorageTypeDevice defines the device storage type for a given Aerospike namespace.
 	StorageTypeDevice = "device"
+
+	//StorageTypeGCS defines the Google Cloud Storage type for a given Aerospike backup.
+	StorageTypeGCS = "gcs"
+
+	//OperationCompleted defines a status condition to indicate when a backup or restore
+	//operation has been completed
+	ConditionCompleted apiextensions.CustomResourceDefinitionConditionType = "Completed"
 )

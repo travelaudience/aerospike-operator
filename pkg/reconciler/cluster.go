@@ -18,11 +18,10 @@ package reconciler
 
 import (
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/tools/record"
-
 	"k8s.io/client-go/kubernetes"
 	listersv1 "k8s.io/client-go/listers/core/v1"
 	storagelistersv1 "k8s.io/client-go/listers/storage/v1"
+	"k8s.io/client-go/tools/record"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"

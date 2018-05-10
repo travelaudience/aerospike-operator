@@ -93,8 +93,8 @@ func main() {
 	aerospikeInformerFactory := aerospikeinformers.NewSharedInformerFactory(aerospikeClient, time.Second*30)
 
 	clusterController := controller.NewAerospikeClusterController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
-	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeInformerFactory)
-	restoreController := controller.NewAerospikeNamespaceRestoreController(kubeClient, aerospikeInformerFactory)
+	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
+	restoreController := controller.NewAerospikeNamespaceRestoreController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 
 	// if --admission-enabled is true create, register and run the validating admission webhook
 	readyCh := make(chan interface{}, 0)

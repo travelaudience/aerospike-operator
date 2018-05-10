@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -56,6 +57,7 @@ type BackupStorageSpec struct {
 // AerospikeNamespaceBackupStatus is the status for an AerospikeNamespaceBackup resource
 type AerospikeNamespaceBackupStatus struct {
 	AerospikeNamespaceBackupSpec
+	Conditions []apiextensions.CustomResourceDefinitionCondition `json="conditions"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

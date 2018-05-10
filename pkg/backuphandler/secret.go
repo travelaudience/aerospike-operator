@@ -14,16 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package logfields
+package backuphandler
 
-const (
-	Kind                  = "kind"
-	CurrentSize           = "currentSize"
-	DesiredSize           = "desiredSize"
-	AerospikeCluster      = "aerospikecluster"
-	AerospikeNamespace    = "aerospikenamespace"
-	Pod                   = "pod"
-	Service               = "service"
-	ConfigMap             = "configmap"
-	PersistentVolumeClaim = "persistentvolumeclaim"
+import (
+	"github.com/travelaudience/aerospike-operator/pkg/errors"
 )
+
+func (h *AerospikeBackupsHandler) ensureSecretExists(obj *BackupRestoreObject) error {
+	secret, err := h.secretsLister.Secrets(obj.Namespace).Get(obj.Storage.Secret)
+	if err != nil {
+		return err
+	}
+	for k := range secret.Data {
+		if k == secretFileName {
+			return nil
+		}
+	}
+	return errors.InvalidSecretFileName
+}

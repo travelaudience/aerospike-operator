@@ -20,4 +20,12 @@ const (
 	// ReasonMigrationsFinished is the reason used in corev1.Event objects created when
 	// migrations are finished.
 	ReasonMigrationsFinished = "MigrationsFinished"
+
+	// ReasonInvalidTarget is the reason used in corev1.Event objects indicating a target
+	// cluster and namespace is not reachable or does not exist
+	ReasonInvalidTarget = "InvalidTarget"
+
+	// ReasonInvalidSecret is the reason used in corev1.Event objects indicating that the
+	// secret is not valid
+	ReasonInvalidSecret = "InvalidSecret"
 )
