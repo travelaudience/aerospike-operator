@@ -28,7 +28,15 @@ const (
 	//StorageTypeGCS defines the Google Cloud Storage type for a given Aerospike backup.
 	StorageTypeGCS = "gcs"
 
-	//OperationCompleted defines a status condition to indicate when a backup or restore
-	//operation has been completed
+	//ConditionCompleted defines a status condition to indicate when a backup or restore
+	//job has been completed
 	ConditionCompleted apiextensions.CustomResourceDefinitionConditionType = "Completed"
+
+	//ConditionCreated defines a status condition to indicate when a backup or restore job
+	//has been created
+	ConditionCreated apiextensions.CustomResourceDefinitionConditionType = "Created"
+
+	//ConditionExpired defines a status condition to indicate when a backup or restore job
+	//has been expired
+	ConditionExpired apiextensions.CustomResourceDefinitionConditionType = "Expired"
 )

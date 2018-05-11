@@ -21,6 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -94,7 +95,7 @@ func (h *AerospikeBackupsHandler) Handle(objInt interface{}) error {
 	case *aerospikev1alpha1.AerospikeNamespaceRestore:
 		return h.handle(&BackupRestoreObject{
 			Action:     restoreAction,
-			Type:       fmt.Sprintf("%s%s", logfields.AerospikeNamespace, backupAction),
+			Type:       fmt.Sprintf("%s%s", logfields.AerospikeNamespace, restoreAction),
 			Obj:        obj,
 			Name:       obj.Name,
 			Namespace:  obj.Namespace,
@@ -112,15 +113,48 @@ func (h *AerospikeBackupsHandler) handle(obj *BackupRestoreObject) error {
 		obj.Type: meta.Key(obj.Obj),
 	}).Debug("checking whether action is needed")
 
-	if h.operationAlreadyPerformed(obj) {
+	// Check if job is already completed
+	if h.getConditionStatus(obj, aerospikev1alpha1.ConditionCompleted) == apiextensions.ConditionTrue {
 		log.WithFields(log.Fields{
 			obj.Type: meta.Key(obj.Obj),
-		}).Debugf("%s action has already finished", obj.Action)
+		}).Debugf("%s job is already completed", obj.Action)
 		return nil
 	}
 
-	if err := h.ensureJobDoesNotExist(obj); err != nil {
-		return err
+	// Check the job status
+	if status, err := h.getJobStatus(obj); err != nil {
+		if err != aerospikeErrors.JobDoesNotExist {
+			return err
+		}
+	} else {
+		if status.Succeeded > 0 {
+			if err := h.setConditions(obj, map[apiextensions.CustomResourceDefinitionConditionType]apiextensions.ConditionStatus{
+				aerospikev1alpha1.ConditionCompleted: apiextensions.ConditionTrue,
+			}); err != nil {
+				return err
+			}
+			log.WithFields(log.Fields{
+				obj.Type: meta.Key(obj.Obj),
+			}).Debugf("%s job completed with success", obj.Action)
+			h.recorder.Eventf(obj.Obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobCompleted,
+				"%s job completed with success", obj.Action)
+			return nil
+		}
+		if status.Active > 0 {
+			log.WithFields(log.Fields{
+				obj.Type: meta.Key(obj.Obj),
+			}).Debugf("%s job is running", obj.Action)
+			h.recorder.Eventf(obj.Obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobRunning,
+				"%s job is running", obj.Action)
+		}
+		if status.Failed > 0 {
+			log.WithFields(log.Fields{
+				obj.Type: meta.Key(obj.Obj),
+			}).Debugf("%s job failed", obj.Action)
+			h.recorder.Eventf(obj.Obj.(runtime.Object), v1.EventTypeWarning, events.ReasonJobFailed,
+				"%s job failed %d times", obj.Action, status.Failed)
+		}
+		return nil
 	}
 
 	if err := h.ensureClusterExists(obj); err != nil {
@@ -130,7 +164,7 @@ func (h *AerospikeBackupsHandler) handle(obj *BackupRestoreObject) error {
 				obj.Target.Cluster,
 			)
 		}
-		if err == aerospikeErrors.NamespaceNotExists {
+		if err == aerospikeErrors.NamespaceDoesNotExist {
 			h.recorder.Eventf(obj.Obj.(runtime.Object), v1.EventTypeWarning, events.ReasonInvalidTarget,
 				"cluster %s does not contain a namespace named %s",
 				obj.Target.Cluster,
@@ -148,16 +182,21 @@ func (h *AerospikeBackupsHandler) handle(obj *BackupRestoreObject) error {
 		}
 		if err == aerospikeErrors.InvalidSecretFileName {
 			h.recorder.Eventf(obj.Obj.(runtime.Object), v1.EventTypeWarning, events.ReasonInvalidSecret,
-				"secret does not contain expected file (Expected \"%s\")",
-				secretFileName,
+				"secret does not contain expected file (Expected \"%s\")", secretFileName,
 			)
 		}
 		return err
 	}
+
 	if err := h.createJob(obj); err != nil {
 		return err
 	}
-	if err := h.addCompletedCondition(obj); err != nil {
+
+	if err := h.setConditions(obj, map[apiextensions.CustomResourceDefinitionConditionType]apiextensions.ConditionStatus{
+		aerospikev1alpha1.ConditionCompleted: apiextensions.ConditionFalse,
+		aerospikev1alpha1.ConditionCreated:   apiextensions.ConditionTrue,
+		aerospikev1alpha1.ConditionExpired:   apiextensions.ConditionFalse,
+	}); err != nil {
 		return err
 	}
 	return nil

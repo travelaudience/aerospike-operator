@@ -19,8 +19,7 @@ package errors
 import "fmt"
 
 var (
-	NamespaceNotExists    = fmt.Errorf("specified aerospike namespace does not exist")
-	JobAlreadyExists      = fmt.Errorf("job already exists")
+	NamespaceDoesNotExist = fmt.Errorf("specified aerospike namespace does not exist")
+	JobDoesNotExist       = fmt.Errorf("job does not exist")
 	InvalidSecretFileName = fmt.Errorf("invalid secret filename")
-	JobFailed             = fmt.Errorf("job failed")
 )

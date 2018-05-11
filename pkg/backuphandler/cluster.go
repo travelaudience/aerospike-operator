@@ -30,5 +30,5 @@ func (h *AerospikeBackupsHandler) ensureClusterExists(obj *BackupRestoreObject) 
 			return nil
 		}
 	}
-	return errors.NamespaceNotExists
+	return errors.NamespaceDoesNotExist
 }

@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
@@ -37,7 +36,7 @@ import (
 func (h *AerospikeBackupsHandler) createJob(obj *BackupRestoreObject) error {
 	job := v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-%s-job-", obj.Name, obj.Action),
+			Name: fmt.Sprintf("%s-%s-job", obj.Name, obj.Action),
 			Labels: map[string]string{
 				selectors.LabelAppKey:       selectors.LabelAppVal,
 				selectors.LabelClusterKey:   obj.Target.Cluster,
@@ -104,7 +103,6 @@ func (h *AerospikeBackupsHandler) createJob(obj *BackupRestoreObject) error {
 		},
 	}
 
-	// create the job
 	res, err := h.kubeclientset.BatchV1().Jobs(obj.Namespace).Create(&job)
 	if err != nil {
 		return err
@@ -113,27 +111,10 @@ func (h *AerospikeBackupsHandler) createJob(obj *BackupRestoreObject) error {
 	log.WithFields(log.Fields{
 		"job": meta.Key(res),
 	}).Debugf("%s job created", obj.Action)
-
-	// wait for job to complete
-	err = h.waitForJobCondition(res, watchJobTimeout, func(event watch.Event) (exit bool, err error) {
-		job := event.Object.(*v1.Job)
-		if job.Status.Failed > 0 {
-			err = errors.JobFailed
-			exit = true
-		}
-		exit = job.Status.Succeeded == 1
-		return
-	})
-	if err != nil {
-		return err
-	}
-	log.WithFields(log.Fields{
-		"job": meta.Key(res),
-	}).Debugf("%s job completed", obj.Action)
 	return nil
 }
 
-func (h *AerospikeBackupsHandler) ensureJobDoesNotExist(obj *BackupRestoreObject) error {
+func (h *AerospikeBackupsHandler) getJobStatus(obj *BackupRestoreObject) (*v1.JobStatus, error) {
 	jobs, err := h.jobsLister.Jobs(obj.Namespace).List(labels.SelectorFromSet(map[string]string{
 		selectors.LabelAppKey:       selectors.LabelAppVal,
 		selectors.LabelClusterKey:   obj.Target.Cluster,
@@ -141,13 +122,13 @@ func (h *AerospikeBackupsHandler) ensureJobDoesNotExist(obj *BackupRestoreObject
 		obj.Type:                    obj.Name,
 	}))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(jobs) > 0 {
-		log.WithFields(log.Fields{
-			obj.Type: meta.Key(obj.Obj),
-		}).Debugf("%s job is already running", obj.Action)
-		return errors.JobAlreadyExists
+		return &jobs[0].Status, nil
 	}
-	return nil
+	log.WithFields(log.Fields{
+		obj.Type: meta.Key(obj.Obj),
+	}).Debugf("%s job does not exist", obj.Action)
+	return nil, errors.JobDoesNotExist
 }

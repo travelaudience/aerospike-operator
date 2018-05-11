@@ -16,21 +16,12 @@ limitations under the License.
 
 package backuphandler
 
-import "time"
-
 const (
 	bucketSecretVolumeName      = "bucket-secret-volume"
 	bucketSecretVolumeMountPath = "/creds"
 
-	operationStateKey      = "state"
-	operationStateFinished = "finished"
-
 	backupExtension = "asb.gz"
 	secretFileName  = "key.json"
-)
-
-var (
-	watchJobTimeout = time.Hour * 1
 )
 
 type actionType string

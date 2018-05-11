@@ -28,4 +28,16 @@ const (
 	// ReasonInvalidSecret is the reason used in corev1.Event objects indicating that the
 	// secret is not valid
 	ReasonInvalidSecret = "InvalidSecret"
+
+	// ReasonJobCompleted is the reason used in corev1.Event objects indicating the backup or
+	// restore is completed
+	ReasonJobCompleted = "ReasonJobCompleted"
+
+	// ReasonJobFailed is the reason used in corev1.Event objects indicating the backup or
+	// restore has failed
+	ReasonJobFailed = "ReasonJobFailed"
+
+	// ReasonJobRunning is the reason used in corev1.Event objects indicating the backup or
+	// restore is completed
+	ReasonJobRunning = "ReasonJobRunning"
 )

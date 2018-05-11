@@ -18,8 +18,11 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -29,6 +32,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
+
+const metadataExt = "json"
 
 var (
 	fs              *flag.FlagSet
@@ -89,13 +94,14 @@ func main() {
 	if _, err = bh.Attrs(ctx); err != nil {
 		log.Fatal(err)
 	}
-	obj := bh.Object(name)
+	backupObject := bh.Object(name)
+	metaObject := bh.Object(fmt.Sprintf("%s.%s", name, metadataExt))
 
 	var bytesTransfered int64
 	if backupTask {
-		bytesTransfered, err = backup(obj)
+		bytesTransfered, err = backup(backupObject, metaObject)
 	} else if restoreTask {
-		bytesTransfered, err = restore(obj)
+		bytesTransfered, err = restore(backupObject, metaObject)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -103,7 +109,7 @@ func main() {
 	log.Infof("Backup size: %d bytes", bytesTransfered)
 }
 
-func backup(obj *storage.ObjectHandle) (n int64, err error) {
+func backup(backupObject *storage.ObjectHandle, metaObject *storage.ObjectHandle) (n int64, err error) {
 	var reader io.Reader
 
 	cmd := exec.Command("asbackup",
@@ -128,8 +134,8 @@ func backup(obj *storage.ObjectHandle) (n int64, err error) {
 	go func() {
 		defer close(errorChan)
 		defer close(nBytesChan)
-		defer stdout.Close()
-		n, err := transferToGCS(reader, obj)
+
+		n, err := transferToGCS(reader, backupObject)
 		if err != nil {
 			errorChan <- err
 		} else {
@@ -137,21 +143,43 @@ func backup(obj *storage.ObjectHandle) (n int64, err error) {
 		}
 	}()
 
-	err = cmd.Run()
+	err = cmd.Start()
 	if err != nil {
 		return
 	}
 	n = <-nBytesChan
+	if err = cmd.Wait(); err != nil {
+		return
+	}
 	err = <-errorChan
+	if err != nil {
+		return
+	}
+
+	err = writeMetadata(metaObject, &Metadata{
+		Namespace: targetNamespace,
+	})
+
 	return
 }
 
-func restore(obj *storage.ObjectHandle) (n int64, err error) {
+func restore(obj *storage.ObjectHandle, metaObject *storage.ObjectHandle) (n int64, err error) {
 	var writer io.Writer
+
+	data, err := readMetadata(metaObject)
+	if err != nil {
+		return
+	}
+
+	if data.Namespace == "" {
+		err = fmt.Errorf("no namespace specified on metadata file")
+		return
+	}
 
 	cmd := exec.Command("asrestore",
 		"-h", targetHost,
 		"-p", strconv.Itoa(targetPort),
+		"-n", fmt.Sprintf("%s,%s", data.Namespace, targetNamespace),
 		"--input-file", "-")
 
 	stdin, err := cmd.StdinPipe()
@@ -195,13 +223,9 @@ func transferToGCS(r io.Reader, obj *storage.ObjectHandle) (n int64, err error) 
 	if compress {
 		gz := gzip.NewWriter(w)
 		defer gz.Close()
-		if n, err = io.Copy(gz, r); err != nil {
-			return
-		}
+		n, err = io.Copy(gz, r)
 	} else {
-		if n, err = io.Copy(w, r); err != nil {
-			return
-		}
+		n, err = io.Copy(w, r)
 	}
 	return
 }
@@ -219,13 +243,39 @@ func transferFromGCS(w io.Writer, obj *storage.ObjectHandle) (n int64, err error
 			return 0, err
 		}
 		defer gz.Close()
-		if n, err = io.Copy(w, gz); err != nil {
-			return 0, err
-		}
+		n, err = io.Copy(w, gz)
 	} else {
-		if n, err = io.Copy(w, r); err != nil {
-			return
-		}
+		n, err = io.Copy(w, r)
 	}
 	return
+}
+
+type Metadata struct {
+	Namespace string `json:"namespace"`
+}
+
+func writeMetadata(metaObject *storage.ObjectHandle, metadata *Metadata) error {
+	w := metaObject.NewWriter(ctx)
+	defer w.Close()
+	metaBytes, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(metaBytes)
+	return err
+}
+
+func readMetadata(metaObject *storage.ObjectHandle) (*Metadata, error) {
+	r, err := metaObject.NewReader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	metaBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	var metadata Metadata
+	err = json.Unmarshal(metaBytes, &metadata)
+	return &metadata, err
 }
