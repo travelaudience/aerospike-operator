@@ -65,16 +65,15 @@ func (h *AerospikeBackupsHandler) createJob(obj *BackupRestoreObject) error {
 					Containers: []corev1.Container{
 						{
 							Name:            "aerospike-operator-tools",
-							Image:           "quay.io/travelaudience/aerospike-operator-tools:dev",
+							Image:           "quay.io/travelaudience/aerospike-operator-tools:dev-testing",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
 								"backup",
 								fmt.Sprintf("-%s", obj.Action),
-								"-host", obj.Target.Cluster,
-								"-port", "3000",
-								"-namespace", obj.Target.Namespace,
 								"-bucket", obj.Storage.Bucket,
 								"-name", fmt.Sprintf("%s.%s", obj.Name, backupExtension),
+								"-pipe-path", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedPipeName),
+								"-secret-path", fmt.Sprintf("%s/%s", bucketSecretVolumeMountPath, secretFileName),
 								"-debug",
 								"-compress",
 							},
@@ -83,6 +82,49 @@ func (h *AerospikeBackupsHandler) createJob(obj *BackupRestoreObject) error {
 									Name:      bucketSecretVolumeName,
 									ReadOnly:  true,
 									MountPath: bucketSecretVolumeMountPath,
+								},
+								{
+									Name:      sharedVolumeName,
+									MountPath: sharedVolumeMountPath,
+								},
+							},
+						},
+						{
+							Name:            "aerospike-tools",
+							Image:           "aerospike/aerospike-tools:3.15.3.6",
+							ImagePullPolicy: corev1.PullAlways,
+							Command: []string{
+								"/bin/bash", "-c",
+							},
+							Args: []string{
+								fmt.Sprintf("%s -h %s -n %s %s - %s %s",
+									fmt.Sprintf("as%s", obj.Action),
+									obj.Target.Cluster,
+									obj.Target.Namespace,
+									inputOutputString(obj.Action),
+									pipeDirection(obj.Action), fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedPipeName),
+								),
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      sharedVolumeName,
+									MountPath: sharedVolumeMountPath,
+								},
+							},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:            "init-pipe",
+							Image:           "busybox",
+							ImagePullPolicy: corev1.PullAlways,
+							Command: []string{
+								"mkfifo", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedPipeName),
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      sharedVolumeName,
+									MountPath: sharedVolumeMountPath,
 								},
 							},
 						},
@@ -95,6 +137,12 @@ func (h *AerospikeBackupsHandler) createJob(obj *BackupRestoreObject) error {
 								Secret: &corev1.SecretVolumeSource{
 									SecretName: obj.Storage.Secret,
 								},
+							},
+						},
+						{
+							Name: sharedVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
 							},
 						},
 					},
@@ -131,4 +179,18 @@ func (h *AerospikeBackupsHandler) getJobStatus(obj *BackupRestoreObject) (*v1.Jo
 		obj.Type: meta.Key(obj.Obj),
 	}).Debugf("%s job does not exist", obj.Action)
 	return nil, errors.JobDoesNotExist
+}
+
+func pipeDirection(action actionType) string {
+	if action == restoreAction {
+		return "<"
+	}
+	return ">"
+}
+
+func inputOutputString(action actionType) string {
+	if action == restoreAction {
+		return "--input-file"
+	}
+	return "--output-file"
 }

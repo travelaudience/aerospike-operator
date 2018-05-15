@@ -20,6 +20,10 @@ const (
 	bucketSecretVolumeName      = "bucket-secret-volume"
 	bucketSecretVolumeMountPath = "/creds"
 
+	sharedVolumeName      = "tools-shared-volume"
+	sharedVolumeMountPath = "/shared"
+	sharedPipeName        = "pipe.tmp"
+
 	backupExtension = "asb.gz"
 	secretFileName  = "key.json"
 )

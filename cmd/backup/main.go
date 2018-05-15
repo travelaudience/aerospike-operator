@@ -18,14 +18,9 @@ package main
 
 import (
 	"compress/gzip"
-	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"os/exec"
-	"strconv"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
@@ -33,35 +28,29 @@ import (
 	"google.golang.org/api/option"
 )
 
-const metadataExt = "json"
-
 var (
-	fs              *flag.FlagSet
-	debug           bool
-	targetHost      string
-	targetNamespace string
-	targetPort      int
-	bucket          string
-	name            string
-	compress        bool
-	backupTask      bool
-	restoreTask     bool
-	secretPath      string
-	ctx             context.Context
+	fs          *flag.FlagSet
+	debug       bool
+	bucket      string
+	name        string
+	compress    bool
+	backupTask  bool
+	restoreTask bool
+	secretPath  string
+	pipePath    string
+	ctx         context.Context
 )
 
 func init() {
 	fs = flag.NewFlagSet("", flag.ExitOnError)
 	fs.BoolVar(&debug, "debug", false, "whether to enable debug logging")
-	fs.StringVar(&targetHost, "host", "localhost", "the host of the target aerospike cluster")
-	fs.StringVar(&targetNamespace, "namespace", "", "the namespace to be backed up")
-	fs.IntVar(&targetPort, "port", 3000, "the port of the target aerospike cluster")
 	fs.StringVar(&bucket, "bucket", "", "the bucket to upload/download backup to/from")
 	fs.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
 	fs.BoolVar(&backupTask, "backup", false, "run backup task")
 	fs.BoolVar(&restoreTask, "restore", false, "run restore task")
 	fs.BoolVar(&compress, "compress", false, "use compressed backup/restore files (gzip)")
 	fs.StringVar(&secretPath, "secret-path", "/creds/key.json", "the host of the target aerospike cluster")
+	fs.StringVar(&pipePath, "pipe-path", "/shared/pipe.tmp", "the path of the named pipe used to transfer data between containers")
 	fs.Parse(os.Args[1:])
 	ctx = context.Background()
 }
@@ -70,7 +59,7 @@ func validateArgs() {
 	if backupTask || restoreTask {
 		return
 	}
-	if bucket != "" && name != "" && targetNamespace != "" {
+	if bucket != "" && name != "" {
 		return
 	}
 	fs.PrintDefaults()
@@ -90,18 +79,16 @@ func main() {
 	defer client.Close()
 
 	bh := client.Bucket(bucket)
-	// Check if the bucket exists
 	if _, err = bh.Attrs(ctx); err != nil {
 		log.Fatal(err)
 	}
 	backupObject := bh.Object(name)
-	metaObject := bh.Object(fmt.Sprintf("%s.%s", name, metadataExt))
 
 	var bytesTransfered int64
 	if backupTask {
-		bytesTransfered, err = backup(backupObject, metaObject)
+		bytesTransfered, err = backup(backupObject)
 	} else if restoreTask {
-		bytesTransfered, err = restore(backupObject, metaObject)
+		bytesTransfered, err = restore(backupObject)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -109,110 +96,39 @@ func main() {
 	log.Infof("Backup size: %d bytes", bytesTransfered)
 }
 
-func backup(backupObject *storage.ObjectHandle, metaObject *storage.ObjectHandle) (n int64, err error) {
+func backup(backupObject *storage.ObjectHandle) (n int64, err error) {
+	pipe, err := os.OpenFile(pipePath, os.O_CREATE, os.ModeNamedPipe)
+	if err != nil {
+		log.Fatal("Open named pipe error:", err)
+	}
+	defer os.Remove(pipePath)
+	defer pipe.Close()
+
 	var reader io.Reader
-
-	cmd := exec.Command("asbackup",
-		"-h", targetHost,
-		"-p", strconv.Itoa(targetPort),
-		"-n", targetNamespace,
-		"--output-file", "-")
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return
-	}
-
 	if debug {
-		reader = NewReaderWithProgress(stdout)
+		reader = NewReaderWithProgress(pipe)
 	} else {
-		reader = stdout
+		reader = pipe
 	}
-
-	nBytesChan := make(chan int64, 1)
-	errorChan := make(chan error, 1)
-	go func() {
-		defer close(errorChan)
-		defer close(nBytesChan)
-
-		n, err := transferToGCS(reader, backupObject)
-		if err != nil {
-			errorChan <- err
-		} else {
-			nBytesChan <- n
-		}
-	}()
-
-	err = cmd.Start()
-	if err != nil {
-		return
-	}
-	n = <-nBytesChan
-	if err = cmd.Wait(); err != nil {
-		return
-	}
-	err = <-errorChan
-	if err != nil {
-		return
-	}
-
-	err = writeMetadata(metaObject, &Metadata{
-		Namespace: targetNamespace,
-	})
-
+	n, err = transferToGCS(reader, backupObject)
 	return
 }
 
-func restore(obj *storage.ObjectHandle, metaObject *storage.ObjectHandle) (n int64, err error) {
+func restore(obj *storage.ObjectHandle) (n int64, err error) {
+	pipe, err := os.OpenFile(pipePath, os.O_RDWR, os.ModeNamedPipe)
+	if err != nil {
+		log.Fatal("Open named pipe error:", err)
+	}
+	defer os.Remove(pipePath)
+	defer pipe.Close()
+
 	var writer io.Writer
-
-	data, err := readMetadata(metaObject)
-	if err != nil {
-		return
-	}
-
-	if data.Namespace == "" {
-		err = fmt.Errorf("no namespace specified on metadata file")
-		return
-	}
-
-	cmd := exec.Command("asrestore",
-		"-h", targetHost,
-		"-p", strconv.Itoa(targetPort),
-		"-n", fmt.Sprintf("%s,%s", data.Namespace, targetNamespace),
-		"--input-file", "-")
-
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return
-	}
-
 	if debug {
-		writer = NewWriterWithProgress(stdin)
+		writer = NewWriterWithProgress(pipe)
 	} else {
-		writer = stdin
+		writer = pipe
 	}
-
-	nBytesChan := make(chan int64, 1)
-	errorChan := make(chan error, 1)
-	go func() {
-		defer close(errorChan)
-		defer close(nBytesChan)
-		defer stdin.Close()
-		n, err := transferFromGCS(writer, obj)
-		if err != nil {
-			errorChan <- err
-		} else {
-			nBytesChan <- n
-		}
-	}()
-
-	err = cmd.Run()
-	if err != nil {
-		return
-	}
-	n = <-nBytesChan
-	err = <-errorChan
+	n, err = transferFromGCS(writer, obj)
 	return
 }
 
@@ -248,34 +164,4 @@ func transferFromGCS(w io.Writer, obj *storage.ObjectHandle) (n int64, err error
 		n, err = io.Copy(w, r)
 	}
 	return
-}
-
-type Metadata struct {
-	Namespace string `json:"namespace"`
-}
-
-func writeMetadata(metaObject *storage.ObjectHandle, metadata *Metadata) error {
-	w := metaObject.NewWriter(ctx)
-	defer w.Close()
-	metaBytes, err := json.Marshal(metadata)
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(metaBytes)
-	return err
-}
-
-func readMetadata(metaObject *storage.ObjectHandle) (*Metadata, error) {
-	r, err := metaObject.NewReader(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	metaBytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-	var metadata Metadata
-	err = json.Unmarshal(metaBytes, &metadata)
-	return &metadata, err
 }

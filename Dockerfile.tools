@@ -4,27 +4,14 @@ COPY . .
 RUN go get -u github.com/golang/dep/cmd/dep
 RUN make dep
 RUN make gen
-RUN go build -o=/backup ./cmd/backup
+RUN CGO_ENABLED=0 go build -a -v -ldflags="-d -s -w" -tags=netgo -installsuffix=netgo -o=/backup ./cmd/backup
 RUN CGO_ENABLED=0 go build -a -v -ldflags="-d -s -w" -tags=netgo -installsuffix=netgo -o=/asprobe ./cmd/asprobe/main.go
 WORKDIR $GOPATH/src/github.com/alicebob/asprom
 RUN git clone https://github.com/alicebob/asprom .
 RUN CGO_ENABLED=0 go build -a -v -ldflags="-d -s -w" -tags=netgo -installsuffix=netgo -o=/asprom *.go
 
-FROM ubuntu:xenial
+FROM alpine:3.7
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 COPY --from=builder /asprobe /usr/local/bin/asprobe
 COPY --from=builder /asprom /usr/local/bin/asprom
 COPY --from=builder /backup /usr/local/bin/backup
-
-RUN apt update && apt install -y git build-essential libssl-dev
-RUN git clone https://github.com/aerospike/aerospike-client-c \
-    && cd aerospike-client-c && git submodule update --init --recursive \
-    && cd .. && git clone https://github.com/aerospike/aerospike-tools-backup
-
-RUN cd aerospike-client-c && make && cd ..
-RUN export CLIENTREPO=$(pwd)/aerospike-client-c \
-    && cd aerospike-tools-backup && make \
-    && mv bin/asbackup /usr/local/bin/asbackup && mv bin/asrestore /usr/local/bin/asrestore
-
-RUN rm -rf /aerospike-client-c && rm -rf /aerospike-tools-backup
-RUN apt remove -y --purge build-essential git
-RUN apt autoremove -y
