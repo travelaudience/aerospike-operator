@@ -16,7 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
-import "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+import (
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 const (
 	//StorageTypeFile defines the file storage type for a given Aerospike namespace.
@@ -40,3 +43,18 @@ const (
 	//has been expired
 	ConditionExpired apiextensions.CustomResourceDefinitionConditionType = "Expired"
 )
+
+type ActionType string
+
+const (
+	ActionTypeBackup  ActionType = "backup"
+	ActionTypeRestore ActionType = "restore"
+)
+
+type BackupRestoreObject interface {
+	GetAction() ActionType
+	GetType() string
+	GetObjectMeta() *v1.ObjectMeta
+	GetStorage() *BackupStorageSpec
+	GetTarget() *TargetNamespace
+}

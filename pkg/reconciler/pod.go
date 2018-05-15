@@ -168,7 +168,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 					Ports: []v1.ContainerPort{
 						{
 							Name:          servicePortName,
-							ContainerPort: servicePort,
+							ContainerPort: ServicePort,
 						},
 						{
 							Name:          heartbeatPortName,
@@ -193,7 +193,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						Handler: v1.Handler{
 							TCPSocket: &v1.TCPSocketAction{
 								Port: intstr.IntOrString{
-									IntVal: servicePort,
+									IntVal: ServicePort,
 								},
 							},
 						},

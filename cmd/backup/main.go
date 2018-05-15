@@ -19,8 +19,10 @@ package main
 import (
 	"compress/gzip"
 	"flag"
+	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
@@ -28,49 +30,79 @@ import (
 	"google.golang.org/api/option"
 )
 
+const (
+	compress = true
+)
+
 var (
-	fs          *flag.FlagSet
-	debug       bool
-	bucket      string
-	name        string
-	compress    bool
-	backupTask  bool
-	restoreTask bool
-	secretPath  string
-	pipePath    string
-	ctx         context.Context
+	backupFS   *flag.FlagSet
+	restoreFS  *flag.FlagSet
+	debug      bool
+	bucketName string
+	name       string
+	secretPath string
+	pipePath   string
+	ctx        context.Context
 )
 
 func init() {
-	fs = flag.NewFlagSet("", flag.ExitOnError)
-	fs.BoolVar(&debug, "debug", false, "whether to enable debug logging")
-	fs.StringVar(&bucket, "bucket", "", "the bucket to upload/download backup to/from")
-	fs.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
-	fs.BoolVar(&backupTask, "backup", false, "run backup task")
-	fs.BoolVar(&restoreTask, "restore", false, "run restore task")
-	fs.BoolVar(&compress, "compress", false, "use compressed backup/restore files (gzip)")
-	fs.StringVar(&secretPath, "secret-path", "/creds/key.json", "the host of the target aerospike cluster")
-	fs.StringVar(&pipePath, "pipe-path", "/shared/pipe.tmp", "the path of the named pipe used to transfer data between containers")
-	fs.Parse(os.Args[1:])
-	ctx = context.Background()
+	backupFS = flag.NewFlagSet("backup", flag.ExitOnError)
+	backupFS.BoolVar(&debug, "debug", false, "whether to enable debug logging")
+	backupFS.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to upload/download backup to/from")
+	backupFS.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
+	backupFS.StringVar(&secretPath, "secret-path", "/creds/key.json", "the path of the key.json file to use as bucket credentials")
+	backupFS.StringVar(&pipePath, "pipe-path", "/shared/pipe.tmp", "the path of the named pipe used to transfer data between containers")
+
+	restoreFS = flag.NewFlagSet("restore", flag.ExitOnError)
+	restoreFS.BoolVar(&debug, "debug", false, "whether to enable debug logging")
+	restoreFS.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to upload/download backup to/from")
+	restoreFS.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
+	restoreFS.StringVar(&secretPath, "secret-path", "/creds/key.json", "the path of the key.json file to use as bucket credentials")
+	restoreFS.StringVar(&pipePath, "pipe-path", "/data/pipe.tmp", "the path of the named pipe used to transfer data between containers")
 }
 
-func validateArgs() {
-	if backupTask || restoreTask {
-		return
-	}
-	if bucket != "" && name != "" {
-		return
-	}
-	fs.PrintDefaults()
-	os.Exit(1)
+func printUsage() {
+	fmt.Printf("\nusage: backup <command> [<args>]\n\n")
+	fmt.Println("Available commands: ")
+	fmt.Printf("\tsave\t\tSave backup to bucket\n")
+	fmt.Printf("\trestore\t\tRestore backup from bucket\n")
+	fmt.Println()
 }
 
-func main() {
-	validateArgs()
+func parseCommandArgs() {
+	if len(os.Args) == 1 {
+		printUsage()
+		os.Exit(2)
+	}
+
+	switch os.Args[1] {
+	case "save":
+		backupFS.Parse(os.Args[2:])
+	case "restore":
+		restoreFS.Parse(os.Args[2:])
+	default:
+		fmt.Printf("\n%q is not valid command.\n", os.Args[1])
+		printUsage()
+		os.Exit(2)
+	}
+
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
+
+	if bucketName == "" || name == "" {
+		if backupFS.Parsed() {
+			backupFS.PrintDefaults()
+		} else if restoreFS.Parsed() {
+			restoreFS.PrintDefaults()
+		}
+		os.Exit(2)
+	}
+}
+
+func main() {
+	parseCommandArgs()
+	ctx = context.Background()
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile(secretPath))
 	if err != nil {
@@ -78,26 +110,39 @@ func main() {
 	}
 	defer client.Close()
 
-	bh := client.Bucket(bucket)
-	if _, err = bh.Attrs(ctx); err != nil {
+	bucket := client.Bucket(bucketName)
+	if _, err = bucket.Attrs(ctx); err != nil {
 		log.Fatal(err)
 	}
-	backupObject := bh.Object(name)
+	backupObject := bucket.Object(name)
+	metaObject := bucket.Object(fmt.Sprintf("%s.meta", name))
 
-	var bytesTransfered int64
-	if backupTask {
-		bytesTransfered, err = backup(backupObject)
-	} else if restoreTask {
-		bytesTransfered, err = restore(backupObject)
+	var bytesTransferred int64
+	if backupFS.Parsed() {
+		if err := writeMetadata(metaObject); err != nil {
+			log.Fatal(err)
+		}
+		if bytesTransferred, err = backup(backupObject); err != nil {
+			log.Fatal(err)
+		}
+	} else if restoreFS.Parsed() {
+		if err := readMetadata(metaObject); err != nil {
+			log.Fatal(err)
+		}
+
+		// Let the destination read EOF and close the pipe
+		// (ensures metadata and data are not sent together)
+		time.Sleep(500 * time.Millisecond)
+
+		if bytesTransferred, err = restore(backupObject); err != nil {
+			log.Fatal(err)
+		}
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Infof("Backup size: %d bytes", bytesTransfered)
+	log.Infof("Backup size: %d bytes", bytesTransferred)
 }
 
 func backup(backupObject *storage.ObjectHandle) (n int64, err error) {
-	pipe, err := os.OpenFile(pipePath, os.O_CREATE, os.ModeNamedPipe)
+	pipe, err := os.OpenFile(pipePath, os.O_RDONLY, os.ModeNamedPipe)
 	if err != nil {
 		log.Fatal("Open named pipe error:", err)
 	}
@@ -115,7 +160,7 @@ func backup(backupObject *storage.ObjectHandle) (n int64, err error) {
 }
 
 func restore(obj *storage.ObjectHandle) (n int64, err error) {
-	pipe, err := os.OpenFile(pipePath, os.O_RDWR, os.ModeNamedPipe)
+	pipe, err := os.OpenFile(pipePath, os.O_CREATE|os.O_WRONLY, os.ModeNamedPipe)
 	if err != nil {
 		log.Fatal("Open named pipe error:", err)
 	}
@@ -164,4 +209,35 @@ func transferFromGCS(w io.Writer, obj *storage.ObjectHandle) (n int64, err error
 		n, err = io.Copy(w, r)
 	}
 	return
+}
+
+func writeMetadata(metaObject *storage.ObjectHandle) error {
+	pipe, err := os.OpenFile(pipePath, os.O_CREATE|os.O_RDONLY, os.ModeNamedPipe)
+	if err != nil {
+		log.Fatal("Open named pipe error:", err)
+	}
+	defer pipe.Close()
+
+	w := metaObject.NewWriter(ctx)
+	defer w.Close()
+
+	_, err = io.Copy(w, pipe)
+	return err
+}
+
+func readMetadata(metaObject *storage.ObjectHandle) error {
+	r, err := metaObject.NewReader(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	pipe, err := os.OpenFile(pipePath, os.O_CREATE|os.O_WRONLY, os.ModeNamedPipe)
+	if err != nil {
+		log.Fatal("Open named pipe error:", err)
+	}
+	defer pipe.Close()
+
+	_, err = io.Copy(pipe, r)
+	return err
 }

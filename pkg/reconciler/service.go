@@ -58,7 +58,7 @@ func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aer
 			Ports: []v1.ServicePort{
 				{
 					Name:       servicePortName,
-					Port:       servicePort,
+					Port:       ServicePort,
 					TargetPort: intstr.IntOrString{StrVal: servicePortName},
 				},
 				{

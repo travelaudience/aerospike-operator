@@ -21,16 +21,9 @@ const (
 	bucketSecretVolumeMountPath = "/creds"
 
 	sharedVolumeName      = "tools-shared-volume"
-	sharedVolumeMountPath = "/shared"
+	sharedVolumeMountPath = "/data"
 	sharedPipeName        = "pipe.tmp"
 
 	backupExtension = "asb.gz"
 	secretFileName  = "key.json"
-)
-
-type actionType string
-
-var (
-	backupAction  actionType = "backup"
-	restoreAction actionType = "restore"
 )

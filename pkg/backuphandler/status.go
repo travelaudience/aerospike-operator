@@ -29,9 +29,9 @@ import (
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 )
 
-func (h *AerospikeBackupsHandler) getConditionStatus(obj *BackupRestoreObject, conditionType apiextensions.CustomResourceDefinitionConditionType) apiextensions.ConditionStatus {
+func (h *AerospikeBackupsHandler) getConditionStatus(obj aerospikev1alpha1.BackupRestoreObject, conditionType apiextensions.CustomResourceDefinitionConditionType) apiextensions.ConditionStatus {
 	var conditions []apiextensions.CustomResourceDefinitionCondition
-	switch object := obj.Obj.(type) {
+	switch object := obj.(type) {
 	case *aerospikev1alpha1.AerospikeNamespaceBackup:
 		conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(object.Status.Conditions))
 		copy(conditions, object.Status.Conditions)
@@ -49,10 +49,10 @@ func (h *AerospikeBackupsHandler) getConditionStatus(obj *BackupRestoreObject, c
 	return apiextensions.ConditionUnknown
 }
 
-func (h *AerospikeBackupsHandler) setConditions(obj *BackupRestoreObject, conditionsMap map[apiextensions.CustomResourceDefinitionConditionType]apiextensions.ConditionStatus) error {
+func (h *AerospikeBackupsHandler) setConditions(obj aerospikev1alpha1.BackupRestoreObject, conditionsMap map[apiextensions.CustomResourceDefinitionConditionType]apiextensions.ConditionStatus) error {
 	var conditions []apiextensions.CustomResourceDefinitionCondition
 
-	switch object := obj.Obj.(type) {
+	switch object := obj.(type) {
 	case *aerospikev1alpha1.AerospikeNamespaceBackup:
 		conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(object.Status.Conditions))
 		copy(conditions, object.Status.Conditions)
@@ -86,7 +86,7 @@ func (h *AerospikeBackupsHandler) setConditions(obj *BackupRestoreObject, condit
 		}
 	}
 
-	switch object := obj.Obj.(type) {
+	switch object := obj.(type) {
 	case *aerospikev1alpha1.AerospikeNamespaceBackup:
 		oldBytes, err := json.Marshal(object)
 		if err != nil {

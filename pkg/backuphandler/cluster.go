@@ -18,15 +18,17 @@ package backuphandler
 
 import (
 	"github.com/travelaudience/aerospike-operator/pkg/errors"
+
+	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 )
 
-func (h *AerospikeBackupsHandler) ensureClusterExists(obj *BackupRestoreObject) error {
-	cluster, err := h.aerospikeClustersLister.AerospikeClusters(obj.Namespace).Get(obj.Target.Cluster)
+func (h *AerospikeBackupsHandler) ensureNamespaceExists(obj aerospikev1alpha1.BackupRestoreObject) error {
+	cluster, err := h.aerospikeClustersLister.AerospikeClusters(obj.GetObjectMeta().Namespace).Get(obj.GetTarget().Cluster)
 	if err != nil {
 		return err
 	}
 	for _, ns := range cluster.Spec.Namespaces {
-		if ns.Name == obj.Target.Namespace {
+		if ns.Name == obj.GetTarget().Namespace {
 			return nil
 		}
 	}

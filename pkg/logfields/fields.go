@@ -17,13 +17,15 @@ limitations under the License.
 package logfields
 
 const (
-	Kind                  = "kind"
-	CurrentSize           = "currentSize"
-	DesiredSize           = "desiredSize"
-	AerospikeCluster      = "aerospikecluster"
-	AerospikeNamespace    = "aerospikenamespace"
-	Pod                   = "pod"
-	Service               = "service"
-	ConfigMap             = "configmap"
-	PersistentVolumeClaim = "persistentvolumeclaim"
+	Kind                      = "kind"
+	CurrentSize               = "currentSize"
+	DesiredSize               = "desiredSize"
+	AerospikeCluster          = "aerospikecluster"
+	AerospikeNamespace        = "aerospikenamespace"
+	AerospikeNamespaceBackup  = "aerospikenamespacebackup"
+	AerospikeNamespaceRestore = "aerospikenamespacerestore"
+	Pod                       = "pod"
+	Service                   = "service"
+	ConfigMap                 = "configmap"
+	PersistentVolumeClaim     = "persistentvolumeclaim"
 )

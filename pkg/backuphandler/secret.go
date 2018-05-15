@@ -17,18 +17,18 @@ limitations under the License.
 package backuphandler
 
 import (
+	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/errors"
 )
 
-func (h *AerospikeBackupsHandler) ensureSecretExists(obj *BackupRestoreObject) error {
-	secret, err := h.secretsLister.Secrets(obj.Namespace).Get(obj.Storage.Secret)
+func (h *AerospikeBackupsHandler) ensureSecretExists(obj aerospikev1alpha1.BackupRestoreObject) error {
+	secret, err := h.secretsLister.Secrets(obj.GetObjectMeta().Namespace).Get(obj.GetStorage().Secret)
 	if err != nil {
 		return err
 	}
-	for k := range secret.Data {
-		if k == secretFileName {
-			return nil
-		}
+
+	if _, ok := secret.Data[secretFileName]; ok {
+		return nil
 	}
 	return errors.InvalidSecretFileName
 }

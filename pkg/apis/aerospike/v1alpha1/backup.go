@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 )
 
 // +genclient
@@ -68,4 +70,24 @@ type AerospikeNamespaceBackupList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []AerospikeNamespaceBackup `json:"items"`
+}
+
+func (b *AerospikeNamespaceBackup) GetAction() ActionType {
+	return ActionTypeBackup
+}
+
+func (b *AerospikeNamespaceBackup) GetType() string {
+	return logfields.AerospikeNamespaceBackup
+}
+
+func (b *AerospikeNamespaceBackup) GetObjectMeta() *metav1.ObjectMeta {
+	return &b.ObjectMeta
+}
+
+func (b *AerospikeNamespaceBackup) GetStorage() *BackupStorageSpec {
+	return &b.Spec.Storage
+}
+
+func (b *AerospikeNamespaceBackup) GetTarget() *TargetNamespace {
+	return &b.Spec.Target
 }

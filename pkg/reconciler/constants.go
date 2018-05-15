@@ -29,7 +29,7 @@ const (
 
 	namespaceVolumePrefix = "data-ns"
 
-	servicePort       = 3000
+	ServicePort       = 3000
 	servicePortName   = "service"
 	heartbeatPort     = 3002
 	heartbeatPortName = "heartbeat"

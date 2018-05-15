@@ -84,7 +84,7 @@ func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.C
 }
 
 func waitPodReadyToShutdown(pod *v1.Pod) error {
-	client, err := as.NewClient(pod.Status.PodIP, servicePort)
+	client, err := as.NewClient(pod.Status.PodIP, ServicePort)
 	if err != nil {
 		return err
 	}
