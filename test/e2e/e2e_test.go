@@ -21,10 +21,14 @@ import (
 	"testing"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
 func init() {
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file to be used")
+	flag.StringVar(&framework.GCSBucketName, "bucket-name-gcs", "", "The name of the GCS bucket to be used")
+	flag.StringVar(&framework.GCSSecretName, "bucket-secret-gcs", "", "The name of the secret containing the credentials to access the GCS bucket")
 	flag.Parse()
 }
 

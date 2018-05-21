@@ -80,6 +80,14 @@ func (b *AerospikeNamespaceBackup) GetType() string {
 	return logfields.AerospikeNamespaceBackup
 }
 
+func (b *AerospikeNamespaceBackup) GetName() string {
+	return b.Name
+}
+
+func (b *AerospikeNamespaceBackup) GetNamespace() string {
+	return b.Namespace
+}
+
 func (b *AerospikeNamespaceBackup) GetObjectMeta() *metav1.ObjectMeta {
 	return &b.ObjectMeta
 }
@@ -90,4 +98,8 @@ func (b *AerospikeNamespaceBackup) GetStorage() *BackupStorageSpec {
 
 func (b *AerospikeNamespaceBackup) GetTarget() *TargetNamespace {
 	return &b.Spec.Target
+}
+
+func (b *AerospikeNamespaceBackup) GetConditions() []apiextensions.CustomResourceDefinitionCondition {
+	return b.Status.Conditions
 }

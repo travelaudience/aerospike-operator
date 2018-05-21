@@ -18,7 +18,6 @@ package backuphandler
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -30,15 +29,7 @@ import (
 )
 
 func (h *AerospikeBackupsHandler) getConditionStatus(obj aerospikev1alpha1.BackupRestoreObject, conditionType apiextensions.CustomResourceDefinitionConditionType) apiextensions.ConditionStatus {
-	var conditions []apiextensions.CustomResourceDefinitionCondition
-	switch object := obj.(type) {
-	case *aerospikev1alpha1.AerospikeNamespaceBackup:
-		conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(object.Status.Conditions))
-		copy(conditions, object.Status.Conditions)
-	case *aerospikev1alpha1.AerospikeNamespaceRestore:
-		conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(object.Status.Conditions))
-		copy(conditions, object.Status.Conditions)
-	}
+	conditions := obj.GetConditions()
 	if conditions != nil {
 		for _, c := range conditions {
 			if c.Type == conditionType {
@@ -50,19 +41,7 @@ func (h *AerospikeBackupsHandler) getConditionStatus(obj aerospikev1alpha1.Backu
 }
 
 func (h *AerospikeBackupsHandler) setConditions(obj aerospikev1alpha1.BackupRestoreObject, conditionsMap map[apiextensions.CustomResourceDefinitionConditionType]apiextensions.ConditionStatus) error {
-	var conditions []apiextensions.CustomResourceDefinitionCondition
-
-	switch object := obj.(type) {
-	case *aerospikev1alpha1.AerospikeNamespaceBackup:
-		conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(object.Status.Conditions))
-		copy(conditions, object.Status.Conditions)
-	case *aerospikev1alpha1.AerospikeNamespaceRestore:
-		conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(object.Status.Conditions))
-		copy(conditions, object.Status.Conditions)
-	default:
-		return fmt.Errorf("unsupported type")
-	}
-
+	conditions := obj.GetConditions()
 	for t, s := range conditionsMap {
 		exists := false
 		for i, c := range conditions {

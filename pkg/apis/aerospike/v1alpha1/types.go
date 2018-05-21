@@ -54,7 +54,10 @@ const (
 type BackupRestoreObject interface {
 	GetAction() ActionType
 	GetType() string
+	GetName() string
+	GetNamespace() string
 	GetObjectMeta() *v1.ObjectMeta
 	GetStorage() *BackupStorageSpec
 	GetTarget() *TargetNamespace
+	GetConditions() []apiextensions.CustomResourceDefinitionCondition
 }

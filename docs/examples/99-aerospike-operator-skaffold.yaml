@@ -27,6 +27,12 @@ rules:
   verbs:
   - list
   - watch
+- apiGroups: [""]
+  resources:
+  - secrets
+  verbs:
+  - get
+  - create
 - apiGroups: ["batch"]
   resources:
   - jobs
@@ -37,6 +43,8 @@ rules:
 - apiGroups: ["aerospike.travelaudience.com"]
   resources:
   - aerospikeclusters
+  - aerospikenamespacebackups
+  - aerospikenamespacerestores
   verbs:
   - create
   - get

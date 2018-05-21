@@ -55,6 +55,13 @@ test.unit:
 .PHONY: test.e2e
 test.e2e: FLAKE_ATTEMPTS?=3
 test.e2e: FOCUS?=
+test.e2e: GCS_BUCKET?=
+test.e2e: GCS_SECRET?=
 test.e2e: TIMEOUT?=1800s
 test.e2e:
-	kubectl -n aerospike-operator exec aerospike-operator -- go test -v -timeout=$(TIMEOUT) ./test/e2e -ginkgo.flakeAttempts=$(FLAKE_ATTEMPTS) -ginkgo.focus=$(FOCUS) $(EXTRA_FLAGS)
+	kubectl -n aerospike-operator exec aerospike-operator -- go test -v -timeout=$(TIMEOUT) ./test/e2e \
+		-ginkgo.flakeAttempts=$(FLAKE_ATTEMPTS) \
+		-ginkgo.focus=$(FOCUS) \
+		-bucket-name-gcs=$(GCS_BUCKET) \
+		-bucket-secret-gcs=$(GCS_SECRET) \
+		$(EXTRA_FLAGS)
