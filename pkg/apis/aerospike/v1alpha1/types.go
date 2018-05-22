@@ -60,4 +60,5 @@ type BackupRestoreObject interface {
 	GetStorage() *BackupStorageSpec
 	GetTarget() *TargetNamespace
 	GetConditions() []apiextensions.CustomResourceDefinitionCondition
+	SetConditions([]apiextensions.CustomResourceDefinitionCondition)
 }

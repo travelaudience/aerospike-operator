@@ -65,41 +65,31 @@ func (h *AerospikeBackupsHandler) setConditions(obj aerospikev1alpha1.BackupRest
 		}
 	}
 
-	switch object := obj.(type) {
-	case *aerospikev1alpha1.AerospikeNamespaceBackup:
-		oldBytes, err := json.Marshal(object)
-		if err != nil {
-			return err
-		}
-		object.Status.Conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(conditions))
-		copy(object.Status.Conditions, conditions)
-		newBytes, err := json.Marshal(object)
-		if err != nil {
-			return err
-		}
+	oldBytes, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	obj.SetConditions(conditions)
+	newBytes, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+
+	switch obj.GetAction() {
+	case aerospikev1alpha1.ActionTypeBackup:
 		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha1.AerospikeNamespaceBackup{})
 		if err != nil {
 			return err
 		}
-		if _, err = h.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceBackups(object.Namespace).Patch(object.Name, types.MergePatchType, patchBytes); err != nil {
+		if _, err = h.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceBackups(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
 			return err
 		}
-	case *aerospikev1alpha1.AerospikeNamespaceRestore:
-		oldBytes, err := json.Marshal(object)
-		if err != nil {
-			return err
-		}
-		object.Status.Conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(conditions))
-		copy(object.Status.Conditions, conditions)
-		newBytes, err := json.Marshal(object)
-		if err != nil {
-			return err
-		}
+	case aerospikev1alpha1.ActionTypeRestore:
 		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha1.AerospikeNamespaceRestore{})
 		if err != nil {
 			return err
 		}
-		if _, err = h.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceRestores(object.Namespace).Patch(object.Name, types.MergePatchType, patchBytes); err != nil {
+		if _, err = h.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceRestores(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
 			return err
 		}
 	}

@@ -103,3 +103,10 @@ func (b *AerospikeNamespaceBackup) GetTarget() *TargetNamespace {
 func (b *AerospikeNamespaceBackup) GetConditions() []apiextensions.CustomResourceDefinitionCondition {
 	return b.Status.Conditions
 }
+
+func (b *AerospikeNamespaceBackup) SetConditions(newConditions []apiextensions.CustomResourceDefinitionCondition)  {
+	b.Status.Conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(newConditions))
+	copy(b.Status.Conditions, newConditions)
+}
+
+
