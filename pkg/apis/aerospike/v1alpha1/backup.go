@@ -104,9 +104,7 @@ func (b *AerospikeNamespaceBackup) GetConditions() []apiextensions.CustomResourc
 	return b.Status.Conditions
 }
 
-func (b *AerospikeNamespaceBackup) SetConditions(newConditions []apiextensions.CustomResourceDefinitionCondition)  {
+func (b *AerospikeNamespaceBackup) SetConditions(newConditions []apiextensions.CustomResourceDefinitionCondition) {
 	b.Status.Conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(newConditions))
 	copy(b.Status.Conditions, newConditions)
 }
-
-

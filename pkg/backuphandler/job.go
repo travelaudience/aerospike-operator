@@ -74,7 +74,8 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 								backupCommand(obj.GetAction()),
 								"-bucket-name", obj.GetStorage().Bucket,
 								"-name", fmt.Sprintf("%s.%s", obj.GetObjectMeta().Name, backupExtension),
-								"-pipe-path", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedPipeName),
+								"-data-pipe-path", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedDataPipeName),
+								"-meta-pipe-path", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedMetadataPipeName),
 								"-secret-path", fmt.Sprintf("%s/%s", bucketSecretVolumeMountPath, secretFileName),
 								"-debug",
 							},
@@ -105,7 +106,7 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 									reconciler.ServicePort,
 									getNamespace(obj.GetAction(), obj.GetTarget().Namespace),
 									inputOutputString(obj.GetAction()),
-									pipeDirection(obj.GetAction()), fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedPipeName),
+									pipeDirection(obj.GetAction()), fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedDataPipeName),
 								),
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -122,7 +123,13 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 							Image:           "busybox",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
-								"mkfifo", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedPipeName),
+								"/bin/sh", "-c",
+							},
+							Args: []string{
+								fmt.Sprintf("%s && %s",
+									fmt.Sprintf("mkfifo %s/%s", sharedVolumeMountPath, sharedDataPipeName),
+									fmt.Sprintf("mkfifo %s/%s", sharedVolumeMountPath, sharedMetadataPipeName),
+								),
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{

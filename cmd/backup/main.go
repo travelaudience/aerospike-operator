@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
@@ -35,14 +34,15 @@ const (
 )
 
 var (
-	backupFS   *flag.FlagSet
-	restoreFS  *flag.FlagSet
-	debug      bool
-	bucketName string
-	name       string
-	secretPath string
-	pipePath   string
-	ctx        context.Context
+	backupFS     *flag.FlagSet
+	restoreFS    *flag.FlagSet
+	debug        bool
+	bucketName   string
+	name         string
+	secretPath   string
+	dataPipePath string
+	metaPipePath string
+	ctx          context.Context
 )
 
 func init() {
@@ -51,14 +51,16 @@ func init() {
 	backupFS.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to upload/download backup to/from")
 	backupFS.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
 	backupFS.StringVar(&secretPath, "secret-path", "/creds/key.json", "the path of the key.json file to use as bucket credentials")
-	backupFS.StringVar(&pipePath, "pipe-path", "/shared/pipe.tmp", "the path of the named pipe used to transfer data between containers")
+	backupFS.StringVar(&dataPipePath, "data-pipe-path", "/data/data.tmp", "the path of the named pipe used to transfer data between containers")
+	backupFS.StringVar(&metaPipePath, "meta-pipe-path", "/data/meta.tmp", "the path of the named pipe used to transfer metadata between containers")
 
 	restoreFS = flag.NewFlagSet("restore", flag.ExitOnError)
 	restoreFS.BoolVar(&debug, "debug", false, "whether to enable debug logging")
 	restoreFS.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to upload/download backup to/from")
 	restoreFS.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
 	restoreFS.StringVar(&secretPath, "secret-path", "/creds/key.json", "the path of the key.json file to use as bucket credentials")
-	restoreFS.StringVar(&pipePath, "pipe-path", "/data/pipe.tmp", "the path of the named pipe used to transfer data between containers")
+	restoreFS.StringVar(&dataPipePath, "data-pipe-path", "/data/data.tmp", "the path of the named pipe used to transfer data between containers")
+	restoreFS.StringVar(&metaPipePath, "meta-pipe-path", "/data/meta.tmp", "the path of the named pipe used to transfer metadata between containers")
 }
 
 func printUsage() {
@@ -129,11 +131,6 @@ func main() {
 		if err := readMetadata(metaObject); err != nil {
 			log.Fatal(err)
 		}
-
-		// Let the destination read EOF and close the pipe
-		// (ensures metadata and data are not sent together)
-		time.Sleep(500 * time.Millisecond)
-
 		if bytesTransferred, err = restore(backupObject); err != nil {
 			log.Fatal(err)
 		}
@@ -142,11 +139,11 @@ func main() {
 }
 
 func backup(backupObject *storage.ObjectHandle) (n int64, err error) {
-	pipe, err := os.OpenFile(pipePath, os.O_RDONLY, os.ModeNamedPipe)
+	pipe, err := os.OpenFile(dataPipePath, os.O_RDONLY, os.ModeNamedPipe)
 	if err != nil {
 		log.Fatal("Open named pipe error:", err)
 	}
-	defer os.Remove(pipePath)
+	defer os.Remove(dataPipePath)
 	defer pipe.Close()
 
 	var reader io.Reader
@@ -160,11 +157,11 @@ func backup(backupObject *storage.ObjectHandle) (n int64, err error) {
 }
 
 func restore(obj *storage.ObjectHandle) (n int64, err error) {
-	pipe, err := os.OpenFile(pipePath, os.O_CREATE|os.O_WRONLY, os.ModeNamedPipe)
+	pipe, err := os.OpenFile(dataPipePath, os.O_WRONLY, os.ModeNamedPipe)
 	if err != nil {
 		log.Fatal("Open named pipe error:", err)
 	}
-	defer os.Remove(pipePath)
+	defer os.Remove(dataPipePath)
 	defer pipe.Close()
 
 	var writer io.Writer
@@ -212,10 +209,11 @@ func transferFromGCS(w io.Writer, obj *storage.ObjectHandle) (n int64, err error
 }
 
 func writeMetadata(metaObject *storage.ObjectHandle) error {
-	pipe, err := os.OpenFile(pipePath, os.O_CREATE|os.O_RDONLY, os.ModeNamedPipe)
+	pipe, err := os.OpenFile(metaPipePath, os.O_RDONLY, os.ModeNamedPipe)
 	if err != nil {
 		log.Fatal("Open named pipe error:", err)
 	}
+	defer os.Remove(metaPipePath)
 	defer pipe.Close()
 
 	w := metaObject.NewWriter(ctx)
@@ -232,10 +230,11 @@ func readMetadata(metaObject *storage.ObjectHandle) error {
 	}
 	defer r.Close()
 
-	pipe, err := os.OpenFile(pipePath, os.O_CREATE|os.O_WRONLY, os.ModeNamedPipe)
+	pipe, err := os.OpenFile(metaPipePath, os.O_WRONLY, os.ModeNamedPipe)
 	if err != nil {
 		log.Fatal("Open named pipe error:", err)
 	}
+	defer os.Remove(metaPipePath)
 	defer pipe.Close()
 
 	_, err = io.Copy(pipe, r)

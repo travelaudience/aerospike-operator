@@ -45,10 +45,9 @@ func backupCommand(action aerospikev1alpha1.ActionType) string {
 
 func metaCommand(action aerospikev1alpha1.ActionType, namespace string) string {
 	if action == aerospikev1alpha1.ActionTypeRestore {
-		return fmt.Sprintf("OLDNAMESPACE=$(cat %s/%s)", sharedVolumeMountPath, sharedPipeName)
+		return fmt.Sprintf("OLDNAMESPACE=$(cat %s/%s)", sharedVolumeMountPath, sharedMetadataPipeName)
 	}
-	// "sleep 1" command ensures the metadata and data are not sent together
-	return fmt.Sprintf("echo %q > %s/%s && sleep 1", namespace, sharedVolumeMountPath, sharedPipeName)
+	return fmt.Sprintf("echo %q > %s/%s", namespace, sharedVolumeMountPath, sharedMetadataPipeName)
 }
 
 func getNamespace(action aerospikev1alpha1.ActionType, namespace string) string {
