@@ -44,7 +44,11 @@ func testNamespaceBackupRestore(tf *framework.TestFramework, ns *v1.Namespace, n
 	err = tf.WaitForBackupRestoreCompleted(backup)
 	Expect(err).NotTo(HaveOccurred())
 
+	// NewAerospikeClusterWithDefault uses generated names. Hence, the restore is always made to a different cluster.
 	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	asRestore := tf.NewAerospikeNamespaceRestoreGCS(asc, asc.Spec.Namespaces[0].Name, backup)
@@ -83,8 +87,14 @@ func testNamespaceRestoreFromDifferentNamespace(tf *framework.TestFramework, ns 
 	err = tf.WaitForBackupRestoreCompleted(backup)
 	Expect(err).NotTo(HaveOccurred())
 
+	// use a different name for the target namespace
 	aerospikeCluster.Spec.Namespaces[0] = tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 1)
+
+	// NewAerospikeClusterWithDefault uses generated names. Hence, the restore is always made to a different cluster.
 	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	asRestore := tf.NewAerospikeNamespaceRestoreGCS(asc, asc.Spec.Namespaces[0].Name, backup)

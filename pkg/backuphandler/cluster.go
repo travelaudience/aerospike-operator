@@ -22,7 +22,7 @@ import (
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 )
 
-func (h *AerospikeBackupsHandler) ensureNamespaceExists(obj aerospikev1alpha1.BackupRestoreObject) error {
+func (h *AerospikeBackupsHandler) checkNamespaceExists(obj aerospikev1alpha1.BackupRestoreObject) error {
 	cluster, err := h.aerospikeClustersLister.AerospikeClusters(obj.GetObjectMeta().Namespace).Get(obj.GetTarget().Cluster)
 	if err != nil {
 		return err

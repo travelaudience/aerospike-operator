@@ -22,26 +22,22 @@ import (
 )
 
 const (
-	//StorageTypeFile defines the file storage type for a given Aerospike namespace.
+	// StorageTypeFile defines the file storage type for a given Aerospike namespace.
 	StorageTypeFile = "file"
 
-	//StorageTypeDevice defines the device storage type for a given Aerospike namespace.
+	// StorageTypeDevice defines the device storage type for a given Aerospike namespace.
 	StorageTypeDevice = "device"
 
-	//StorageTypeGCS defines the Google Cloud Storage type for a given Aerospike backup.
+	// StorageTypeGCS defines the Google Cloud Storage type for a given Aerospike backup.
 	StorageTypeGCS = "gcs"
 
-	//ConditionCompleted defines a status condition to indicate when a backup or restore
-	//job has been completed
+	// ConditionCompleted defines a status condition that indicates that a backup or restore
+	// job has been completed
 	ConditionCompleted apiextensions.CustomResourceDefinitionConditionType = "Completed"
 
-	//ConditionCreated defines a status condition to indicate when a backup or restore job
-	//has been created
+	// ConditionCreated defines a status condition that indicates that a backup or restore job
+	// has been created
 	ConditionCreated apiextensions.CustomResourceDefinitionConditionType = "Created"
-
-	//ConditionExpired defines a status condition to indicate when a backup or restore job
-	//has been expired
-	ConditionExpired apiextensions.CustomResourceDefinitionConditionType = "Expired"
 )
 
 type ActionType string
@@ -49,11 +45,15 @@ type ActionType string
 const (
 	ActionTypeBackup  ActionType = "backup"
 	ActionTypeRestore ActionType = "restore"
+
+	AerospikeClusterKind          = "AerospikeCluster"
+	AerospikeNamespaceBackupKind  = "AerospikeNamespaceBackup"
+	AerospikeNamespaceRestoreKind = "AerospikeNamespaceRestore"
 )
 
 type BackupRestoreObject interface {
 	GetAction() ActionType
-	GetType() string
+	GetKind() string
 	GetName() string
 	GetNamespace() string
 	GetObjectMeta() *v1.ObjectMeta

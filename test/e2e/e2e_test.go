@@ -27,8 +27,8 @@ import (
 
 func init() {
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file to be used")
-	flag.StringVar(&framework.GCSBucketName, "bucket-name-gcs", "", "The name of the GCS bucket to be used")
-	flag.StringVar(&framework.GCSSecretName, "bucket-secret-gcs", "", "The name of the secret containing the credentials to access the GCS bucket")
+	flag.StringVar(&framework.GCSBucketName, "gcs-bucket-name", "", "the name of the GCS bucket to be used to store backups")
+	flag.StringVar(&framework.GCSSecretName, "gcs-secret-name", "", "the name of the secret containing the credentials to access the GCS bucket")
 	flag.Parse()
 }
 

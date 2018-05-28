@@ -21,7 +21,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/errors"
 )
 
-func (h *AerospikeBackupsHandler) ensureSecretExists(obj aerospikev1alpha1.BackupRestoreObject) error {
+func (h *AerospikeBackupsHandler) checkSecretExists(obj aerospikev1alpha1.BackupRestoreObject) error {
 	secret, err := h.secretsLister.Secrets(obj.GetObjectMeta().Namespace).Get(obj.GetStorage().Secret)
 	if err != nil {
 		return err

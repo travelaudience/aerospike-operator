@@ -17,10 +17,10 @@ limitations under the License.
 package backuphandler
 
 const (
-	bucketSecretVolumeName      = "bucket-secret-volume"
+	bucketSecretVolumeName      = "creds"
 	bucketSecretVolumeMountPath = "/creds"
 
-	sharedVolumeName       = "tools-shared-volume"
+	sharedVolumeName       = "data"
 	sharedVolumeMountPath  = "/data"
 	sharedDataPipeName     = "data.tmp"
 	sharedMetadataPipeName = "meta.tmp"

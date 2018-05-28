@@ -29,6 +29,8 @@ const (
 	LabelClusterKey = "cluster"
 	// LabelNamespaceKey represents the name of the "namespace" label added to every persistent volume claim.
 	LabelNamespaceKey = "namespace"
+	// LabelActionKey represents the name of the "action" label added to backup/restore jobs.
+	LabelActionKey = "action"
 )
 
 // PodsByClusterName returns a selector that matches all pods belonging to a given AerospikeCluster.

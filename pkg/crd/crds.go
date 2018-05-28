@@ -28,17 +28,17 @@ import (
 )
 
 const (
-	AerospikeClusterKind   = "AerospikeCluster"
+	AerospikeClusterKind   = aerospikev1alpha1.AerospikeClusterKind
 	AerospikeClusterPlural = "aerospikeclusters"
 	AerospikeClusterShort  = "asc"
 
-	AerospikeBackupKind   = "AerospikeNamespaceBackup"
-	AerospikeBackupPlural = "aerospikenamespacebackups"
-	AerospikeBackupShort  = "asbackup"
+	AerospikeNamespaceBackupKind   = aerospikev1alpha1.AerospikeNamespaceBackupKind
+	AerospikeNamespaceBackupPlural = "aerospikenamespacebackups"
+	AerospikeNamespaceBackupShort  = "asnb"
 
-	AerospikeRestoreKind   = "AerospikeNamespaceRestore"
-	AerospikeRestorePlural = "aerospikenamespacerestores"
-	AerospikeRestoreShort  = "asrestore"
+	AerospikeNamespaceRestoreKind   = aerospikev1alpha1.AerospikeNamespaceRestoreKind
+	AerospikeNamespaceRestorePlural = "aerospikenamespacerestores"
+	AerospikeNamespaceRestoreShort  = "asnr"
 )
 
 var (
@@ -154,9 +154,9 @@ var (
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural:     AerospikeBackupPlural,
-					Kind:       AerospikeBackupKind,
-					ShortNames: []string{AerospikeBackupShort},
+					Plural:     AerospikeNamespaceBackupPlural,
+					Kind:       AerospikeNamespaceBackupKind,
+					ShortNames: []string{AerospikeNamespaceBackupShort},
 				},
 				Validation: &extsv1beta1.CustomResourceValidation{
 					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
@@ -228,9 +228,9 @@ var (
 				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
 				Scope:   extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural:     AerospikeRestorePlural,
-					Kind:       AerospikeRestoreKind,
-					ShortNames: []string{AerospikeRestoreShort},
+					Plural:     AerospikeNamespaceRestorePlural,
+					Kind:       AerospikeNamespaceRestoreKind,
+					ShortNames: []string{AerospikeNamespaceRestoreShort},
 				},
 				Validation: &extsv1beta1.CustomResourceValidation{
 					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{

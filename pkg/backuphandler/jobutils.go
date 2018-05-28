@@ -56,3 +56,10 @@ func getNamespace(action aerospikev1alpha1.ActionType, namespace string) string 
 	}
 	return namespace
 }
+
+func asCommand(action aerospikev1alpha1.ActionType) string {
+	if action == aerospikev1alpha1.ActionTypeRestore {
+		return "asrestore"
+	}
+	return "asbackup"
+}

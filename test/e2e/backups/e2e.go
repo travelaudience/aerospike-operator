@@ -55,7 +55,7 @@ var _ = Describe("AerospikeNamespaceBackupRestore", func() {
 			testNamespaceBackupRestore(tf, ns, 100000)
 		})
 
-		It("restores from a backup with a different namespace", func() {
+		It("restores from a backup to a namespace with a different name", func() {
 			testNamespaceRestoreFromDifferentNamespace(tf, ns, 100000)
 		})
 	})

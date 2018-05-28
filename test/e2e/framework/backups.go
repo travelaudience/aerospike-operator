@@ -45,6 +45,7 @@ func (tf *TestFramework) CopySecretToNamespace(secret string, ns *corev1.Namespa
 	}
 	s.Namespace = ns.Name
 	s.ResourceVersion = ""
+	s.UID = ""
 	_, err = tf.KubeClient.CoreV1().Secrets(ns.Name).Create(s)
 	return err
 }

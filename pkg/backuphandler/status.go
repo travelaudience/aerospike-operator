@@ -40,36 +40,20 @@ func (h *AerospikeBackupsHandler) getConditionStatus(obj aerospikev1alpha1.Backu
 	return apiextensions.ConditionUnknown
 }
 
-func (h *AerospikeBackupsHandler) setConditions(obj aerospikev1alpha1.BackupRestoreObject, conditionsMap map[apiextensions.CustomResourceDefinitionConditionType]apiextensions.ConditionStatus) error {
-	conditions := obj.GetConditions()
-	for t, s := range conditionsMap {
-		exists := false
-		for i, c := range conditions {
-			if c.Type == t {
-				conditions[i].Status = s
-				conditions[i].LastTransitionTime = v1.Time{
-					Time: time.Now(),
-				}
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			conditions = append(conditions, apiextensions.CustomResourceDefinitionCondition{
-				Type:   t,
-				Status: s,
-				LastTransitionTime: v1.Time{
-					Time: time.Now(),
-				},
-			})
-		}
-	}
-
+func (h *AerospikeBackupsHandler) appendCondition(obj aerospikev1alpha1.BackupRestoreObject, conditionType apiextensions.CustomResourceDefinitionConditionType, conditionStatus apiextensions.ConditionStatus) error {
 	oldBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err
 	}
-	obj.SetConditions(conditions)
+
+	obj.SetConditions(append(obj.GetConditions(), apiextensions.CustomResourceDefinitionCondition{
+		Type:   conditionType,
+		Status: conditionStatus,
+		LastTransitionTime: v1.Time{
+			Time: time.Now(),
+		},
+	}))
+
 	newBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err

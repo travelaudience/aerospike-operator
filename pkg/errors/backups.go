@@ -20,6 +20,5 @@ import "fmt"
 
 var (
 	NamespaceDoesNotExist = fmt.Errorf("specified aerospike namespace does not exist")
-	JobDoesNotExist       = fmt.Errorf("job does not exist")
 	InvalidSecretFileName = fmt.Errorf("invalid secret filename")
 )

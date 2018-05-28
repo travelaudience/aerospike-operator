@@ -27,4 +27,6 @@ const (
 	Service                   = "service"
 	ConfigMap                 = "configmap"
 	PersistentVolumeClaim     = "persistentvolumeclaim"
+	Key                       = "key"
+	Job                       = "job"
 )

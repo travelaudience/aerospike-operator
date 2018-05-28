@@ -23,12 +23,10 @@ import (
 	"k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/crd"
-	"github.com/travelaudience/aerospike-operator/pkg/errors"
+	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
@@ -38,18 +36,17 @@ import (
 func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreObject) error {
 	job := v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%s-job", obj.GetObjectMeta().Name, obj.GetAction()),
+			Name: h.getJobName(obj),
 			Labels: map[string]string{
 				selectors.LabelAppKey:       selectors.LabelAppVal,
 				selectors.LabelClusterKey:   obj.GetTarget().Cluster,
 				selectors.LabelNamespaceKey: obj.GetTarget().Namespace,
-				obj.GetType():               obj.GetObjectMeta().Name,
 			},
 			Namespace: obj.GetObjectMeta().Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         v1alpha1.SchemeGroupVersion.String(),
-					Kind:               crd.AerospikeBackupKind,
+					Kind:               obj.GetKind(),
 					Name:               obj.GetObjectMeta().Name,
 					UID:                obj.GetObjectMeta().UID,
 					Controller:         pointers.NewBool(true),
@@ -67,7 +64,7 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 					Containers: []corev1.Container{
 						{
 							Name:            "aerospike-operator-tools",
-							Image:           "quay.io/travelaudience/aerospike-operator-tools:dev-testing",
+							Image:           "quay.io/travelaudience/aerospike-operator-tools:latest",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
 								"backup",
@@ -101,7 +98,7 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 							Args: []string{
 								fmt.Sprintf("%s && %s -h %s -p %d -n %s %s - %s %s",
 									metaCommand(obj.GetAction(), obj.GetTarget().Namespace),
-									fmt.Sprintf("as%s", obj.GetAction()),
+									asCommand(obj.GetAction()),
 									obj.GetTarget().Cluster,
 									reconciler.ServicePort,
 									getNamespace(obj.GetAction(), obj.GetTarget().Namespace),
@@ -123,13 +120,9 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 							Image:           "busybox",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
-								"/bin/sh", "-c",
-							},
-							Args: []string{
-								fmt.Sprintf("%s && %s",
-									fmt.Sprintf("mkfifo %s/%s", sharedVolumeMountPath, sharedDataPipeName),
-									fmt.Sprintf("mkfifo %s/%s", sharedVolumeMountPath, sharedMetadataPipeName),
-								),
+								"mkfifo",
+								fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedDataPipeName),
+								fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedMetadataPipeName),
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -167,26 +160,19 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 	}
 
 	log.WithFields(log.Fields{
-		"job": meta.Key(res),
+		logfields.Job: meta.Key(res),
 	}).Debugf("%s job created", obj.GetAction())
 	return nil
 }
 
 func (h *AerospikeBackupsHandler) getJobStatus(obj aerospikev1alpha1.BackupRestoreObject) (*v1.JobStatus, error) {
-	jobs, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).List(labels.SelectorFromSet(map[string]string{
-		selectors.LabelAppKey:       selectors.LabelAppVal,
-		selectors.LabelClusterKey:   obj.GetTarget().Cluster,
-		selectors.LabelNamespaceKey: obj.GetTarget().Namespace,
-		obj.GetType():               obj.GetObjectMeta().Name,
-	}))
+	job, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).Get(h.getJobName(obj))
 	if err != nil {
 		return nil, err
 	}
-	if len(jobs) > 0 {
-		return &jobs[0].Status, nil
-	}
-	log.WithFields(log.Fields{
-		obj.GetType(): meta.Key(obj),
-	}).Debugf("%s job does not exist", obj.GetAction())
-	return nil, errors.JobDoesNotExist
+	return &job.Status, nil
+}
+
+func (h *AerospikeBackupsHandler) getJobName(obj aerospikev1alpha1.BackupRestoreObject) string {
+	return fmt.Sprintf("%s-%s", obj.GetName(), obj.GetAction())
 }

@@ -19,8 +19,6 @@ package v1alpha1
 import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 )
 
 // +genclient
@@ -76,8 +74,8 @@ func (b *AerospikeNamespaceBackup) GetAction() ActionType {
 	return ActionTypeBackup
 }
 
-func (b *AerospikeNamespaceBackup) GetType() string {
-	return logfields.AerospikeNamespaceBackup
+func (b *AerospikeNamespaceBackup) GetKind() string {
+	return AerospikeNamespaceBackupKind
 }
 
 func (b *AerospikeNamespaceBackup) GetName() string {
@@ -105,6 +103,5 @@ func (b *AerospikeNamespaceBackup) GetConditions() []apiextensions.CustomResourc
 }
 
 func (b *AerospikeNamespaceBackup) SetConditions(newConditions []apiextensions.CustomResourceDefinitionCondition) {
-	b.Status.Conditions = make([]apiextensions.CustomResourceDefinitionCondition, len(newConditions))
-	copy(b.Status.Conditions, newConditions)
+	b.Status.Conditions = newConditions
 }
