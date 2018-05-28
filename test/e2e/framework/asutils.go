@@ -40,6 +40,8 @@ func NewAerospikeClient(aerospikeCluster *v1alpha1.AerospikeCluster) (*Aerospike
 	// https://github.com/aerospike/aerospike-client-go/issues/227
 	// https://github.com/aerospike/aerospike-client-go/issues/229
 	c.DefaultPolicy.SocketTimeout = 0
+	c.DefaultPolicy.MaxRetries = 2
+	c.DefaultPolicy.SleepBetweenRetries = 1 * time.Second
 	c.DefaultWritePolicy.SocketTimeout = 0
 
 	c.DefaultWritePolicy.Timeout = 3 * time.Second

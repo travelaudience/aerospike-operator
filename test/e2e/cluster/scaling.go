@@ -17,9 +17,7 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
 	"math"
-	"time"
 
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
@@ -59,32 +57,28 @@ func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, 
 
 	c1, err := framework.NewAerospikeClient(asc)
 	Expect(err).NotTo(HaveOccurred())
+	err = c1.WriteSequentialIntegers(asc.Spec.Namespaces[0].Name, 1000)
+	Expect(err).NotTo(HaveOccurred())
+	c1.Close()
 
 	// cerrCh will contain any connection errors that may occur
 	cerrCh := make(chan error)
 	// stopCh will allow us to exit the goroutine
 	stopCh := make(chan bool)
-	// periodically try to connect to the cluster while we perform the scale operation
+	// keep reading integer values until cluster finishes scaling
 	go func() {
-		// ticker will control how often we try to connect to the cluster
-		ticker := time.NewTicker(1 * time.Second)
 		defer close(cerrCh)
-		defer ticker.Stop()
-
 		for {
 			select {
 			case <-stopCh:
 				return
-			case <-ticker.C:
-				c, err := framework.NewAerospikeClient(asc)
-				if err != nil {
+			default:
+				c2, err := framework.NewAerospikeClient(asc)
+				Expect(err).NotTo(HaveOccurred())
+				if err = c2.ReadSequentialIntegers(asc.Spec.Namespaces[0].Name, 1000); err != nil {
 					cerrCh <- err
-					continue
 				}
-				if !c.IsConnected() {
-					cerrCh <- fmt.Errorf("aerospike client is not connected")
-				}
-				c.Close()
+				c2.Close()
 			}
 		}
 	}()
