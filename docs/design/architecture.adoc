@@ -15,7 +15,7 @@ it introduces:
 * <<api-spec.adoc#aerospikecluster,`AerospikeCluster`>>: represents an Aerospike
 cluster managed by `aerospike-operator`. It specifies the version of Aerospike
 to be deployed, the number of nodes in the cluster and the list and properties
-of namespaces in the cluster.
+of the Aerospike namespaces in the cluster.
 * <<api-spec.adoc#aerospikenamespacebackup,`AerospikeNamespaceBackup`>>:
 represents a single backup operation targeting a given Aerospike namespace, as
 well as how the backup data should be stored in a cloud storage provider.
@@ -57,8 +57,8 @@ connections, the service's endpoints are updated to include the IP of the new
 pod. Similarly, when a pod is deleted the service's endpoints are updated in
 order to remove the pod's IP.
 
-Jobs are responsible for backing up and restoring data in a given namespace, and
-are created as necessary when a backup or restore is requested (i.e., when an
+Jobs are responsible for backing up and restoring data in a given Aerospike namespace,
+and are created as necessary when a backup or restore is requested (i.e., when an
 `AerospikeNamespaceBackup` or `AerospikeNamespaceRestore` resources are
 created). These jobs are themselves clients of the Aerospike cluster, using the
 abovementioned service to discover nodes and perform the backup and restore
@@ -83,13 +83,17 @@ also be mounted at each pod.
 
 Jobs launched by `aerospike-operator` will run a custom container that will be
 responsible for interacting with `asbackup` or `asrestore` and with the cloud
-storage provider. As mentioned above, every job will also be given a persistent
-volume where to temporarily store backup data. A _pre-existing_ secret
-containing credentials to access the cloud storage provider will also be mounted
-in each job. This secret is _not_ managed by `aerospike-operator`, and must be
-created by the user according to a pre-established structure. Jobs discover pods
-in the Aerospike cluster using the Aerospike service, then connecting to these
-pods in order to backup and restore data for a given namespace.
+storage provider. Since uploads/downloads are streamed to/from Google Cloud
+Storage there is no need to provision these jobs with persistent volumes. This
+allows for faster and cheaper backup/restore operations while ensuring the
+consistency of the backup data. A _pre-existing_ secret containing credentials
+to access the cloud storage provider will be mounted in each job. This secret is
+_not_ managed by `aerospike-operator`, and must be created by the user according
+to a pre-established structure described in
+<<backup-and-restore.adoc#gcs-credentials,Google Cloud Storage Credentials>>.
+Jobs discover pods in the Aerospike cluster using the Aerospike service, then
+connect to these pods in order to backup and restore data for a given Aerospike
+namespace.
 
 The creation and management of the pods and jobs mentioned above is the
 responsibility of the <<controllers,controllers>>. In the next section we
@@ -103,8 +107,8 @@ briefly describe the responsibilities of each of these controllers.
 
 The _cluster controller_ is responsible for managing an Aerospike cluster based
 on the spec provided in an `AerospikeCluster` resource, and for managing the
-namespaces that exist in this cluster and the means of storage for this data.
-This includes creating or deleting pods, creating the service used for
+Aerospike namespaces that exist in this cluster and the means of storage for this
+data. This includes creating or deleting pods, creating the service used for
 clustering and discovery, creating and updating the underlying Aerospike
 configuration and ensuring that operations such as scaling up or down happen
 smoothly, taking into account any possible rebalancing operations that may be
@@ -128,8 +132,8 @@ about the changes.
 with the new desired state, taking the necessary actions in order to bring
 current and desired states in sync. This means, for instance, creating pods
 in a scale-up operation, deleting pods in a scale-down operation, creating the
-necessary service and managing the persistent volumes where namespace data will
-be stored.
+necessary service and managing the persistent volumes where Aerospike namespace
+data will be stored.
 
 It should be noted that the cluster controller also watches pods belonging to a
 given Aerospike cluster. Whenever one of the pods gets terminated (e.g., due to
@@ -154,11 +158,9 @@ controller of any _create_ operations performed in `AerospikeNamespaceBackup`
 resources.
 . Whenever a given `AerospikeNamespaceBackup` resource is created, the
 controller gets notified of the change by Kubernetes.
-. The controller then proceeds to provisioning a volume where to store the
-backed-up data temporarily and launching a Kubernetes job that will be
-responsible for backing-up data to this volume using `asbackup`. When `asbackup`
-finishes backing-up the namespace, data is uploaded to the cloud storage
-provider.
+. The controller then proceeds to launch a Kubernetes job that will be
+responsible for backing-up data using `asbackup`. Backup data is streamed to
+cloud storage as `asbackup` writes it.
 
 NOTE: Backups are not deleted when the corresponding `AerospikeNamespaceBackup`
 resource is deleted. This behaviour is intentional and helps preventing
@@ -178,10 +180,8 @@ the controller of any _create_ operations performed in
 `AerospikeNamespaceRestore` resources.
 . Whenever a given `AerospikeNamespaceRestore` resource is created, the
 controller gets notified of the change by Kubernetes.
-. The controller then proceeds to provisioning a volume where to download
-previously backed-up data to and proceeds to launching a Kubernetes job that
-will be responsible for actually downloading the backup data and restoring it
-using `asrestore`.
+. The controller then proceeds to launch a Kubernetes job that will be
+responsible for streaming the backup data and restoring it using `asrestore`.
 
 <<toc,Back>>
 
@@ -204,13 +204,6 @@ period between successive runs of the garbage collector may be configured. The
 resources targeted by the garbage collector and its behaviour with respect to
 these resources are identified in the next sections.
 
-=== Persistent volumes used for backup and restore
-
-During each run, the garbage collector will look for terminated backup and
-restore jobs originated by `AerospikeNamespaceBackup` and
-`AerospikeNamespaceRestore` resources, and cleanup any persistent volumes
-created for temporarily storing data originated by the job.
-
 [[garbage-collection-backup-data]]
 === Backup data
 
@@ -232,8 +225,8 @@ an
 https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/#validation[OpenAPI v3 schema],
 some more involved, dynamic validations may be required for some types of custom
 resources. For example, it is a good idea to enforce that the replication factor
-for a given namespace is not larger than size of the cluster it belongs to. In
-order to achieve this, `aerospike-operator` makes use of
+for a given Aerospike namespace is not larger than size of the cluster it belongs
+to. In order to achieve this, `aerospike-operator` makes use of
 https://kubernetes.io/docs/admin/extensible-admission-controllers/#admission-webhooks[validating admission webhooks]: HTTP callbacks that are called when a given object is acted
 upon (e.g., created or updated). These callbacks may be used to either accept or
 reject the action in a _synchronous_ fashion, hence providing immediate feedback
@@ -251,6 +244,6 @@ registration happens).
 The `aerospikeclusters.aerospike.travelaudience.com` webhook is called whenever
 a given `AerospikeCluster` resource is created or updated, and enforces that:
 
-* No namespaces have been removed or changed.
-* For every new namespace, the replication factor is less than or equal to the
+* No Aerospike namespaces have been removed or changed.
+* For every new Aerospike namespace, the replication factor is less than or equal to the
   size of the cluster.

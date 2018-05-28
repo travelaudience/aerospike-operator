@@ -92,7 +92,7 @@ cluster.
 | Field | Description | Scheme | Required
 | version | The version of Aerospike to be deployed. | string | true
 | nodeCount | The number of nodes in the cluster. | int32 | true
-| namespaces | The specification of the namespaces in the cluster. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
+| namespaces | The specification of the Aerospike namespaces in the cluster. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
 |===
 
 ==== Validations
@@ -174,7 +174,7 @@ exist.
 [[storagespec]]
 === StorageSpec
 
-The StorageSpec type specifies how data in a given namespace will be stored.
+The StorageSpec type specifies how data in a given Aerospike namespace will be stored.
 
 |===
 | Field | Description | Scheme | Required
@@ -203,7 +203,7 @@ operation.
 
 |===
 | Field | Description | Scheme | Required
-| target | The specification of the namespace to backup. | <<targetnamespace,TargetNamespace>> | true
+| target | The specification of the Aerospike cluster and namespace to backup. | <<targetnamespace,TargetNamespace>> | true
 | storage | The specification of how the backup will be stored. | <<backupstoragespec,BackupStorageSpec>> | true
 | ttl | The retention period (_days_) during which to keep backup data in cloud storage, suffixed with _d_. Defaults to `0d`, meaning the backup data will be kept forever. | string | false
 |===
@@ -248,7 +248,7 @@ operation.
 
 |===
 | Field | Description | Scheme | Required
-| target | The specification of the cluster and namespace the backup will be restored to. | <<targetnamespace,TargetNamespace>> | true
+| target | The specification of the Aerospike cluster and namespace the backup will be restored to. | <<targetnamespace,TargetNamespace>> | true
 | storage | The specification of how the backup will be retrieved. | <<backupstoragespec,BackupStorageSpec>> | true
 |===
 
@@ -285,7 +285,7 @@ spec:
 [[targetnamespace]]
 === TargetNamespace
 
-The TargetNamespace type specifies the cluster and namespace a single backup or
+The TargetNamespace type specifies the Aerospike cluster and namespace a single backup or
 restore operation will target.
 
 |===
