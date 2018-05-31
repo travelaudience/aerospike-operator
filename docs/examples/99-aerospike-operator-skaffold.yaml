@@ -33,14 +33,8 @@ rules:
   verbs:
   - get
   - create
-- apiGroups: ["batch"]
-  resources:
-  - jobs
-  verbs:
-  - create
-  - list
-  - watch
-- apiGroups: ["aerospike.travelaudience.com"]
+- apiGroups: 
+  - aerospike.travelaudience.com
   resources:
   - aerospikeclusters
   - aerospikenamespacebackups
@@ -48,9 +42,7 @@ rules:
   verbs:
   - create
   - get
-  - list
   - update
-  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
