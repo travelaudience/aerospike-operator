@@ -67,6 +67,14 @@ rules:
   - create
   - patch
 - apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - list
+  - watch
+- apiGroups:
   - aerospike.travelaudience.com
   resources:
   - aerospikeclusters
