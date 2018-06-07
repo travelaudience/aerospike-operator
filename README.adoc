@@ -14,9 +14,16 @@ endif::[]
 image:https://img.shields.io/badge/status-development-blue.svg["Status"]
 image:https://quay.io/repository/travelaudience/aerospike-operator/status["Docker Repository on Quay", link="https://quay.io/repository/travelaudience/aerospike-operator"]
 
+WARNING: `aerospike-operator` is currently _alpha_, and is under active
+development. One should expect breaking changes to the API and behavior to be
+introduced at any moment.
+
 == Prerequisites
 
 * Kubernetes 1.10+
+
+NOTE: Support for Kubernetes 1.11 is being planned and will be implemented as
+soon as it is generally available.
 
 == Before proceeding
 
