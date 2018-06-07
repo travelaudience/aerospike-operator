@@ -2,7 +2,7 @@
 
 ## Pre-requisites
 
-* Kubernetes 1.9+.
+* Kubernetes 1.10+.
 * Go 1.10+
 * `dep`
 * `make`
