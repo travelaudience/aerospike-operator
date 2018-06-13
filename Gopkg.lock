@@ -30,8 +30,8 @@
     "types/rand",
     "utils/buffer"
   ]
-  revision = "9701404f4c60a6ea256595d24bf318f721a7e8b8"
-  version = "v1.32.0"
+  revision = "c10b5393e43bd60125aca6289c7b24879edb1787"
+  version = "v1.33.0"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -654,6 +654,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "87f1fb1f591d636b9341700024e5182296376c5d7bdde322e18dd967fa0b79e0"
+  inputs-digest = "4a015703702ae516342469b9e006ca9f825e5484f8711670743d82a636940607"
   solver-name = "gps-cdcl"
   solver-version = 1

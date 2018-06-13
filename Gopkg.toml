@@ -18,6 +18,10 @@
   name = "k8s.io/kubernetes"
   version = "v1.10.4"
 
+[[constraint]]
+  name = "github.com/aerospike/aerospike-client-go"
+  version = "v1.33.0"
+
 [prune]
   go-tests = true
   unused-packages = true
