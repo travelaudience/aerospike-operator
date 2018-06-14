@@ -91,3 +91,15 @@ func (r *AerospikeNamespaceRestore) GetConditions() []apiextensions.CustomResour
 func (r *AerospikeNamespaceRestore) SetConditions(newConditions []apiextensions.CustomResourceDefinitionCondition) {
 	r.Status.Conditions = newConditions
 }
+
+func (b *AerospikeNamespaceRestore) GetFailedConditionType() apiextensions.CustomResourceDefinitionConditionType {
+	return ConditionRestoreFailed
+}
+
+func (b *AerospikeNamespaceRestore) GetFinishedConditionType() apiextensions.CustomResourceDefinitionConditionType {
+	return ConditionRestoreFinished
+}
+
+func (b *AerospikeNamespaceRestore) GetStartedConditionType() apiextensions.CustomResourceDefinitionConditionType {
+	return ConditionRestoreStarted
+}

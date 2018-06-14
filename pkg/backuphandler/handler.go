@@ -17,6 +17,8 @@ limitations under the License.
 package backuphandler
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -69,7 +71,7 @@ func (h *AerospikeBackupsHandler) Handle(obj aerospikev1alpha1.BackupRestoreObje
 	}).Debug("checking whether action is needed")
 
 	// check if job is already completed
-	if h.getConditionStatus(obj, aerospikev1alpha1.ConditionCompleted) == apiextensions.ConditionTrue {
+	if h.getConditionStatus(obj, obj.GetFinishedConditionType()) == apiextensions.ConditionTrue {
 		log.WithFields(log.Fields{
 			logfields.Kind: obj.GetKind(),
 			logfields.Key:  meta.Key(obj),
@@ -84,32 +86,46 @@ func (h *AerospikeBackupsHandler) Handle(obj aerospikev1alpha1.BackupRestoreObje
 		}
 	} else {
 		if status.Succeeded > 0 {
-			if err := h.appendCondition(obj, aerospikev1alpha1.ConditionCompleted, apiextensions.ConditionTrue); err != nil {
-				return err
-			}
+			// log that the job was successful
 			log.WithFields(log.Fields{
 				logfields.Kind: obj.GetKind(),
 				logfields.Key:  meta.Key(obj),
-			}).Debugf("%s job completed", obj.GetAction())
-			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobCompleted,
-				"%s job completed", obj.GetAction())
-			return nil
+			}).Debugf("%s job has finished", obj.GetAction())
+			// record an event indicating success
+			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobFinished,
+				"%s job has finished", obj.GetAction())
+			// append a condition to the resource's status indicating success
+			condition := apiextensions.CustomResourceDefinitionCondition{
+				Type:    obj.GetFinishedConditionType(),
+				Status:  apiextensions.ConditionTrue,
+				Message: fmt.Sprintf("%s job has finished", obj.GetAction()),
+			}
+			return h.appendCondition(obj, condition)
 		}
 		if status.Active > 0 {
+			// log that the job is active, but create no condition or event
 			log.WithFields(log.Fields{
 				logfields.Kind: obj.GetKind(),
 				logfields.Key:  meta.Key(obj),
 			}).Debugf("%s job is running", obj.GetAction())
-			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobRunning,
-				"%s job is running", obj.GetAction())
+			return nil
 		}
 		if status.Failed > 0 {
+			// log that the job failed
 			log.WithFields(log.Fields{
 				logfields.Kind: obj.GetKind(),
 				logfields.Key:  meta.Key(obj),
 			}).Debugf("%s job failed %d times", obj.GetAction(), status.Failed)
+			// record an event indicating failure
 			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonJobFailed,
 				"%s job failed %d times", obj.GetAction(), status.Failed)
+			// append a condition to the resource's status indicating failure
+			condition := apiextensions.CustomResourceDefinitionCondition{
+				Type:    obj.GetFailedConditionType(),
+				Status:  apiextensions.ConditionTrue,
+				Message: fmt.Sprintf("%s job failed %d times", obj.GetAction(), status.Failed),
+			}
+			return h.appendCondition(obj, condition)
 		}
 		return nil
 	}
@@ -145,11 +161,23 @@ func (h *AerospikeBackupsHandler) Handle(obj aerospikev1alpha1.BackupRestoreObje
 		return err
 	}
 
-	if err := h.createJob(obj); err != nil {
+	// create the backup/restore job
+	job, err := h.createJob(obj)
+	if err != nil {
 		return err
 	}
-	if err := h.appendCondition(obj, aerospikev1alpha1.ConditionCreated, apiextensions.ConditionTrue); err != nil {
+	// append a condition to the resource indicating the current status
+	condition := apiextensions.CustomResourceDefinitionCondition{
+		Type:    obj.GetStartedConditionType(),
+		Status:  apiextensions.ConditionTrue,
+		Message: fmt.Sprintf("%s job created as %s", obj.GetAction(), meta.Key(job)),
+	}
+	if err := h.appendCondition(obj, condition); err != nil {
 		return err
 	}
+	// record an event indicating the current status
+	h.recorder.Eventf(obj.(runtime.Object),
+		v1.EventTypeNormal, events.ReasonJobCreated,
+		"%s job created as %s", obj.GetAction(), meta.Key(job))
 	return nil
 }

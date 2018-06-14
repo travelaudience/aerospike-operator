@@ -122,7 +122,7 @@ func (tf *TestFramework) WaitForBackupRestoreCompleted(obj aerospikev1alpha1.Bac
 		conditions := obj.GetConditions()
 		if conditions != nil {
 			for _, c := range conditions {
-				if c.Type == aerospikev1alpha1.ConditionCompleted {
+				if c.Type == obj.GetFinishedConditionType() {
 					return true, nil
 				}
 			}

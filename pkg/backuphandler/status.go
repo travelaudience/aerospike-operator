@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
@@ -40,19 +40,14 @@ func (h *AerospikeBackupsHandler) getConditionStatus(obj aerospikev1alpha1.Backu
 	return apiextensions.ConditionUnknown
 }
 
-func (h *AerospikeBackupsHandler) appendCondition(obj aerospikev1alpha1.BackupRestoreObject, conditionType apiextensions.CustomResourceDefinitionConditionType, conditionStatus apiextensions.ConditionStatus) error {
+func (h *AerospikeBackupsHandler) appendCondition(obj aerospikev1alpha1.BackupRestoreObject, condition apiextensions.CustomResourceDefinitionCondition) error {
 	oldBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err
 	}
 
-	obj.SetConditions(append(obj.GetConditions(), apiextensions.CustomResourceDefinitionCondition{
-		Type:   conditionType,
-		Status: conditionStatus,
-		LastTransitionTime: v1.Time{
-			Time: time.Now(),
-		},
-	}))
+	condition.LastTransitionTime = metav1.NewTime(time.Now())
+	obj.SetConditions(append(obj.GetConditions(), condition))
 
 	newBytes, err := json.Marshal(obj)
 	if err != nil {

@@ -31,13 +31,23 @@ const (
 	// StorageTypeGCS defines the Google Cloud Storage type for a given Aerospike backup.
 	StorageTypeGCS = "gcs"
 
-	// ConditionCompleted defines a status condition that indicates that a backup or restore
-	// job has been completed
-	ConditionCompleted apiextensions.CustomResourceDefinitionConditionType = "Completed"
+	// ConditionBackupFailed defines a status condition that indicates that a backup job has failed
+	ConditionBackupFailed apiextensions.CustomResourceDefinitionConditionType = "BackupFailed"
 
-	// ConditionCreated defines a status condition that indicates that a backup or restore job
-	// has been created
-	ConditionCreated apiextensions.CustomResourceDefinitionConditionType = "Created"
+	// ConditionBackupFinished defines a status condition that indicates that a backup job has finished
+	ConditionBackupFinished apiextensions.CustomResourceDefinitionConditionType = "BackupFinished"
+
+	// ConditionBackupStarted defines a status condition that indicates that a backup job has started
+	ConditionBackupStarted apiextensions.CustomResourceDefinitionConditionType = "BackupStarted"
+
+	// ConditionRestoreFailed defines a status condition that indicates that a restore job has failed
+	ConditionRestoreFailed apiextensions.CustomResourceDefinitionConditionType = "RestoreFailed"
+
+	// ConditionRestoreFinished defines a status condition that indicates that a restore job has finished
+	ConditionRestoreFinished apiextensions.CustomResourceDefinitionConditionType = "RestoreFinished"
+
+	// ConditionRestoreStarted defines a status condition that indicates that a restore job has started
+	ConditionRestoreStarted apiextensions.CustomResourceDefinitionConditionType = "RestoreStarted"
 )
 
 type ActionType string
@@ -61,4 +71,7 @@ type BackupRestoreObject interface {
 	GetTarget() *TargetNamespace
 	GetConditions() []apiextensions.CustomResourceDefinitionCondition
 	SetConditions([]apiextensions.CustomResourceDefinitionCondition)
+	GetFailedConditionType() apiextensions.CustomResourceDefinitionConditionType
+	GetFinishedConditionType() apiextensions.CustomResourceDefinitionConditionType
+	GetStartedConditionType() apiextensions.CustomResourceDefinitionConditionType
 }

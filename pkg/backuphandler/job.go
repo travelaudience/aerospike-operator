@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -33,8 +33,8 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
-func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreObject) error {
-	job := v1.Job{
+func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreObject) (*batchv1.Job, error) {
+	job := batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.getJobName(obj),
 			Labels: map[string]string{
@@ -54,7 +54,7 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 				},
 			},
 		},
-		Spec: v1.JobSpec{
+		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      string(obj.GetAction()),
@@ -156,16 +156,16 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 
 	res, err := h.kubeclientset.BatchV1().Jobs(obj.GetObjectMeta().Namespace).Create(&job)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.WithFields(log.Fields{
 		logfields.Job: meta.Key(res),
 	}).Debugf("%s job created", obj.GetAction())
-	return nil
+	return res, nil
 }
 
-func (h *AerospikeBackupsHandler) getJobStatus(obj aerospikev1alpha1.BackupRestoreObject) (*v1.JobStatus, error) {
+func (h *AerospikeBackupsHandler) getJobStatus(obj aerospikev1alpha1.BackupRestoreObject) (*batchv1.JobStatus, error) {
 	job, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).Get(h.getJobName(obj))
 	if err != nil {
 		return nil, err
