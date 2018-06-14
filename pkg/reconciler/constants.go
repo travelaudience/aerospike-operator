@@ -65,9 +65,12 @@ const (
 	nsFilePath             = "filePath"
 	nsDevicePath           = "devicePath"
 
-	aspromPortName = "prometheus"
-	aspromPort     = 9145
+	aspromPortName      = "prometheus"
+	aspromPort          = 9145
+	aspromCpuRequest    = "10m"
+	aspromMemoryRequest = "32Mi"
 
+	asCpuRequest                   = "1000m"
 	asReadinessInitialDelaySeconds = 3
 	asReadinessTimeoutSeconds      = 2
 	asReadinessPeriodSeconds       = 10

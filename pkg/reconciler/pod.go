@@ -19,10 +19,13 @@ package reconciler
 import (
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
@@ -202,6 +205,12 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						PeriodSeconds:       asReadinessPeriodSeconds,
 						FailureThreshold:    asReadinessFailureThreshold,
 					},
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse(asCpuRequest),
+							v1.ResourceMemory: computeMemoryRequest(aerospikeCluster),
+						},
+					},
 				},
 				{
 					Name:            "asprom",
@@ -224,6 +233,12 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 									IntVal: aspromPort,
 								},
 							},
+						},
+					},
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse(aspromCpuRequest),
+							v1.ResourceMemory: resource.MustParse(aspromMemoryRequest),
 						},
 					},
 				},
@@ -393,4 +408,21 @@ func (r *AerospikeClusterReconciler) safeRestartPod(aerospikeCluster *aerospikev
 		return err
 	}
 	return r.createPodWithIndex(aerospikeCluster, configMap, podIndex(pod))
+}
+
+// computeMemoryRequest computes the amount of memory to be requested per pod based on the value of the memorySize field
+// of each namespace and returns the corresponding resource.Quantity.
+func computeMemoryRequest(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) resource.Quantity {
+	sum := 0
+	for _, ns := range aerospikeCluster.Spec.Namespaces {
+		s, err := strconv.Atoi(strings.TrimSuffix(ns.MemorySize, "G"))
+		if err != nil {
+			// ns.MemorySize has been validated before, so it is highly unlikely
+			// than an error occurs at this point. however, if it does occur, we
+			// must return something and so we pick 1Gi as the default quantity.
+			return resource.MustParse("1Gi")
+		}
+		sum += s
+	}
+	return resource.MustParse(fmt.Sprintf("%dGi", sum))
 }
