@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package backuphandler
+package backuprestore
 
 import (
 	"encoding/json"
@@ -28,19 +28,7 @@ import (
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 )
 
-func (h *AerospikeBackupsHandler) getConditionStatus(obj aerospikev1alpha1.BackupRestoreObject, conditionType apiextensions.CustomResourceDefinitionConditionType) apiextensions.ConditionStatus {
-	conditions := obj.GetConditions()
-	if conditions != nil {
-		for _, c := range conditions {
-			if c.Type == conditionType {
-				return c.Status
-			}
-		}
-	}
-	return apiextensions.ConditionUnknown
-}
-
-func (h *AerospikeBackupsHandler) appendCondition(obj aerospikev1alpha1.BackupRestoreObject, condition apiextensions.CustomResourceDefinitionCondition) error {
+func (h *AerospikeBackupRestoreHandler) appendCondition(obj aerospikev1alpha1.BackupRestoreObject, condition apiextensions.CustomResourceDefinitionCondition) error {
 	oldBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -73,4 +61,13 @@ func (h *AerospikeBackupsHandler) appendCondition(obj aerospikev1alpha1.BackupRe
 		}
 	}
 	return nil
+}
+
+func (h *AerospikeBackupRestoreHandler) isFailedOrFinished(obj aerospikev1alpha1.BackupRestoreObject) bool {
+	for _, c := range obj.GetConditions() {
+		if (c.Type == obj.GetFinishedConditionType() || c.Type == obj.GetFailedConditionType()) && c.Status == apiextensions.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }

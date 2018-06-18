@@ -19,13 +19,15 @@ package controller
 import (
 	"fmt"
 
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/travelaudience/aerospike-operator/pkg/backuphandler"
+	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
 	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
@@ -35,7 +37,7 @@ import (
 type AerospikeNamespaceRestoreController struct {
 	*genericController
 	aerospikeNamespaceRestoreLister aerospikelisters.AerospikeNamespaceRestoreLister
-	handler                         *backuphandler.AerospikeBackupsHandler
+	handler                         *backuprestore.AerospikeBackupRestoreHandler
 }
 
 // NewAerospikeNamespaceRestoreController returns a new controller for AerospikeNamespaceRestore objects
@@ -66,7 +68,7 @@ func NewAerospikeNamespaceRestoreController(
 	}
 	c.syncHandler = c.processQueueItem
 
-	c.handler = backuphandler.New(kubeClient, aerospikeClient, aerospikeClustersLister, jobsLister, secretsLister, c.recorder)
+	c.handler = backuprestore.New(kubeClient, aerospikeClient, aerospikeClustersLister, jobsLister, secretsLister, c.recorder)
 	c.logger.Debug("setting up event handlers")
 
 	// setup an event handler for when AerospikeNamespaceRestore resources change
@@ -74,6 +76,26 @@ func NewAerospikeNamespaceRestoreController(
 		AddFunc: c.enqueue,
 		UpdateFunc: func(_, obj interface{}) {
 			c.enqueue(obj)
+		},
+	})
+	// setup an event handler for when Job resources change. This
+	// handler will lookup the owner of the given Job, and if it is
+	// owned by a AerospikeNamespaceRestore resource will enqueue that
+	// AerospikeNamespaceRestore resource for processing. This way, we don't
+	// need to implement custom logic for handling Job resources. More info on
+	// this pattern:
+	// https://github.com/kubernetes/community/blob/8cafef897a22026d42f5e5bb3f104febe7e29830/contributors/devel/controllers.md
+	jobInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: c.handleObject,
+		UpdateFunc: func(old, new interface{}) {
+			newJob := new.(*batchv1.Job)
+			oldJob := old.(*batchv1.Job)
+			if newJob.ResourceVersion == oldJob.ResourceVersion {
+				// Periodic resync will send update events for all known Jobs.
+				// Two different versions of the same Job will always have different RVs.
+				return
+			}
+			c.handleObject(new)
 		},
 	})
 
@@ -107,4 +129,45 @@ func (c *AerospikeNamespaceRestoreController) processQueueItem(key string) error
 		return err
 	}
 	return nil
+}
+
+// handleObject will take any resource implementing metav1.Object and attempt
+// to find the AerospikeNamespaceRestore resource that 'owns' it. It does this
+// by looking at the objects metadata.ownerReferences field for an appropriate
+// OwnerReference. It then enqueues that AerospikeNamespaceRestore resource to
+// be processed. If the object does not have an appropriate OwnerReference, it
+// will simply be skipped.
+func (c *AerospikeNamespaceRestoreController) handleObject(obj interface{}) {
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			runtime.HandleError(fmt.Errorf("error decoding object, invalid type"))
+			return
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			runtime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
+			return
+		}
+		c.logger.Debugf("recovered deleted object '%s' from tombstone", object.GetName())
+	}
+	c.logger.Debugf("processing object: %s", object.GetName())
+	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
+		// If this object is not owned by a AerospikeNamespaceRestore, we should
+		// not do anything more with it.
+		if ownerRef.Kind != "AerospikeNamespaceRestore" {
+			return
+		}
+
+		asnb, err := c.aerospikeNamespaceRestoreLister.AerospikeNamespaceRestores(object.GetNamespace()).Get(ownerRef.Name)
+		if err != nil {
+			c.logger.Debugf("ignoring orphaned object '%s' of aerospikenamespacerestore '%s'", object.GetSelfLink(), ownerRef.Name)
+			return
+		}
+
+		c.enqueue(asnb)
+		return
+	}
 }

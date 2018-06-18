@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package backuphandler
+package backuprestore
 
 import (
 	"fmt"
@@ -26,15 +26,22 @@ import (
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"github.com/travelaudience/aerospike-operator/pkg/version"
 )
 
-func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreObject) (*batchv1.Job, error) {
+const (
+	// jobBackoffLimit is the maximum number of failures we tolerate before the
+	// backup/restore job fails permanently.
+	jobBackoffLimit = 3
+)
+
+// createJob creates the job associated with obj.
+func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRestoreObject) (*batchv1.Job, error) {
 	job := batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.getJobName(obj),
@@ -69,66 +76,19 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
 								"backup",
-								backupCommand(obj.GetAction()),
-								"-bucket-name", obj.GetStorage().Bucket,
-								"-name", fmt.Sprintf("%s.%s", obj.GetObjectMeta().Name, backupExtension),
-								"-data-pipe-path", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedDataPipeName),
-								"-meta-pipe-path", fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedMetadataPipeName),
-								"-secret-path", fmt.Sprintf("%s/%s", bucketSecretVolumeMountPath, secretFileName),
-								"-debug",
+								string(obj.GetAction()),
+								fmt.Sprintf("-debug=%t", debug.DebugEnabled),
+								fmt.Sprintf("-bucket-name=%s", obj.GetStorage().Bucket),
+								fmt.Sprintf("-name=%s", obj.GetObjectMeta().Name),
+								fmt.Sprintf("-secret-path=%s/%s", secretVolumeMountPath, secretFilename),
+								fmt.Sprintf("-host=%s.%s", obj.GetTarget().Cluster, obj.GetNamespace()),
+								fmt.Sprintf("-namespace=%s", obj.GetTarget().Namespace),
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name:      bucketSecretVolumeName,
+									Name:      secretVolumeName,
 									ReadOnly:  true,
-									MountPath: bucketSecretVolumeMountPath,
-								},
-								{
-									Name:      sharedVolumeName,
-									MountPath: sharedVolumeMountPath,
-								},
-							},
-						},
-						{
-							Name:            "aerospike-tools",
-							Image:           "aerospike/aerospike-tools:3.15.3.6",
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command: []string{
-								"/bin/bash", "-c",
-							},
-							Args: []string{
-								fmt.Sprintf("%s && %s -h %s -p %d -n %s %s - %s %s",
-									metaCommand(obj.GetAction(), obj.GetTarget().Namespace),
-									asCommand(obj.GetAction()),
-									obj.GetTarget().Cluster,
-									reconciler.ServicePort,
-									getNamespace(obj.GetAction(), obj.GetTarget().Namespace),
-									inputOutputString(obj.GetAction()),
-									pipeDirection(obj.GetAction()), fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedDataPipeName),
-								),
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      sharedVolumeName,
-									MountPath: sharedVolumeMountPath,
-								},
-							},
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:            "init-pipe",
-							Image:           "busybox",
-							ImagePullPolicy: corev1.PullAlways,
-							Command: []string{
-								"mkfifo",
-								fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedDataPipeName),
-								fmt.Sprintf("%s/%s", sharedVolumeMountPath, sharedMetadataPipeName),
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      sharedVolumeName,
-									MountPath: sharedVolumeMountPath,
+									MountPath: secretVolumeMountPath,
 								},
 							},
 						},
@@ -136,22 +96,17 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 					RestartPolicy: corev1.RestartPolicyNever,
 					Volumes: []corev1.Volume{
 						{
-							Name: bucketSecretVolumeName,
+							Name: secretVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
 									SecretName: obj.GetStorage().Secret,
 								},
 							},
 						},
-						{
-							Name: sharedVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						},
 					},
 				},
 			},
+			BackoffLimit: pointers.NewInt32(jobBackoffLimit),
 		},
 	}
 
@@ -166,14 +121,7 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 	return res, nil
 }
 
-func (h *AerospikeBackupsHandler) getJobStatus(obj aerospikev1alpha1.BackupRestoreObject) (*batchv1.JobStatus, error) {
-	job, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).Get(h.getJobName(obj))
-	if err != nil {
-		return nil, err
-	}
-	return &job.Status, nil
-}
-
-func (h *AerospikeBackupsHandler) getJobName(obj aerospikev1alpha1.BackupRestoreObject) string {
+// getJobName returns the name of the job associated with obj.
+func (h *AerospikeBackupRestoreHandler) getJobName(obj aerospikev1alpha1.BackupRestoreObject) string {
 	return fmt.Sprintf("%s-%s", obj.GetName(), obj.GetAction())
 }

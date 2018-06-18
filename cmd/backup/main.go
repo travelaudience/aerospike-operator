@@ -18,10 +18,14 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
@@ -30,190 +34,260 @@ import (
 )
 
 const (
-	backupSaveCommand    = "save"
-	backupRestoreCommand = "restore"
+	backupCommand  = "backup"
+	restoreCommand = "restore"
 )
 
 var (
-	backupFS     *flag.FlagSet
-	restoreFS    *flag.FlagSet
-	debug        bool
-	bucketName   string
-	name         string
-	secretPath   string
-	dataPipePath string
-	metaPipePath string
-	ctx          context.Context
+	bfs *flag.FlagSet
+	rfs *flag.FlagSet
+
+	debug      bool
+	bucketName string
+	name       string
+	secretPath string
+	host       string
+	port       int
+	namespace  string
 )
 
-func init() {
-	backupFS = flag.NewFlagSet(backupSaveCommand, flag.ExitOnError)
-	backupFS.BoolVar(&debug, "debug", false, "whether to enable debug logging")
-	backupFS.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to upload the backup to")
-	backupFS.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
-	backupFS.StringVar(&secretPath, "secret-path", "/creds/key.json", "the path to the service account credentials file")
-	backupFS.StringVar(&dataPipePath, "data-pipe-path", "/data/data.tmp", "the path to the named pipe used to transfer data between containers")
-	backupFS.StringVar(&metaPipePath, "meta-pipe-path", "/data/meta.tmp", "the path to the named pipe used to transfer metadata between containers")
+// backupMetadata stores metadata about a backup operation.
+type backupMetadata struct {
+	// Namespace holds the original name of the namespace at the time the backup
+	// was performed.
+	Namespace string `json:"namespace"`
+}
 
-	restoreFS = flag.NewFlagSet(backupRestoreCommand, flag.ExitOnError)
-	restoreFS.BoolVar(&debug, "debug", false, "whether to enable debug logging")
-	restoreFS.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to download the backup from")
-	restoreFS.StringVar(&name, "name", "", "the name of the backup file to be retrieved from GCS")
-	restoreFS.StringVar(&secretPath, "secret-path", "/creds/key.json", "the path to the service account credentials file")
-	restoreFS.StringVar(&dataPipePath, "data-pipe-path", "/data/data.tmp", "the path to the named pipe used to transfer data between containers")
-	restoreFS.StringVar(&metaPipePath, "meta-pipe-path", "/data/meta.tmp", "the path to the named pipe used to transfer metadata between containers")
+func init() {
+	bfs = flag.NewFlagSet(backupCommand, flag.ExitOnError)
+	bfs.BoolVar(&debug, "debug", false, "whether to enable debug logging")
+	bfs.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to upload the backup to")
+	bfs.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
+	bfs.StringVar(&secretPath, "secret-path", "/secret/key.json", "the path to the service account credentials file")
+	bfs.StringVar(&host, "host", "", "the host to which asbackup will connect")
+	bfs.IntVar(&port, "port", 3000, "the port to which asbackup will connect")
+	bfs.StringVar(&namespace, "namespace", "", "the name of the namespace which to backup")
+
+	rfs = flag.NewFlagSet(restoreCommand, flag.ExitOnError)
+	rfs.BoolVar(&debug, "debug", false, "whether to enable debug logging")
+	rfs.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to download the backup from")
+	rfs.StringVar(&name, "name", "", "the name of the backup file to be retrieved from GCS")
+	rfs.StringVar(&secretPath, "secret-path", "/secret/key.json", "the path to the service account credentials file")
+	rfs.StringVar(&host, "host", "", "the host to which asrestore will connect")
+	rfs.IntVar(&port, "port", 3000, "the port to which asrestore will connect")
+	rfs.StringVar(&namespace, "namespace", "", "the name of the namespace which to restore data into")
 }
 
 func main() {
-	parseCommandArgs()
-	ctx = context.Background()
+	if len(os.Args) == 1 {
+		log.Fatalf("too few arguments")
+	}
+	switch os.Args[1] {
+	case backupCommand:
+		bfs.Parse(os.Args[2:])
+		if debug {
+			log.SetLevel(log.DebugLevel)
+		}
+		log.Info("backup is starting")
+		if err := doBackup(); err != nil {
+			log.Fatal(err)
+		}
+		log.Info("backup is complete")
+	case restoreCommand:
+		rfs.Parse(os.Args[2:])
+		if debug {
+			log.SetLevel(log.DebugLevel)
+		}
+		log.Info("restore is starting")
+		if err := doRestore(); err != nil {
+			log.Fatal(err)
+		}
+		log.Info("restore is complete")
+	default:
+		log.Fatalf("invalid command %q", os.Args[1])
+	}
+}
 
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile(secretPath))
+// doBackup performs a backup operation on the target namespace.
+func doBackup() error {
+	// initialize the gcs client and get handles to the meta and backup objects
+	log.Debug("initing cloud storage")
+	client, metaObject, backupObject, err := initGCSObjects()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer client.Close()
 
+	// dump metadata to the meta file
+	log.Debug("dumping metadata")
+	if err := dumpMetadata(metaObject); err != nil {
+		return err
+	}
+
+	// build the asbackup command
+	cmd := exec.Command("asbackup", "-h", host, "-p", strconv.Itoa(port), "-n", namespace, "-o", "-", "-c", "-v")
+	// get a handle to stdout
+	o, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	// capture asbackup's stderr
+	errw := log.New().Writer()
+	defer errw.Close()
+	cmd.Stderr = errw
+
+	// give some feedback about what is going to be executed
+	log.Debug("==== asbackup ====")
+	log.Debug(strings.Join(cmd.Args, " "))
+	log.Debug("==================")
+
+	// launch the asbackup process
+	log.Debug("running asbackup and streaming to cloud storage")
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	// transfer data from asbackup's stdout to gcs
+	if err := transferToGCS(o, backupObject); err != nil {
+		return err
+	}
+	// wait for asbackup to terminate
+	return cmd.Wait()
+}
+
+// doRestore performs a restore operation to the target namespace.
+func doRestore() error {
+	// initialize the gcs client and get handles to the meta and backup objects
+	log.Debug("initing cloud storage")
+	client, metaObject, backupObject, err := initGCSObjects()
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	// read metadata to the meta file
+	log.Debug("reading metadata")
+	n, err := readMetadata(metaObject)
+	if err != nil {
+		return err
+	}
+
+	// build the asrestore command
+	cmd := exec.Command("asrestore", "-h", host, "-p", strconv.Itoa(port), "-i", "-", "-n", fmt.Sprintf("%s,%s", n.Namespace, namespace), "-v")
+	// get a handle to stdin
+	i, err := cmd.StdinPipe()
+	// capture asrestore's stderr
+	errw := log.New().Writer()
+	defer errw.Close()
+	cmd.Stderr = errw
+
+	// give some feedback about what is going to be executed
+	log.Debug("==== asrestore ====")
+	log.Debug(strings.Join(cmd.Args, " "))
+	log.Debug("===================")
+
+	// launch the asrestore process
+	log.Debug("running asrestore and streaming from cloud storage")
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	// transfer data from gcs to asrestore's stdin
+	if err := transferFromGCS(i, backupObject); err != nil {
+		return err
+	}
+	// close stdin when we're done
+	if err := i.Close(); err != nil {
+		return err
+	}
+	// wait for asrestore to terminate
+	return cmd.Wait()
+}
+
+// initGCSObjects initializes the GCS client and returns handles to the meta and backup objects.
+func initGCSObjects() (*storage.Client, *storage.ObjectHandle, *storage.ObjectHandle, error) {
+	// create a gcs client
+	client, err := storage.NewClient(context.Background(), option.WithCredentialsFile(secretPath))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// get a handle to the target bucket
 	bucket := client.Bucket(bucketName)
-	if _, err = bucket.Attrs(ctx); err != nil {
-		log.Fatal(err)
+	// attempt to read the bucket metadata
+	if _, err = bucket.Attrs(context.Background()); err != nil {
+		return nil, nil, nil, err
 	}
-	backupObject := bucket.Object(name)
-	metaObject := bucket.Object(fmt.Sprintf("%s.meta", name))
-
-	var bytesTransferred int64
-	if backupFS.Parsed() {
-		if _, err := writeMetadata(metaObject); err != nil {
-			log.Fatal(err)
-		}
-		if bytesTransferred, err = backup(backupObject); err != nil {
-			log.Fatal(err)
-		}
-	} else if restoreFS.Parsed() {
-		if _, err := readMetadata(metaObject); err != nil {
-			log.Fatal(err)
-		}
-		if bytesTransferred, err = restore(backupObject); err != nil {
-			log.Fatal(err)
-		}
-	}
-	log.Infof("backup size: %d bytes", bytesTransferred)
+	// get a handle to the metadata object
+	metaObject := bucket.Object(fmt.Sprintf("%s.json", name))
+	// get a handle to the backup object
+	backupObject := bucket.Object(fmt.Sprintf("%s.asb.gz", name))
+	// return the gcs client and the handles to the metadata and backup files
+	return client, metaObject, backupObject, nil
 }
 
-func printUsage() {
-	fmt.Printf("\nusage: backup <command> [<args>]\n\n")
-	fmt.Println("available commands:")
-	fmt.Printf("\tsave\t\tsave backup to bucket\n")
-	fmt.Printf("\trestore\t\trestore backup from bucket\n")
-	fmt.Println()
-}
-
-func parseCommandArgs() {
-	if len(os.Args) == 1 {
-		printUsage()
-		os.Exit(1)
-	}
-
-	switch os.Args[1] {
-	case backupSaveCommand:
-		backupFS.Parse(os.Args[2:])
-	case backupRestoreCommand:
-		restoreFS.Parse(os.Args[2:])
-	default:
-		fmt.Printf("\n%q is not a valid command\n", os.Args[1])
-		printUsage()
-		os.Exit(1)
-	}
-
-	if debug {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	if bucketName == "" || name == "" {
-		if backupFS.Parsed() {
-			backupFS.PrintDefaults()
-		} else if restoreFS.Parsed() {
-			restoreFS.PrintDefaults()
-		}
-		os.Exit(1)
-	}
-}
-
-func backup(backupObject *storage.ObjectHandle) (int64, error) {
-	pipe, err := os.OpenFile(dataPipePath, os.O_RDONLY, os.ModeNamedPipe)
-	if err != nil {
-		return 0, err
-	}
-	defer os.Remove(dataPipePath)
-	defer pipe.Close()
-
-	return transferToGCS(pipe, backupObject)
-}
-
-func restore(obj *storage.ObjectHandle) (int64, error) {
-	pipe, err := os.OpenFile(dataPipePath, os.O_WRONLY, os.ModeNamedPipe)
-	if err != nil {
-		return 0, err
-	}
-	defer os.Remove(dataPipePath)
-	defer pipe.Close()
-
-	return transferFromGCS(pipe, obj)
-}
-
-func transferToGCS(r io.Reader, obj *storage.ObjectHandle) (int64, error) {
-	w := obj.NewWriter(ctx)
+// transferToGCS streams backup data to GCS.
+func transferToGCS(r io.Reader, obj *storage.ObjectHandle) error {
+	// create a writer that writes to the target object
+	w := obj.NewWriter(context.Background())
 	defer w.Close()
-
+	// create a writer that gzips the backup data
 	gz := gzip.NewWriter(w)
 	defer gz.Close()
-
-	return io.Copy(gz, r)
+	// copy the gziped backup data to the bucket
+	if s, err := io.Copy(gz, r); err != nil {
+		return err
+	} else {
+		log.Infof("%d bytes written", s)
+		return nil
+	}
 }
 
-func transferFromGCS(w io.Writer, obj *storage.ObjectHandle) (int64, error) {
-	r, err := obj.NewReader(ctx)
+// transferFromGCS streams backup data from GCS.
+func transferFromGCS(w io.Writer, obj *storage.ObjectHandle) error {
+	// create a reader that reads from the source object
+	r, err := obj.NewReader(context.Background())
 	if err != nil {
-		return 0, err
+		return err
 	}
 	defer r.Close()
-
+	// create a reader that ungzips the backup data
 	gz, err := gzip.NewReader(r)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	defer gz.Close()
-
-	return io.Copy(w, gz)
-}
-
-func writeMetadata(metaObject *storage.ObjectHandle) (int64, error) {
-	pipe, err := os.OpenFile(metaPipePath, os.O_RDONLY, os.ModeNamedPipe)
-	if err != nil {
-		return 0, err
+	// read the gziped backup data from the bucket
+	if r, err := io.Copy(w, gz); err != nil {
+		return err
+	} else {
+		log.Infof("%d bytes read", r)
+		return nil
 	}
-	defer os.Remove(metaPipePath)
-	defer pipe.Close()
-
-	w := metaObject.NewWriter(ctx)
-	defer w.Close()
-
-	return io.Copy(w, pipe)
 }
 
-func readMetadata(metaObject *storage.ObjectHandle) (int64, error) {
-	r, err := metaObject.NewReader(ctx)
+// dumpMetadata dumps backup metadata to GCS.
+func dumpMetadata(metaObject *storage.ObjectHandle) error {
+	// create a writer that writes to the target object
+	w := metaObject.NewWriter(context.Background())
+	defer w.Close()
+	// dump the backup metadata to the writer
+	m := &backupMetadata{Namespace: namespace}
+	if err := json.NewEncoder(w).Encode(m); err != nil {
+		return err
+	}
+	return nil
+}
+
+// readMetadata reads backup metadata from GCS.
+func readMetadata(metaObject *storage.ObjectHandle) (*backupMetadata, error) {
+	// create a reader that reads from the source object
+	r, err := metaObject.NewReader(context.Background())
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer r.Close()
-
-	pipe, err := os.OpenFile(metaPipePath, os.O_WRONLY, os.ModeNamedPipe)
-	if err != nil {
-		return 0, err
+	// read the backup metadata from the reader
+	m := &backupMetadata{}
+	if err := json.NewDecoder(r).Decode(m); err != nil {
+		return nil, err
 	}
-	defer os.Remove(metaPipePath)
-	defer pipe.Close()
-
-	return io.Copy(pipe, r)
+	return m, nil
 }

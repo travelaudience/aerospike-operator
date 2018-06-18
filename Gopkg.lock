@@ -119,8 +119,8 @@
 [[projects]]
   name = "github.com/imdario/mergo"
   packages = ["."]
-  revision = "9d5f1277e9a8ed20c3684bda8fde67c05628518c"
-  version = "v0.3.4"
+  revision = "9316a62528ac99aaecb4e47eadd6dc8aa6533d58"
+  version = "v0.3.5"
 
 [[projects]]
   name = "github.com/json-iterator/go"
@@ -205,8 +205,8 @@
 [[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert"]
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
 
 [[projects]]
   branch = "master"
@@ -217,13 +217,13 @@
     "parse",
     "pm"
   ]
-  revision = "b0fa786cf4ea360285924c4a7fd42325be57aec8"
+  revision = "ca850f594eaafa5468da2bd53b865e4ee55be18b"
 
 [[projects]]
   name = "go.opencensus.io"
   packages = [
+    ".",
     "exporter/stackdriver/propagation",
-    "exporterutil",
     "internal",
     "internal/tagencoding",
     "plugin/ochttp",
@@ -236,14 +236,14 @@
     "trace/internal",
     "trace/propagation"
   ]
-  revision = "5897c5ce32247fc8af19c7710abd96e3304fb43c"
-  version = "v0.12.0"
+  revision = "6edeb78af2d9e4f169abb223feaef35da2e45d06"
+  version = "v0.13.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "b47b1587369238182299fe4dad77d05b8b461e06"
+  revision = "a8fb68e7206f8c78be19b432c58eb52a6aa34462"
 
 [[projects]]
   branch = "master"
@@ -261,7 +261,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "1e491301e022f8f977054da4c2d852decd59571f"
+  revision = "db08ff08e8622530d9ed3a0e8ac279f6d4c02196"
 
 [[projects]]
   branch = "master"
@@ -282,7 +282,7 @@
     "unix",
     "windows"
   ]
-  revision = "538ab54ba952cc4c7c705fa213fbf7993c97c175"
+  revision = "8014b7b116a67fea23fbb82cd834c9ad656ea44b"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -337,7 +337,7 @@
     "storage/v1",
     "transport/http"
   ]
-  revision = "00e3bb8d04691e25ee2fccf98c866bcb7925c3ec"
+  revision = "2eea9ba0a3d94f6ab46508083e299a00bbbc65f6"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -365,7 +365,7 @@
     "googleapis/rpc/code",
     "googleapis/rpc/status"
   ]
-  revision = "81158efcc9f219c511e4d3c0d61a0e6e49c01a24"
+  revision = "32ee49c4dd805befd833990acba36cb75042378c"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -395,8 +395,8 @@
     "tap",
     "transport"
   ]
-  revision = "41344da2231b913fa3d983840a57a6b1b7b631a1"
-  version = "v1.12.0"
+  revision = "7a6a684ca69eb4cae85ad0a484f2e531598c047b"
+  version = "v1.12.2"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -447,7 +447,6 @@
   revision = "8b7507fac302640dd5f1efbf9643199952cc58db"
 
 [[projects]]
-  branch = "release-1.10"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -459,9 +458,9 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake"
   ]
   revision = "8e7f43002fec5394a8d96ebca781aa9d4b37aaef"
+  version = "kubernetes-1.10.4"
 
 [[projects]]
-  branch = "release-1.10"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -507,6 +506,7 @@
     "third_party/forked/golang/reflect"
   ]
   revision = "17529ec7eadb8de8e7dc835201455f53571f655a"
+  version = "kubernetes-1.10.4"
 
 [[projects]]
   branch = "release-7.0"
@@ -643,7 +643,7 @@
   branch = "master"
   name = "k8s.io/kube-openapi"
   packages = ["pkg/util/proto"]
-  revision = "8a9b82f00b3a86eac24681da3f9fe6c34c01cea2"
+  revision = "bf40560368791a7dddfeea9b3cfcf89b34139f44"
 
 [[projects]]
   name = "k8s.io/kubernetes"

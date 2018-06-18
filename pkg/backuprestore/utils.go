@@ -14,15 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package backuphandler
+package backuprestore
 
 import (
-	"github.com/travelaudience/aerospike-operator/pkg/errors"
-
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/errors"
 )
 
-func (h *AerospikeBackupsHandler) checkNamespaceExists(obj aerospikev1alpha1.BackupRestoreObject) error {
+func (h *AerospikeBackupRestoreHandler) checkNamespaceExists(obj aerospikev1alpha1.BackupRestoreObject) error {
 	cluster, err := h.aerospikeClustersLister.AerospikeClusters(obj.GetObjectMeta().Namespace).Get(obj.GetTarget().Cluster)
 	if err != nil {
 		return err
@@ -33,4 +32,16 @@ func (h *AerospikeBackupsHandler) checkNamespaceExists(obj aerospikev1alpha1.Bac
 		}
 	}
 	return errors.NamespaceDoesNotExist
+}
+
+func (h *AerospikeBackupRestoreHandler) checkSecretExists(obj aerospikev1alpha1.BackupRestoreObject) error {
+	secret, err := h.secretsLister.Secrets(obj.GetObjectMeta().Namespace).Get(obj.GetStorage().Secret)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := secret.Data[secretFilename]; ok {
+		return nil
+	}
+	return errors.InvalidSecretFileName
 }

@@ -14,21 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package backuphandler
+package backuprestore
 
-import (
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/errors"
+const (
+	secretFilename        = "key.json"
+	secretVolumeName      = "secret"
+	secretVolumeMountPath = "/secret"
 )
-
-func (h *AerospikeBackupsHandler) checkSecretExists(obj aerospikev1alpha1.BackupRestoreObject) error {
-	secret, err := h.secretsLister.Secrets(obj.GetObjectMeta().Namespace).Get(obj.GetStorage().Secret)
-	if err != nil {
-		return err
-	}
-
-	if _, ok := secret.Data[secretFileName]; ok {
-		return nil
-	}
-	return errors.InvalidSecretFileName
-}
