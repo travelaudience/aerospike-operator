@@ -57,27 +57,18 @@ used in order to ease the deployment of local versions. To deploy
 may run
 
 ```
-$ PROFILE=minikube make dev
+$ PROFILE=minikube make run
 ```
 
 or, if using GKE,
 
 ```
-$ PROFILE=gke make dev
+$ PROFILE=gke make run
 ```
 
 This will create or update everything that is needed for `aerospike-operator`
 and the test suite to run, and will create an `aerospike-operator` pod inside
-the `aerospike-operator` namespace. Since the pods runs `go run`, it may take
-a couple of minutes for the logs to start being presented. Once one sees
-
-```
-...
-[aerospike-operator] time="2018-04-26T09:55:11Z" level=debug msg="starting workers"
-[aerospike-operator] time="2018-04-26T09:55:11Z" level=debug msg="started workers"
-```
-
-one may proceed to running the test suite.
+the `aerospike-operator` namespace.
 
 ## Running the test suite
 

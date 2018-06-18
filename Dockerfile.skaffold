@@ -1,6 +1,4 @@
 FROM golang:1.10.1
-RUN go get -u github.com/golang/dep/cmd/dep
 WORKDIR /go/src/github.com/travelaudience/aerospike-operator
 COPY . .
-RUN make build CMD=operator OUT=/usr/local/bin/aerospike-operator
-CMD ["aerospike-operator", "-debug"]
+CMD ["bin/aerospike-operator", "-debug"]

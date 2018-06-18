@@ -31,14 +31,15 @@ dep:
 		git fetch origin && \
 		git checkout -f kubernetes-$(KUBERNETES_VERSION)
 
-.PHONY: dev
-dev: PROFILE?=minikube
-dev:
-	skaffold dev -p $(PROFILE)
-
 .PHONY: run
 run: PROFILE?=minikube
 run:
+	CGO_ENABLED=0 go build \
+	-v \
+	-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/version.Version=$(VERSION)" \
+	-tags=netgo \
+	-installsuffix=netgo \
+	-o=bin/aerospike-operator ./cmd/operator/main.go
 	skaffold run -p $(PROFILE)
 
 .PHONY: docker.operator
