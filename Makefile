@@ -1,3 +1,17 @@
+# VERSION holds the current version of aerospike-operator.
+VERSION?=0.6.0-dev
+
+build: BIN?=operator
+build: OUT?=bin/aerospike-operator
+build: dep gen
+	CGO_ENABLED=0 go build \
+	-a \
+	-v \
+	-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/version.Version=$(VERSION)" \
+	-tags=netgo \
+	-installsuffix=netgo \
+	-o=$(OUT) ./cmd/$(BIN)/main.go
+
 # the dep target fetches required dependencies
 # it should be removed as soon as k8s.io/code-generator can be specified as a
 # 'required' dependency in Gopkg.toml, and replaced by a call to dep ensure
@@ -28,13 +42,13 @@ run:
 	skaffold run -p $(PROFILE)
 
 .PHONY: docker.operator
-docker.operator: TAG?=$(shell git describe --dirty)
+docker.operator: TAG?=$(VERSION)
 docker.operator: IMG?=quay.io/travelaudience/aerospike-operator
 docker.operator:
 	docker build -t $(IMG):$(TAG) -f ./Dockerfile .
 
 .PHONY: docker.tools
-docker.tools: TAG?=$(shell git describe --dirty)
+docker.tools: TAG?=$(VERSION)
 docker.tools: IMG?=quay.io/travelaudience/aerospike-operator-tools
 docker.tools:
 	docker build -t $(IMG):$(TAG) -f ./Dockerfile.tools .

@@ -38,6 +38,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/signals"
+	"github.com/travelaudience/aerospike-operator/pkg/version"
 )
 
 var (
@@ -59,6 +60,10 @@ func main() {
 	if debug.DebugEnabled {
 		log.SetLevel(log.DebugLevel)
 	}
+
+	log.WithFields(log.Fields{
+		"version": version.Version,
+	}).Infof("aerospike-operator is starting")
 
 	// set up signals so we handle the first shutdown signal gracefully
 	stopCh := signals.SetupSignalHandler()

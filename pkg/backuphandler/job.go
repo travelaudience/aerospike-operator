@@ -31,6 +31,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
+	"github.com/travelaudience/aerospike-operator/pkg/version"
 )
 
 func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreObject) (*batchv1.Job, error) {
@@ -64,7 +65,7 @@ func (h *AerospikeBackupsHandler) createJob(obj aerospikev1alpha1.BackupRestoreO
 					Containers: []corev1.Container{
 						{
 							Name:            "aerospike-operator-tools",
-							Image:           "quay.io/travelaudience/aerospike-operator-tools:latest",
+							Image:           fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", version.Version),
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
 								"backup",
