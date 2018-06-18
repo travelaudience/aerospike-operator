@@ -7,7 +7,7 @@ build: dep gen
 	CGO_ENABLED=0 go build \
 	-a \
 	-v \
-	-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/version.Version=$(VERSION)" \
+	-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/versioning.OperatorVersion=$(VERSION)" \
 	-tags=netgo \
 	-installsuffix=netgo \
 	-o=$(OUT) ./cmd/$(BIN)/main.go
@@ -36,7 +36,7 @@ run: PROFILE?=minikube
 run:
 	CGO_ENABLED=0 go build \
 	-v \
-	-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/version.Version=$(VERSION)" \
+	-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/versioning.OperatorVersion=$(VERSION)" \
 	-tags=netgo \
 	-installsuffix=netgo \
 	-o=bin/aerospike-operator ./cmd/operator/main.go

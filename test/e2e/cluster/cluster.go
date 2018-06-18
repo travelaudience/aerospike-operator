@@ -29,12 +29,12 @@ import (
 
 func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Name = "one-really-lengthy-cluster-name-having-more-than-sixtytwo-chars"
+	aerospikeCluster.Name = "one-really-lengthy-cluster-name-having-more-than-sixtyone-char"
 	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	status := err.(*errors.StatusError)
 	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
-	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 62 characters"))
+	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 61 characters"))
 }
 
 func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1.Namespace) {

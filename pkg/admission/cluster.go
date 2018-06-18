@@ -7,11 +7,12 @@ import (
 	av1beta1 "k8s.io/api/admission/v1beta1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
 const (
 	// aerospikeClusterMaxNameLen represents the maximum length of an AerospikeCluster's metadata.name.
-	aerospikeClusterMaxNameLen = 62
+	aerospikeClusterMaxNameLen = 61
 )
 
 func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {
@@ -40,7 +41,7 @@ func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionRespo
 }
 
 func validateAerospikeCluster(aerospikeCluster *v1alpha1.AerospikeCluster) error {
-	// validate that the name doesn't exceed 52 characters
+	// validate that the name doesn't exceed 61 characters
 	if len(aerospikeCluster.Name) > aerospikeClusterMaxNameLen {
 		return fmt.Errorf("the name of the cluster cannot exceed %d characters", aerospikeClusterMaxNameLen)
 	}
@@ -54,10 +55,64 @@ func validateAerospikeCluster(aerospikeCluster *v1alpha1.AerospikeCluster) error
 }
 
 func validateAerospikeClusterUpdate(old, new *v1alpha1.AerospikeCluster) error {
+	// check whether a version upgrade has been requested, in which case we
+	// prevent configuration/topology changes from occurring simultaneously
+	if old.Spec.Version != new.Spec.Version {
+		// create a copy of the new spec
+		tmp := new.DeepCopy()
+		// set tmp.Spec.Version to old.Spec.Version
+		tmp.Spec.Version = old.Spec.Version
+		// check if old.Spec and tmp.Spec differ
+		// if they do, more than just .spec.Version has been been changed
+		// between old and new, and new must be rejected
+		if !reflect.DeepEqual(old.Spec, tmp.Spec) {
+			return fmt.Errorf("when changing .spec.version no other changes to .spec can be performed")
+		}
+	}
+
+	// validate the transition between old.spec.version and new.spec.version
+	if err := validateVersion(old, new); err != nil {
+		return err
+	}
+	// validate the namespace configuration
+	if err := validateNamespaces(old, new); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateVersion(old, new *v1alpha1.AerospikeCluster) error {
+	// if the version was not changed, we're good
+	if old.Spec.Version == new.Spec.Version {
+		return nil
+	}
+	// validate the requested version transition
+	sourceVersion, err := versioning.NewVersionFromString(old.Spec.Version)
+	if err != nil {
+		return err
+	}
+	targetVersion, err := versioning.NewVersionFromString(new.Spec.Version)
+	if err != nil {
+		return err
+	}
+	upgrade := versioning.VersionUpgrade{sourceVersion, targetVersion}
+	// return an error if the transition is not supported
+	if !upgrade.IsValid() {
+		return fmt.Errorf("cannot upgrade from version %v to %v", sourceVersion, targetVersion)
+	}
+	return nil
+}
+
+func validateNamespaces(old, new *v1alpha1.AerospikeCluster) error {
 	// grab a name => spec map for the namespaces in the old object
 	oldnss := namespaceMap(old)
 	// grab a name => spec map for the namespaces in the new object
 	newnss := namespaceMap(new)
+	// prevent two namespaces with the same name from appearing in the spec
+	if len(newnss) < len(new.Spec.Namespaces) {
+		return fmt.Errorf("namespace names must be unique")
+	}
 	// validate that no namespace has been removed
 	for name := range oldnss {
 		if _, ok := newnss[name]; !ok {

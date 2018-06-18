@@ -71,10 +71,8 @@ var (
 										Minimum: pointers.NewFloat64(1),
 									},
 									"version": {
-										Type: "string",
-										Enum: []extsv1beta1.JSON{
-											{Raw: []byte(asstrings.DoubleQuoted("4.0.0.4"))},
-										},
+										Type:    "string",
+										Pattern: `^\d+\.\d+\.\d+(\.\d+)?$`,
 									},
 									"namespaces": {
 										Type:     "array",
@@ -109,7 +107,6 @@ var (
 																Type: "string",
 																Enum: []extsv1beta1.JSON{
 																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeFile))},
-																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeDevice))},
 																},
 															},
 															"size": {

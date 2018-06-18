@@ -25,7 +25,7 @@ import (
 // DoubleQuoted returns the provided string surrounded by double-quotes, escaping any existing
 // double-quotes.
 func DoubleQuoted(str string) string {
-	return fmt.Sprintf(`"%s"`, str)
+	return fmt.Sprintf("%q", str)
 }
 
 // Hash creates an unique identifier for a given string.

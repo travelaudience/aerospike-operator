@@ -38,7 +38,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/signals"
-	"github.com/travelaudience/aerospike-operator/pkg/version"
+	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
 var (
@@ -62,7 +62,7 @@ func main() {
 	}
 
 	log.WithFields(log.Fields{
-		"version": version.Version,
+		"version": versioning.OperatorVersion,
 	}).Infof("aerospike-operator is starting")
 
 	// set up signals so we handle the first shutdown signal gracefully

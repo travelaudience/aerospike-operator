@@ -37,7 +37,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
-	"github.com/travelaudience/aerospike-operator/pkg/version"
+	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
 func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap) error {
@@ -215,7 +215,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 				},
 				{
 					Name:            "asprom",
-					Image:           fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", version.Version),
+					Image:           fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
 					ImagePullPolicy: v1.PullAlways,
 					Command: []string{
 						"asprom",
