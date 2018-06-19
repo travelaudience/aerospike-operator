@@ -30,7 +30,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
-func (r *AerospikeClusterReconciler) ensureHeadlessService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeCluster.Name,

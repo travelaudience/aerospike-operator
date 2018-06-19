@@ -25,6 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -46,63 +47,82 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 	if err != nil {
 		return err
 	}
-
 	// grab the current and desired size of the cluster
 	currentSize := len(pods)
 	desiredSize := aerospikeCluster.Spec.NodeCount
 
-	// sort pods by their index
-	sort.Sort(byIndex(pods))
-
 	// scale down if necessary
 	for i := currentSize - 1; i >= desiredSize; i-- {
-		log.WithFields(log.Fields{
-			logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-			logfields.CurrentSize:      currentSize,
-			logfields.DesiredSize:      desiredSize,
-		}).Debugf("deleting %s", meta.Key(pods[i]))
-
-		if err := r.safeDeletePod(aerospikeCluster, pods[i]); err != nil {
+		if err := r.safeDeletePodWithIndex(aerospikeCluster, i); err != nil {
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+			}).Errorf("failed to delete pod with index %d: %v", i, err)
 			return err
 		}
 	}
 
-	// create and restart pods as required
-	for i := 0; i < desiredSize; i++ {
-		if i < currentSize {
-			if configMap.Annotations[configMapHashLabel] != pods[i].Annotations[configMapHashLabel] {
-				// this pod must be restarted in order for aerospike to notice the new config
-				if _, err := r.safeRestartPod(aerospikeCluster, configMap, pods[i]); err != nil {
-					log.WithFields(log.Fields{
-						logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-						logfields.Pod:              meta.Key(pods[i]),
-					}).Errorf("pod restart failed: %v", err)
-					return err
-				}
+	// re-list existing pods for the cluster after scaling down
+	pods, err = r.listClusterPods(aerospikeCluster)
+	if err != nil {
+		return err
+	}
+	// re-grab the current and desired size of the cluster
+	currentSize = len(pods)
+	desiredSize = aerospikeCluster.Spec.NodeCount
 
-			} else if upgrade {
-				if err := r.upgradePod(aerospikeCluster, configMap, pods[i]); err != nil {
-					log.WithFields(log.Fields{
-						logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-						logfields.Pod:              meta.Key(pods[i]),
-					}).Errorf("pod upgrade failed: %v", err)
-					return err
-				}
-			}
-		} else {
+	// create/upgrade/restart existing pods as required
+	for i := 0; i < desiredSize; i++ {
+		// attempt to grab the pod with the specified index
+		pod, err := r.getPodWithIndex(aerospikeCluster, i)
+		if err != nil {
+			// we've failed to get the pod with the specified index
 			log.WithFields(log.Fields{
 				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-				logfields.CurrentSize:      currentSize,
-				logfields.DesiredSize:      desiredSize,
-			}).Debugf("creating pod")
-
-			// create a new pod in order to meet the desired size
-			if _, err := r.createPod(aerospikeCluster, configMap); err != nil {
+				logfields.PodIndex:         i,
+			}).Errorf("failed to get pod: %v", err)
+			// propagate the error
+			return err
+		}
+		// check whether the pod needs to be created
+		if pod == nil {
+			// no pod with the specified index exists, so it must be created
+			if _, err := r.createPodWithIndex(aerospikeCluster, configMap, i); err != nil {
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+					logfields.PodIndex:         i,
+				}).Errorf("failed to create pod: %v", err)
 				return err
 			}
+			// proceed to the next index
+			continue
+		}
+		// check whether the pod needs to be upgraded
+		if upgrade {
+			if err := r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i); err != nil {
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+					logfields.Pod:              meta.Key(pod),
+				}).Errorf("failed to upgrade pod: %v", err)
+				return err
+			}
+			// proceed to the next index
+			continue
+		}
+		// check whether the pod needs to be restarted
+		if configMap.Annotations[configMapHashLabel] != pod.Annotations[configMapHashLabel] {
+			if _, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, i); err != nil {
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+					logfields.Pod:              meta.Key(pod),
+				}).Errorf("failed to restart pod: %v", err)
+				return err
+			}
+			// proceed to the next index
+			continue
 		}
 	}
 
+	// signal that we're good and return
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 		logfields.CurrentSize:      currentSize,
@@ -113,39 +133,15 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 }
 
 func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) ([]*v1.Pod, error) {
+	// read the list of pods from the lister
 	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(selectors.PodsByClusterName(aerospikeCluster.Name))
 	if err != nil {
 		return nil, err
 	}
+	// sort the pods by index
+	sort.Sort(byIndex(pods))
+	// return the list of pods
 	return pods, nil
-}
-
-func (r *AerospikeClusterReconciler) newPodIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) int {
-	pods, err := r.listClusterPods(aerospikeCluster)
-	if err != nil {
-		return -1
-	}
-	if len(pods) == 0 {
-		return 0
-	}
-
-	idxList := make([]int, 0)
-	for _, p := range pods {
-		idxList = append(idxList, podIndex(p))
-	}
-
-	sort.Ints(idxList)
-	for i := 0; i < len(idxList); i++ {
-		if i != idxList[i] {
-			return i
-		}
-	}
-
-	return len(idxList)
-}
-
-func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap) (*v1.Pod, error) {
-	return r.createPodWithIndex(aerospikeCluster, configMap, r.newPodIndex(aerospikeCluster))
 }
 
 func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) (*v1.Pod, error) {
@@ -388,13 +384,37 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) safeDeletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
+func (r *AerospikeClusterReconciler) getPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, index int) (*v1.Pod, error) {
+	// look for the pod with the specified index
+	p, err := r.podsLister.Pods(aerospikeCluster.Namespace).Get(fmt.Sprintf("%s-%d", aerospikeCluster.Name, index))
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			// the pod may exist but we couldn't list it
+			return nil, err
+		}
+		// the pod doesn't exist, so return nil but don't propagate the error
+		return nil, nil
+	}
+	// return the pod returned by the lister
+	return p, nil
+}
+
+func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, index int) error {
+	// check whether a pod with the specified index exists
+	pod, err := r.getPodWithIndex(aerospikeCluster, index)
+	if err != nil {
+		// we've failed to get the pod with the specified index
+		return err
+	}
+	if pod == nil {
+		// no pod with the specified index exists
+		return nil
+	}
 	// check whether the pod is participating in migrations
 	migrations, err := podHasMigrationsInProgress(pod)
 	if err != nil {
 		return err
 	}
-
 	// if the pod is participating in migrations, we wait for them to finish and
 	// keep on giving feedback
 	if migrations {
@@ -415,7 +435,7 @@ func (r *AerospikeClusterReconciler) safeDeletePod(aerospikeCluster *aerospikev1
 					)
 				case <-done:
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitForMigrationsFinished,
-						"migrations finished to finish on pod %s",
+						"migrations finished on pod %s",
 						meta.Key(pod),
 					)
 					return
@@ -427,20 +447,19 @@ func (r *AerospikeClusterReconciler) safeDeletePod(aerospikeCluster *aerospikev1
 		}
 		close(done)
 	}
-
 	// delete the pod now that migrations are finished
 	return r.deletePod(aerospikeCluster, pod)
 }
 
-func (r *AerospikeClusterReconciler) safeRestartPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, pod *v1.Pod) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) (*v1.Pod, error) {
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-	}).Debugf("restarting %s", meta.Key(pod))
+	}).Debugf("restarting the pod with index %d", index)
 
-	if err := r.safeDeletePod(aerospikeCluster, pod); err != nil {
+	if err := r.safeDeletePodWithIndex(aerospikeCluster, index); err != nil {
 		return nil, err
 	}
-	return r.createPodWithIndex(aerospikeCluster, configMap, podIndex(pod))
+	return r.createPodWithIndex(aerospikeCluster, configMap, index)
 }
 
 // computeMemoryRequest computes the amount of memory to be requested per pod based on the value of the memorySize field

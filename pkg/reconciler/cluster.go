@@ -23,9 +23,9 @@ import (
 	storagelistersv1 "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/travelaudience/aerospike-operator/pkg/errors"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
+	"github.com/travelaudience/aerospike-operator/pkg/errors"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 )
@@ -68,7 +68,6 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	}).Debug("checking whether reconciliation is needed")
 
 	// check if a previous upgrade operation has failed, in which case we return
-	// without touching the cluster
 	if v, ok := aerospikeCluster.ObjectMeta.Annotations[UpgradeStatusAnnotationKey]; ok {
 		if v == UpgradeStatusFailedAnnotationValue {
 			log.WithFields(log.Fields{
@@ -98,8 +97,8 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	if !valid {
 		return nil
 	}
-	// create the headless service for the cluster
-	if err := r.ensureHeadlessService(aerospikeCluster); err != nil {
+	// create the service for the cluster
+	if err := r.ensureService(aerospikeCluster); err != nil {
 		return err
 	}
 	// create/get the configmap
@@ -125,7 +124,7 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 		return err
 	}
 
-	// update the .status field of aerospikeCluster
+	// update the status field of aerospikeCluster
 	if err := r.updateStatus(aerospikeCluster); err != nil {
 		return err
 	}

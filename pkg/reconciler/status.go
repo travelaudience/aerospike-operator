@@ -27,24 +27,19 @@ import (
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 )
 
-// updateStatus observes the aerospikeCluster and updates its status field accordingly
+// updateStatus updates the status of aerospikeCluster to match the spec.
+// IMPORTANT this method MUST only be called after a successful reconcile
 func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
 	// deepcopy aerospikeCluster so we can modify the status to later create the patch
 	new := aerospikeCluster.DeepCopy()
-	// lookup pods belonging to this aerospikeCluster
-	pods, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).List(listoptions.PodsByClusterName(aerospikeCluster.Name))
-	if err != nil {
-		return err
-	}
-	// update status.nodeCount accordingly
-	new.Status.NodeCount = len(pods.Items)
-	// update status.version and status.namespaces to match spec
-	new.Status.Version = aerospikeCluster.Spec.Version
+	// update status to match the spec - the correctness of this is ensured by
+	// the reconcile loop
 	new.Status.Namespaces = aerospikeCluster.Spec.Namespaces
-	// update the status
+	new.Status.NodeCount = aerospikeCluster.Spec.NodeCount
+	new.Status.Version = aerospikeCluster.Spec.Version
+	// update the status field of aerospikeCluster
 	return r.patchCluster(aerospikeCluster, new)
 }
 
@@ -74,13 +69,13 @@ func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha1.Ae
 
 // appendCondition appends the specified condition to the aerospikeCluster
 // object
-func (r *AerospikeClusterReconciler) appendCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, condition apiextensions.CustomResourceDefinitionCondition) {
+func appendCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, condition apiextensions.CustomResourceDefinitionCondition) {
 	aerospikeCluster.Status.Conditions = append(aerospikeCluster.Status.Conditions, condition)
 }
 
 // setAnnotation sets an annotation with the specified key and value in the
 // aerospikeCluster object
-func (r *AerospikeClusterReconciler) setAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key, value string) {
+func setAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key, value string) {
 	if aerospikeCluster.ObjectMeta.Annotations == nil {
 		aerospikeCluster.ObjectMeta.Annotations = make(map[string]string)
 	}
@@ -89,6 +84,6 @@ func (r *AerospikeClusterReconciler) setAnnotation(aerospikeCluster *aerospikev1
 
 // removeAnnotation removes the annotation with the specified key from the
 // aerospikeCluster object
-func (r *AerospikeClusterReconciler) removeAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key string) {
+func removeAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key string) {
 	delete(aerospikeCluster.ObjectMeta.Annotations, key)
 }

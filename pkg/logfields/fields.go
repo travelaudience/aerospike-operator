@@ -29,4 +29,5 @@ const (
 	PersistentVolumeClaim     = "persistentvolumeclaim"
 	Key                       = "key"
 	Job                       = "job"
+	PodIndex                  = "podIndex"
 )

@@ -40,12 +40,12 @@ func (r *AerospikeClusterReconciler) validateStorageClass(aerospikeCluster *aero
 			if _, err := r.scsLister.Get(ns.Storage.StorageClassName); err != nil {
 				if errors.IsNotFound(err) {
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonValidationError,
-						"Storage Class with name \"%s\" does not exist",
+						"storage class %q does not exist",
 						ns.Storage.StorageClassName,
 					)
 				} else {
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonValidationError,
-						"Error getting Storage Class with name \"%s\": %v",
+						"failed to get storage class %q: %v",
 						ns.Storage.StorageClassName,
 						err,
 					)
