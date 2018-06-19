@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,6 +44,7 @@ type AerospikeClusterSpec struct {
 // AerospikeClusterStatus is the status for an AerospikeCluster resource
 type AerospikeClusterStatus struct {
 	AerospikeClusterSpec
+	Conditions []apiextensions.CustomResourceDefinitionCondition `json="conditions"`
 }
 
 // AerospikeNamespaceSpec is the spec for an AerospikeNamespace object

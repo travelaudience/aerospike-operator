@@ -40,7 +40,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
-func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap) error {
+func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, upgrade bool) error {
 	// list existing pods for the cluster
 	pods, err := r.listClusterPods(aerospikeCluster)
 	if err != nil {
@@ -62,29 +62,42 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			logfields.DesiredSize:      desiredSize,
 		}).Debugf("deleting %s", meta.Key(pods[i]))
 
-		// this pod is not needed anymore, so it must be deleted
 		if err := r.safeDeletePod(aerospikeCluster, pods[i]); err != nil {
 			return err
 		}
 	}
 
+	// create and restart pods as required
 	for i := 0; i < desiredSize; i++ {
 		if i < currentSize {
 			if configMap.Annotations[configMapHashLabel] != pods[i].Annotations[configMapHashLabel] {
-				log.WithFields(log.Fields{
-					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-					logfields.CurrentSize:      currentSize,
-					logfields.DesiredSize:      desiredSize,
-				}).Debugf("restarting %s", meta.Key(pods[i]))
-
 				// this pod must be restarted in order for aerospike to notice the new config
-				if err := r.safeRestartPod(aerospikeCluster, configMap, pods[i]); err != nil {
+				if _, err := r.safeRestartPod(aerospikeCluster, configMap, pods[i]); err != nil {
+					log.WithFields(log.Fields{
+						logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+						logfields.Pod:              meta.Key(pods[i]),
+					}).Errorf("pod restart failed: %v", err)
+					return err
+				}
+
+			} else if upgrade {
+				if err := r.upgradePod(aerospikeCluster, configMap, pods[i]); err != nil {
+					log.WithFields(log.Fields{
+						logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+						logfields.Pod:              meta.Key(pods[i]),
+					}).Errorf("pod upgrade failed: %v", err)
 					return err
 				}
 			}
 		} else {
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+				logfields.CurrentSize:      currentSize,
+				logfields.DesiredSize:      desiredSize,
+			}).Debugf("creating pod")
+
 			// create a new pod in order to meet the desired size
-			if err := r.createPod(aerospikeCluster, configMap); err != nil {
+			if _, err := r.createPod(aerospikeCluster, configMap); err != nil {
 				return err
 			}
 		}
@@ -131,11 +144,11 @@ func (r *AerospikeClusterReconciler) newPodIndex(aerospikeCluster *aerospikev1al
 	return len(idxList)
 }
 
-func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap) error {
+func (r *AerospikeClusterReconciler) createPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap) (*v1.Pod, error) {
 	return r.createPodWithIndex(aerospikeCluster, configMap, r.newPodIndex(aerospikeCluster))
 }
 
-func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) error {
+func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) (*v1.Pod, error) {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", aerospikeCluster.Name, index),
@@ -294,7 +307,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 	}
 
 	if claims, err := r.getPersistentVolumeClaims(aerospikeCluster, pod); err != nil {
-		return err
+		return nil, err
 	} else {
 		for _, claim := range claims {
 			pod.Spec.Volumes = append(pod.Spec.Volumes, v1.Volume{
@@ -311,7 +324,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 	// create the pod
 	res, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).Create(pod)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	done := make(chan bool, 1)
@@ -336,10 +349,11 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 	}()
 
 	err = r.waitForPodCondition(res, func(event watch.Event) (bool, error) {
-		return isPodRunningAndReady(event.Object.(*v1.Pod)), nil
+		pod = event.Object.(*v1.Pod)
+		return isPodRunningAndReady(pod), nil
 	}, watchCreatePodTimeout)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	close(done)
 
@@ -348,7 +362,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		logfields.Pod:              meta.Key(res),
 	}).Debug("pod created and running")
 
-	return nil
+	return pod, nil
 }
 
 func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
@@ -375,38 +389,56 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 }
 
 func (r *AerospikeClusterReconciler) safeDeletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
-	done := make(chan bool, 1)
-	go func() {
-		ticker := time.NewTicker(podOperationFeedbackPeriod)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonMigrationsFinishing,
-					"waiting for migrations to finish on pod %s",
-					meta.Key(pod),
-				)
-			case <-done:
-				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonMigrationsFinished,
-					"migrations finished on pod %s",
-					meta.Key(pod),
-				)
-				return
-			}
-		}
-	}()
-
-	if err := waitPodReadyToShutdown(pod); err != nil {
+	// check whether the pod is participating in migrations
+	migrations, err := podHasMigrationsInProgress(pod)
+	if err != nil {
 		return err
 	}
-	close(done)
 
+	// if the pod is participating in migrations, we wait for them to finish and
+	// keep on giving feedback
+	if migrations {
+		done := make(chan bool, 1)
+		go func() {
+			ticker := time.NewTicker(podOperationFeedbackPeriod)
+			defer ticker.Stop()
+			r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitForMigrationsStarted,
+				"waiting for migrations to finish on pod %s",
+				meta.Key(pod),
+			)
+			for {
+				select {
+				case <-ticker.C:
+					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitingForMigrations,
+						"waiting for migrations to finish on pod %s",
+						meta.Key(pod),
+					)
+				case <-done:
+					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitForMigrationsFinished,
+						"migrations finished to finish on pod %s",
+						meta.Key(pod),
+					)
+					return
+				}
+			}
+		}()
+		if err := waitForMigrationsToFinishOnPod(pod); err != nil {
+			return err
+		}
+		close(done)
+	}
+
+	// delete the pod now that migrations are finished
 	return r.deletePod(aerospikeCluster, pod)
 }
 
-func (r *AerospikeClusterReconciler) safeRestartPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, pod *v1.Pod) error {
+func (r *AerospikeClusterReconciler) safeRestartPod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, pod *v1.Pod) (*v1.Pod, error) {
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+	}).Debugf("restarting %s", meta.Key(pod))
+
 	if err := r.safeDeletePod(aerospikeCluster, pod); err != nil {
-		return err
+		return nil, err
 	}
 	return r.createPodWithIndex(aerospikeCluster, configMap, podIndex(pod))
 }

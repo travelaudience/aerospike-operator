@@ -83,7 +83,21 @@ func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.C
 	return nil
 }
 
-func waitPodReadyToShutdown(pod *v1.Pod) error {
+func podHasMigrationsInProgress(pod *v1.Pod) (bool, error) {
+	client, err := as.NewClient(pod.Status.PodIP, ServicePort)
+	if err != nil {
+		return false, err
+	}
+	defer client.Close()
+	for _, node := range client.GetNodes() {
+		if node.GetHost().Name == pod.Status.PodIP {
+			return node.MigrationInProgress()
+		}
+	}
+	return false, nil
+}
+
+func waitForMigrationsToFinishOnPod(pod *v1.Pod) error {
 	client, err := as.NewClient(pod.Status.PodIP, ServicePort)
 	if err != nil {
 		return err
@@ -99,4 +113,24 @@ func waitPodReadyToShutdown(pod *v1.Pod) error {
 		}
 	}
 	return nil
+}
+
+func getAerospikeServerVersionFromPod(pod *v1.Pod) (string, error) {
+	addr := fmt.Sprintf("%s:%d", pod.Status.PodIP, ServicePort)
+	conn, err := as.NewConnection(addr, 5*time.Second)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := as.RequestInfo(conn, "build")
+	if err != nil {
+		return "", err
+	}
+
+	version, ok := res["build"]
+	if !ok {
+		return "", fmt.Errorf("failed to get aerospike version from pod %v", meta.Key(pod))
+	}
+
+	return version, nil
 }

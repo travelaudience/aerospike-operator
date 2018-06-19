@@ -23,6 +23,7 @@ import (
 	storagelistersv1 "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/travelaudience/aerospike-operator/pkg/errors"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
@@ -66,6 +67,28 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 	}).Debug("checking whether reconciliation is needed")
 
+	// check if a previous upgrade operation has failed, in which case we return
+	// without touching the cluster
+	if v, ok := aerospikeCluster.ObjectMeta.Annotations[UpgradeStatusAnnotationKey]; ok {
+		if v == UpgradeStatusFailedAnnotationValue {
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+			}).Warn("a previous version upgrade has failed. aborting")
+			return nil
+		}
+	}
+
+	// check if the current reconcile operation is an upgrade, and if it is set
+	// the appropriate annotations (for internal use) and conditions
+	upgrade := aerospikeCluster.Status.Version != "" && aerospikeCluster.Spec.Version != aerospikeCluster.Status.Version
+	if upgrade {
+		var err error
+		aerospikeCluster, err = r.signalUpgradeStarted(aerospikeCluster)
+		if err != nil {
+			return err
+		}
+	}
+
 	// validate fields that cannot be validated statically
 	valid, err := r.validate(aerospikeCluster)
 	if err != nil {
@@ -88,9 +111,31 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	if err := r.ensureNetworkPolicy(aerospikeCluster); err != nil {
 		return err
 	}
-	// make sure that current size meets desired size
-	if err := r.ensurePods(aerospikeCluster, configMap); err != nil {
+
+	// make sure that pods are up-to-date with the spec
+	if err := r.ensurePods(aerospikeCluster, configMap, upgrade); err != nil {
+		// if a pod upgrade failed, signal with the appropriate annotations
+		// and conditions
+		if err == errors.PodUpgradeFailed {
+			if _, err := r.signalUpgradeFailed(aerospikeCluster); err != nil {
+				log.Errorf("failed to signal failed upgrade: %v", err)
+			}
+		}
+		// return the original error
 		return err
 	}
-	return r.ensureStatus(aerospikeCluster)
+
+	// update the .status field of aerospikeCluster
+	if err := r.updateStatus(aerospikeCluster); err != nil {
+		return err
+	}
+
+	// set the appropriate annotations and conditions if performing an upgrade
+	if upgrade {
+		if _, err := r.signalUpgradeFinished(aerospikeCluster); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

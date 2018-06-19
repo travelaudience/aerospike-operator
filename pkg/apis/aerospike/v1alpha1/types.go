@@ -48,6 +48,18 @@ const (
 
 	// ConditionRestoreStarted defines a status condition that indicates that a restore job has started
 	ConditionRestoreStarted apiextensions.CustomResourceDefinitionConditionType = "RestoreStarted"
+
+	// ConditionUpgradeStarted defines a status condition that indicates that an upgrade to an
+	// Aerospike cluster has started
+	ConditionUpgradeStarted apiextensions.CustomResourceDefinitionConditionType = "UpgradeStarted"
+
+	// ConditionUpgradeFinished defines a status condition that indicates that an upgrade to an
+	// Aerospike cluster has finished
+	ConditionUpgradeFinished apiextensions.CustomResourceDefinitionConditionType = "UpgradeFinished"
+
+	// ConditionUpgradeFailed defines a status condition that indicates that an upgrade to an
+	// Aerospike cluster has failed
+	ConditionUpgradeFailed apiextensions.CustomResourceDefinitionConditionType = "UpgradeFailed"
 )
 
 type ActionType string

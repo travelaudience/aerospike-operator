@@ -75,6 +75,16 @@ const (
 	asReadinessTimeoutSeconds      = 2
 	asReadinessPeriodSeconds       = 10
 	asReadinessFailureThreshold    = 3
+
+	// UpgradeStatusAnnotationKey is the name of the annotation added to
+	// AerospikeCluster resources that are being upgraded.
+	UpgradeStatusAnnotationKey = "aerospike.travelaudience.com/upgrade-status"
+	// UpgradeStatusStartedAnnotationValue is the value of the annotation added
+	// to AerospikeCluster resources that are being upgrade.
+	UpgradeStatusStartedAnnotationValue = "started"
+	// UpgradeStatusFailedAnnotationValue is the value of the annotation added
+	// to AerospikeCluster resources that have not been successfully upgraded.
+	UpgradeStatusFailedAnnotationValue = "failed"
 )
 
 var asConfigTemplate = template.Must(template.New("aerospike-config").Parse(aerospikeConfig))
