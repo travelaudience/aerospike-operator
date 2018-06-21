@@ -60,7 +60,7 @@ func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alph
 				Cluster:   cluster.Name,
 				Namespace: namespace,
 			},
-			Storage: aerospikev1alpha1.BackupStorageSpec{
+			Storage: &aerospikev1alpha1.BackupStorageSpec{
 				Type:   aerospikev1alpha1.StorageTypeGCS,
 				Bucket: GCSBucketName,
 				Secret: GCSSecretName,
@@ -80,7 +80,7 @@ func (tf *TestFramework) NewAerospikeNamespaceRestoreGCS(cluster *aerospikev1alp
 				Cluster:   cluster.Name,
 				Namespace: namespace,
 			},
-			Storage: aerospikev1alpha1.BackupStorageSpec{
+			Storage: &aerospikev1alpha1.BackupStorageSpec{
 				Type:   aerospikev1alpha1.StorageTypeGCS,
 				Bucket: GCSBucketName,
 				Secret: GCSSecretName,

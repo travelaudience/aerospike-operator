@@ -37,14 +37,6 @@ const (
 	// migrations are finished.
 	ReasonWaitForMigrationsFinished = "WaitForMigrationsFinished"
 
-	// ReasonInvalidTarget is the reason used in corev1.Event objects indicating a target
-	// cluster and namespace is not reachable or does not exist
-	ReasonInvalidTarget = "InvalidTarget"
-
-	// ReasonInvalidSecret is the reason used in corev1.Event objects indicating that the
-	// secret is not valid
-	ReasonInvalidSecret = "InvalidSecret"
-
 	// ReasonJobFinished is the reason used in corev1.Event objects indicating the backup or
 	// restore is finished
 	ReasonJobFinished = "JobFinished"

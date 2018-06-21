@@ -27,13 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	batchlistersv1 "k8s.io/client-go/listers/batch/v1"
-	corelistersv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
-	aerospikeerrors "github.com/travelaudience/aerospike-operator/pkg/errors"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
@@ -44,7 +42,6 @@ type AerospikeBackupRestoreHandler struct {
 	aerospikeclientset      aerospikeclientset.Interface
 	aerospikeClustersLister aerospikelisters.AerospikeClusterLister
 	jobsLister              batchlistersv1.JobLister
-	secretsLister           corelistersv1.SecretLister
 	recorder                record.EventRecorder
 }
 
@@ -52,14 +49,12 @@ func New(kubeclientset kubernetes.Interface,
 	aerospikeclientset aerospikeclientset.Interface,
 	aerospikeClustersLister aerospikelisters.AerospikeClusterLister,
 	jobsLister batchlistersv1.JobLister,
-	secretsLister corelistersv1.SecretLister,
 	recorder record.EventRecorder) *AerospikeBackupRestoreHandler {
 	return &AerospikeBackupRestoreHandler{
 		kubeclientset:           kubeclientset,
 		aerospikeclientset:      aerospikeclientset,
 		aerospikeClustersLister: aerospikeClustersLister,
 		jobsLister:              jobsLister,
-		secretsLister:           secretsLister,
 		recorder:                recorder,
 	}
 }
@@ -81,6 +76,16 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha1.BackupResto
 		return nil
 	}
 
+	// get backupstoragespec from the "parent" aerospikecluster resource in case
+	// this field is not specified in the current resource
+	if obj.GetStorage() == nil {
+		aerospikeCluster, err := h.aerospikeClustersLister.AerospikeClusters(obj.GetNamespace()).Get(obj.GetTarget().Cluster)
+		if err != nil {
+			return err
+		}
+		obj.SetStorage(&aerospikeCluster.Spec.BackupSpec.Storage)
+	}
+
 	// check whether the associated job exists, and create it if it doesn't
 	j, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).Get(h.getJobName(obj))
 	if err != nil {
@@ -99,39 +104,6 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha1.BackupResto
 // launchJob performs a number of checks and launches the job associated with
 // obj.
 func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha1.BackupRestoreObject) error {
-	// make sure that the target cluster and namespace exist
-	if err := h.checkNamespaceExists(obj); err != nil {
-		if errors.IsNotFound(err) {
-			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonInvalidTarget,
-				"cluster %s does not exist",
-				obj.GetTarget().Cluster,
-			)
-		}
-		if err == aerospikeerrors.NamespaceDoesNotExist {
-			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonInvalidTarget,
-				"cluster %s does not contain a namespace named %s",
-				obj.GetTarget().Cluster,
-				obj.GetTarget().Namespace,
-			)
-		}
-		return err
-	}
-	// make sure that the secret containing cloud storage credentials exists and
-	// matches the expected format
-	if err := h.checkSecretExists(obj); err != nil {
-		if errors.IsNotFound(err) {
-			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonInvalidSecret,
-				"secret does not exist",
-			)
-		}
-		if err == aerospikeerrors.InvalidSecretFileName {
-			h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonInvalidSecret,
-				"secret does not contain expected field %s", secretFilename,
-			)
-		}
-		return err
-	}
-
 	// create the backup/restore job
 	job, err := h.createJob(obj)
 	if err != nil {

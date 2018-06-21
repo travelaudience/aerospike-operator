@@ -80,7 +80,7 @@ func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRe
 								fmt.Sprintf("-debug=%t", debug.DebugEnabled),
 								fmt.Sprintf("-bucket-name=%s", obj.GetStorage().Bucket),
 								fmt.Sprintf("-name=%s", obj.GetObjectMeta().Name),
-								fmt.Sprintf("-secret-path=%s/%s", secretVolumeMountPath, secretFilename),
+								fmt.Sprintf("-secret-path=%s/%s", secretVolumeMountPath, SecretFilename),
 								fmt.Sprintf("-host=%s.%s", obj.GetTarget().Cluster, obj.GetNamespace()),
 								fmt.Sprintf("-namespace=%s", obj.GetTarget().Namespace),
 							},

@@ -42,10 +42,55 @@ const (
 )
 
 var (
-	AerospikeClusterCRDName = fmt.Sprintf("%s.%s", AerospikeClusterPlural, aerospikev1alpha1.SchemeGroupVersion.Group)
+	AerospikeClusterCRDName          = fmt.Sprintf("%s.%s", AerospikeClusterPlural, aerospikev1alpha1.SchemeGroupVersion.Group)
+	AerospikeNamespaceBackupCRDName  = fmt.Sprintf("%s.%s", AerospikeNamespaceBackupPlural, aerospikev1alpha1.SchemeGroupVersion.Group)
+	AerospikeNamespaceRestoreCRDName = fmt.Sprintf("%s.%s", AerospikeNamespaceRestorePlural, aerospikev1alpha1.SchemeGroupVersion.Group)
 )
 
 var (
+	backupStorageSpecProps = extsv1beta1.JSONSchemaProps{
+		Type: "object",
+		Properties: map[string]extsv1beta1.JSONSchemaProps{
+			"type": {
+				Type: "string",
+				Enum: []extsv1beta1.JSON{
+					{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeGCS))},
+				},
+			},
+			"bucket": {
+				Type:      "string",
+				MinLength: pointers.NewInt64(1),
+			},
+			"secret": {
+				Type:      "string",
+				MinLength: pointers.NewInt64(1),
+			},
+		},
+		Required: []string{
+			"type",
+			"bucket",
+			"secret",
+		},
+	}
+
+	backupRestoreTargetProps = extsv1beta1.JSONSchemaProps{
+		Type: "object",
+		Properties: map[string]extsv1beta1.JSONSchemaProps{
+			"cluster": {
+				Type:      "string",
+				MinLength: pointers.NewInt64(1),
+			},
+			"namespace": {
+				Type:      "string",
+				MinLength: pointers.NewInt64(1),
+			},
+		},
+		Required: []string{
+			"cluster",
+			"namespace",
+		},
+	}
+
 	crds = []*extsv1beta1.CustomResourceDefinition{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -130,6 +175,15 @@ var (
 											},
 										},
 									},
+									"backupSpec": {
+										Type: "object",
+										Properties: map[string]extsv1beta1.JSONSchemaProps{
+											"storage": backupStorageSpecProps,
+										},
+										Required: []string{
+											"storage",
+										},
+									},
 								},
 								Required: []string{
 									"nodeCount",
@@ -160,47 +214,8 @@ var (
 						Properties: map[string]extsv1beta1.JSONSchemaProps{
 							"spec": {
 								Properties: map[string]extsv1beta1.JSONSchemaProps{
-									"target": {
-										Type: "object",
-										Properties: map[string]extsv1beta1.JSONSchemaProps{
-											"cluster": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-											"namespace": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-										},
-										Required: []string{
-											"cluster",
-											"namespace",
-										},
-									},
-									"storage": {
-										Type: "object",
-										Properties: map[string]extsv1beta1.JSONSchemaProps{
-											"type": {
-												Type: "string",
-												Enum: []extsv1beta1.JSON{
-													{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeGCS))},
-												},
-											},
-											"bucket": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-											"secret": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-										},
-										Required: []string{
-											"type",
-											"bucket",
-											"secret",
-										},
-									},
+									"target":  backupRestoreTargetProps,
+									"storage": backupStorageSpecProps,
 									"ttl": {
 										Type:    "string",
 										Pattern: `^\d+d$`,
@@ -208,7 +223,6 @@ var (
 								},
 								Required: []string{
 									"target",
-									"storage",
 								},
 							},
 						},
@@ -234,51 +248,11 @@ var (
 						Properties: map[string]extsv1beta1.JSONSchemaProps{
 							"spec": {
 								Properties: map[string]extsv1beta1.JSONSchemaProps{
-									"target": {
-										Type: "object",
-										Properties: map[string]extsv1beta1.JSONSchemaProps{
-											"cluster": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-											"namespace": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-										},
-										Required: []string{
-											"cluster",
-											"namespace",
-										},
-									},
-									"storage": {
-										Type: "object",
-										Properties: map[string]extsv1beta1.JSONSchemaProps{
-											"type": {
-												Type: "string",
-												Enum: []extsv1beta1.JSON{
-													{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeGCS))},
-												},
-											},
-											"bucket": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-											"secret": {
-												Type:      "string",
-												MinLength: pointers.NewInt64(1),
-											},
-										},
-										Required: []string{
-											"type",
-											"bucket",
-											"secret",
-										},
-									},
+									"target":  backupRestoreTargetProps,
+									"storage": backupStorageSpecProps,
 								},
 								Required: []string{
 									"target",
-									"storage",
 								},
 							},
 						},

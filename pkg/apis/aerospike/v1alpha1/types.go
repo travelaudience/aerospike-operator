@@ -80,6 +80,7 @@ type BackupRestoreObject interface {
 	GetNamespace() string
 	GetObjectMeta() *v1.ObjectMeta
 	GetStorage() *BackupStorageSpec
+	SetStorage(*BackupStorageSpec)
 	GetTarget() *TargetNamespace
 	GetConditions() []apiextensions.CustomResourceDefinitionCondition
 	SetConditions([]apiextensions.CustomResourceDefinitionCondition)

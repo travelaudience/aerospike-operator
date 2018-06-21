@@ -23,11 +23,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	corelistersv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/util/cert"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike"
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
+	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 )
 
@@ -42,9 +47,11 @@ var (
 	scheme = runtime.NewScheme()
 	codecs = serializer.NewCodecFactory(scheme)
 
-	aerospikeOperatorWebhookName = fmt.Sprintf("aerospike-operator.%s", aerospike.GroupName)
-	aerospikeClusterWebhookPath  = "/admission/reviews/aerospikeclusters"
-	healthzPath                  = "/healthz"
+	aerospikeOperatorWebhookName         = fmt.Sprintf("aerospike-operator.%s", aerospike.GroupName)
+	aerospikeClusterWebhookPath          = "/admission/reviews/aerospikeclusters"
+	aerospikeNamespaceBackupWebhookPath  = "/admission/reviews/aerospikenamespacebackups"
+	aerospikeNamespaceRestoreWebhookPath = "/admission/reviews/aerospikenamespacerestores"
+	healthzPath                          = "/healthz"
 
 	failurePolicy = admissionregistrationv1beta1.Fail
 )
@@ -53,14 +60,24 @@ type admissionFunc func(admissionv1beta1.AdmissionReview) *admissionv1beta1.Admi
 
 // ValidatingAdmissionWebhook represents a validating admission webhook.
 type ValidatingAdmissionWebhook struct {
-	kubeClient *kubernetes.Clientset
+	kubeClient              kubernetes.Interface
+	aerospikeClient         aerospikeclientset.Interface
+	secretsLister           corelistersv1.SecretLister
+	aerospikeClustersLister aerospikelisters.AerospikeClusterLister
 }
 
 // NewValidatingAdmissionWebhook creates a ValidatingAdmissionWebhook struct that will use the specified client to
 // access the API.
-func NewValidatingAdmissionWebhook(kubeClient *kubernetes.Clientset) *ValidatingAdmissionWebhook {
+func NewValidatingAdmissionWebhook(
+	kubeClient kubernetes.Interface,
+	aerospikeClient aerospikeclientset.Interface,
+	kubeInformerFactory kubeinformers.SharedInformerFactory,
+	aerospikeInformerFactory aerospikeinformers.SharedInformerFactory) *ValidatingAdmissionWebhook {
 	return &ValidatingAdmissionWebhook{
-		kubeClient: kubeClient,
+		kubeClient:              kubeClient,
+		aerospikeClient:         aerospikeClient,
+		secretsLister:           kubeInformerFactory.Core().V1().Secrets().Lister(),
+		aerospikeClustersLister: aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeClusters().Lister(),
 	}
 }
 
@@ -138,6 +155,56 @@ func (s *ValidatingAdmissionWebhook) RegisterAndRun(readyCh chan interface{}) {
 				},
 				FailurePolicy: &failurePolicy,
 			},
+			{
+				Name: crd.AerospikeNamespaceBackupCRDName,
+				Rules: []admissionregistrationv1beta1.RuleWithOperations{
+					{
+						Operations: []admissionregistrationv1beta1.OperationType{
+							admissionregistrationv1beta1.Create,
+							admissionregistrationv1beta1.Update,
+						},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{v1alpha1.SchemeGroupVersion.Group},
+							APIVersions: []string{v1alpha1.SchemeGroupVersion.Version},
+							Resources:   []string{crd.AerospikeNamespaceBackupPlural},
+						},
+					},
+				},
+				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+					Service: &admissionregistrationv1beta1.ServiceReference{
+						Name:      ServiceName,
+						Namespace: namespace,
+						Path:      &aerospikeNamespaceBackupWebhookPath,
+					},
+					CABundle: caBundle,
+				},
+				FailurePolicy: &failurePolicy,
+			},
+			{
+				Name: crd.AerospikeNamespaceRestoreCRDName,
+				Rules: []admissionregistrationv1beta1.RuleWithOperations{
+					{
+						Operations: []admissionregistrationv1beta1.OperationType{
+							admissionregistrationv1beta1.Create,
+							admissionregistrationv1beta1.Update,
+						},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{v1alpha1.SchemeGroupVersion.Group},
+							APIVersions: []string{v1alpha1.SchemeGroupVersion.Version},
+							Resources:   []string{crd.AerospikeNamespaceRestorePlural},
+						},
+					},
+				},
+				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+					Service: &admissionregistrationv1beta1.ServiceReference{
+						Name:      ServiceName,
+						Namespace: namespace,
+						Path:      &aerospikeNamespaceRestoreWebhookPath,
+					},
+					CABundle: caBundle,
+				},
+				FailurePolicy: &failurePolicy,
+			},
 		},
 	}
 
@@ -156,7 +223,9 @@ func (s *ValidatingAdmissionWebhook) RegisterAndRun(readyCh chan interface{}) {
 
 	// create an http server and register a handler function to back the webhook
 	mux := http.NewServeMux()
-	mux.HandleFunc(aerospikeClusterWebhookPath, handleAerospikeCluster)
+	mux.HandleFunc(aerospikeClusterWebhookPath, s.handleAerospikeCluster)
+	mux.HandleFunc(aerospikeNamespaceBackupWebhookPath, s.handleAerospikeNamespaceBackup)
+	mux.HandleFunc(aerospikeNamespaceRestoreWebhookPath, s.handleAerospikeNamespaceRestore)
 	mux.HandleFunc(healthzPath, handleHealthz)
 	srv := http.Server{
 		Addr:    fmt.Sprintf(":%d", 8443),
@@ -188,8 +257,16 @@ func (s *ValidatingAdmissionWebhook) RegisterAndRun(readyCh chan interface{}) {
 	}
 }
 
-func handleAerospikeCluster(res http.ResponseWriter, req *http.Request) {
-	handle(res, req, admitAerospikeCluster)
+func (s *ValidatingAdmissionWebhook) handleAerospikeCluster(res http.ResponseWriter, req *http.Request) {
+	handle(res, req, s.admitAerospikeCluster)
+}
+
+func (s *ValidatingAdmissionWebhook) handleAerospikeNamespaceBackup(res http.ResponseWriter, req *http.Request) {
+	handle(res, req, s.admitAerospikeNamespaceBackup)
+}
+
+func (s *ValidatingAdmissionWebhook) handleAerospikeNamespaceRestore(res http.ResponseWriter, req *http.Request) {
+	handle(res, req, s.admitAerospikeNamespaceRestore)
 }
 
 func handleHealthz(res http.ResponseWriter, _ *http.Request) {

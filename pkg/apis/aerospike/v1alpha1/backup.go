@@ -36,9 +36,10 @@ type AerospikeNamespaceBackup struct {
 
 // AerospikeNamespaceBackupSpec is the spec for an AerospikeNamespaceBackup resource
 type AerospikeNamespaceBackupSpec struct {
-	Target  TargetNamespace   `json:"target"`
-	Storage BackupStorageSpec `json:"storage"`
-	TTL     string            `json:"ttl"`
+	Target TargetNamespace `json:"target"`
+	// +optional
+	Storage *BackupStorageSpec `json:"storage,omitempty"`
+	TTL     string             `json:"ttl"`
 }
 
 // TargetNamespace specifies the cluster and namespace to backup
@@ -91,7 +92,11 @@ func (b *AerospikeNamespaceBackup) GetObjectMeta() *metav1.ObjectMeta {
 }
 
 func (b *AerospikeNamespaceBackup) GetStorage() *BackupStorageSpec {
-	return &b.Spec.Storage
+	return b.Spec.Storage
+}
+
+func (b *AerospikeNamespaceBackup) SetStorage(storage *BackupStorageSpec) {
+	b.Spec.Storage = storage
 }
 
 func (b *AerospikeNamespaceBackup) GetTarget() *TargetNamespace {

@@ -103,7 +103,7 @@ func main() {
 
 	// if --admission-enabled is true create, register and run the validating admission webhook
 	readyCh := make(chan interface{}, 0)
-	go admission.NewValidatingAdmissionWebhook(kubeClient).RegisterAndRun(readyCh)
+	go admission.NewValidatingAdmissionWebhook(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory).RegisterAndRun(readyCh)
 
 	// wait for the webhook to be ready to start the controllers
 	<-readyCh

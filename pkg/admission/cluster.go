@@ -7,6 +7,7 @@ import (
 	av1beta1 "k8s.io/api/admission/v1beta1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
@@ -15,7 +16,7 @@ const (
 	aerospikeClusterMaxNameLen = 61
 )
 
-func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {
+func (s *ValidatingAdmissionWebhook) admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {
 	// decode the new AerospikeCluster object
 	new, err := decodeAerospikeCluster(ar.Request.Object.Raw)
 	if err != nil {
@@ -27,12 +28,12 @@ func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionRespo
 		return admissionResponseFromError(err)
 	}
 	// validate the new AerospikeCluster
-	if err = validateAerospikeCluster(new); err != nil {
+	if err = s.validateAerospikeCluster(new); err != nil {
 		return admissionResponseFromError(err)
 	}
 	// if this is an update, validate that the transition from old to new
 	if ar.Request.Operation == av1beta1.Update {
-		if err = validateAerospikeClusterUpdate(old, new); err != nil {
+		if err = s.validateAerospikeClusterUpdate(old, new); err != nil {
 			return admissionResponseFromError(err)
 		}
 	}
@@ -40,21 +41,34 @@ func admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionRespo
 	return &av1beta1.AdmissionResponse{Allowed: true}
 }
 
-func validateAerospikeCluster(aerospikeCluster *v1alpha1.AerospikeCluster) error {
+func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *v1alpha1.AerospikeCluster) error {
 	// validate that the name doesn't exceed 61 characters
 	if len(aerospikeCluster.Name) > aerospikeClusterMaxNameLen {
 		return fmt.Errorf("the name of the cluster cannot exceed %d characters", aerospikeClusterMaxNameLen)
 	}
+
 	// validate that every namespace's replication factor is less than or equal to the cluster's node count.
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
 		if ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
 			return fmt.Errorf("replication factor of %d requested for namespace %s but the cluster has only %d nodes", ns.ReplicationFactor, ns.Name, aerospikeCluster.Spec.NodeCount)
 		}
 	}
+
+	// if backupSpec is specified, make sure that the secret containing
+	// cloud storage credentials exists and matches the expected format
+	if aerospikeCluster.Spec.BackupSpec != nil {
+		secret, err := s.secretsLister.Secrets(aerospikeCluster.Namespace).Get(aerospikeCluster.Spec.BackupSpec.Storage.Secret)
+		if err != nil {
+			return err
+		}
+		if _, ok := secret.Data[backuprestore.SecretFilename]; !ok {
+			return fmt.Errorf("secret does not contain expected field %q", backuprestore.SecretFilename)
+		}
+	}
 	return nil
 }
 
-func validateAerospikeClusterUpdate(old, new *v1alpha1.AerospikeCluster) error {
+func (s *ValidatingAdmissionWebhook) validateAerospikeClusterUpdate(old, new *v1alpha1.AerospikeCluster) error {
 	// check whether a version upgrade has been requested, in which case we
 	// prevent configuration/topology changes from occurring simultaneously
 	if old.Spec.Version != new.Spec.Version {
@@ -67,6 +81,10 @@ func validateAerospikeClusterUpdate(old, new *v1alpha1.AerospikeCluster) error {
 		// between old and new, and new must be rejected
 		if !reflect.DeepEqual(old.Spec, tmp.Spec) {
 			return fmt.Errorf("when changing .spec.version no other changes to .spec can be performed")
+		}
+		// fail if the aerospikecluster resource doesn't contain .spec.backupSpec
+		if new.Spec.BackupSpec == nil {
+			return fmt.Errorf("no value for .spec.backupSpec has been specified")
 		}
 	}
 

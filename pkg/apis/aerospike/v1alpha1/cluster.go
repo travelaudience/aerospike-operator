@@ -39,6 +39,8 @@ type AerospikeClusterSpec struct {
 	NodeCount  int                      `json:"nodeCount"`
 	Version    string                   `json:"version"`
 	Namespaces []AerospikeNamespaceSpec `json:"namespaces"`
+	// +optional
+	BackupSpec *AerospikeClusterBackupSpec `json:"backupSpec,omitempty"`
 }
 
 // AerospikeClusterStatus is the status for an AerospikeCluster resource
@@ -54,6 +56,11 @@ type AerospikeNamespaceSpec struct {
 	MemorySize        string      `json:"memorySize"`
 	DefaultTTL        string      `json:"defaultTTL"`
 	Storage           StorageSpec `json:"storage"`
+}
+
+// AerospikeClusterBackupSpec is the spec for AerospikeCluster backups
+type AerospikeClusterBackupSpec struct {
+	Storage BackupStorageSpec `json:"storage"`
 }
 
 // StorageSpec is the spec for a Storage object

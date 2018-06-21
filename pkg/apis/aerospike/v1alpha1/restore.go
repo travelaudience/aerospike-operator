@@ -36,8 +36,9 @@ type AerospikeNamespaceRestore struct {
 
 // AerospikeNamespaceRestoreSpec is the spec for an AerospikeNamespaceRestore resource
 type AerospikeNamespaceRestoreSpec struct {
-	Target  TargetNamespace   `json:"target"`
-	Storage BackupStorageSpec `json:"storage"`
+	Target TargetNamespace `json:"target"`
+	// +optional
+	Storage *BackupStorageSpec `json:"storage,omitempty"`
 }
 
 // AerospikeNamespaceRestoreStatus is the status for an AerospikeNamespaceRestore resource
@@ -77,7 +78,11 @@ func (r *AerospikeNamespaceRestore) GetObjectMeta() *metav1.ObjectMeta {
 }
 
 func (r *AerospikeNamespaceRestore) GetStorage() *BackupStorageSpec {
-	return &r.Spec.Storage
+	return r.Spec.Storage
+}
+
+func (r *AerospikeNamespaceRestore) SetStorage(storage *BackupStorageSpec) {
+	r.Spec.Storage = storage
 }
 
 func (r *AerospikeNamespaceRestore) GetTarget() *TargetNamespace {

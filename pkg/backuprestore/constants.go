@@ -17,7 +17,9 @@ limitations under the License.
 package backuprestore
 
 const (
-	secretFilename        = "key.json"
+	// SecretFileName represents the name of the file that is required to exist
+	// in the secret referenced in BackupStorageSpec objects.
+	SecretFilename        = "key.json"
 	secretVolumeName      = "secret"
 	secretVolumeMountPath = "/secret"
 )
