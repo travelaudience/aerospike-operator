@@ -93,6 +93,7 @@ cluster.
 | version | The version of Aerospike to be deployed. | string | true
 | nodeCount | The number of nodes in the cluster. | int32 | true
 | namespaces | The specification of the Aerospike namespaces in the cluster. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
+| backupSpec | The specification of how Aerospike namespace backups made by aerospike-operator should be performed and stored. | <<aerospikebackupspec,AerospikeBackupSpec>> | false
 |===
 
 ==== Validations
@@ -113,6 +114,11 @@ metadata:
 spec:
   version: "4.0.0.4"
   nodeCount: 3
+  backupSpec:
+      storage:
+        type: gcs
+        bucket: test-bucket
+        secret: bucket-secret
   namespaces:
   - name: aerospike-namespace-0
     replicationFactor: 2
@@ -129,6 +135,23 @@ spec:
       type: file
       size: 300G
 ----
+
+<<toc,Back>>
+
+[[aerospikebackupspec]]
+=== AerospikeBackupSpec
+
+The AerospikeBackupSpec type specifies how Aerospike namespace backups made
+by aerospike-operator should be performed and stored.
+
+|===
+| Field | Description | Scheme | Required
+| storage | The specification of how the backup is stored. | <<backupstoragespec,BackupStorageSpec>> | true
+|===
+
+==== Validations
+
+* `storage` must be non-null.
 
 <<toc,Back>>
 
@@ -204,7 +227,7 @@ operation.
 |===
 | Field | Description | Scheme | Required
 | target | The specification of the Aerospike cluster and namespace to backup. | <<targetnamespace,TargetNamespace>> | true
-| storage | The specification of how the backup will be stored. | <<backupstoragespec,BackupStorageSpec>> | true
+| storage | The specification of how the backup will be stored. | <<backupstoragespec,BackupStorageSpec>> | false
 | ttl | The retention period (_days_) during which to keep backup data in cloud storage, suffixed with _d_. Defaults to `0d`, meaning the backup data will be kept forever. | string | false
 |===
 
@@ -215,7 +238,6 @@ More info:
 ==== Validations
 
 * `target` must be non-null.
-* `storage` must be non-null.
 * `ttl` must represent a non-negative quantity.
 
 ==== Example
@@ -249,7 +271,7 @@ operation.
 |===
 | Field | Description | Scheme | Required
 | target | The specification of the Aerospike cluster and namespace the backup will be restored to. | <<targetnamespace,TargetNamespace>> | true
-| storage | The specification of how the backup will be retrieved. | <<backupstoragespec,BackupStorageSpec>> | true
+| storage | The specification of how the backup is retrieved. | <<backupstoragespec,BackupStorageSpec>> | false
 |===
 
 More info:
@@ -259,7 +281,6 @@ More info:
 ==== Validations
 
 * `target` must be non-null.
-* `storage` must be non-null.
 
 ==== Example
 
