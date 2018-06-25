@@ -54,6 +54,7 @@ func NewAerospikeClusterController(
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	scInformer := kubeInformerFactory.Storage().V1().StorageClasses()
 	aerospikeClusterInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeClusters()
+	aerospikeNamespaceBackupInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeNamespaceBackups()
 
 	// obtain references to listers for the required types
 	podsLister := podInformer.Lister()
@@ -62,6 +63,7 @@ func NewAerospikeClusterController(
 	pvcsLister := pvcInformer.Lister()
 	scsLister := scInformer.Lister()
 	aerospikeClustersLister := aerospikeClusterInformer.Lister()
+	aerospikeNamespaceBackupsLister := aerospikeNamespaceBackupInformer.Lister()
 
 	c := &AerospikeClusterController{
 		genericController:       newGenericController("aerospikecluster", kubeClient),
@@ -76,7 +78,7 @@ func NewAerospikeClusterController(
 		aerospikeClusterInformer.Informer().HasSynced,
 	}
 	c.syncHandler = c.processQueueItem
-	c.reconciler = reconciler.New(kubeClient, aerospikeClient, podsLister, configMapsLister, servicesLister, pvcsLister, scsLister, c.recorder)
+	c.reconciler = reconciler.New(kubeClient, aerospikeClient, podsLister, configMapsLister, servicesLister, pvcsLister, scsLister, aerospikeNamespaceBackupsLister, c.recorder)
 
 	c.logger.Debug("setting up event handlers")
 

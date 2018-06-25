@@ -60,6 +60,18 @@ const (
 	// ConditionUpgradeFailed defines a status condition that indicates that an upgrade to an
 	// Aerospike cluster has failed
 	ConditionUpgradeFailed apiextensions.CustomResourceDefinitionConditionType = "UpgradeFailed"
+
+	// ConditionAutoBackupStarted defines a status condition that indicates that a pre-upgrade
+	// backup for an Aerospike cluster has started
+	ConditionAutoBackupStarted apiextensions.CustomResourceDefinitionConditionType = "AutoBackupStarted"
+
+	// ConditionAutoBackupFinished defines a status condition that indicates that a pre-upgrade
+	// backup for an Aerospike cluster has finished
+	ConditionAutoBackupFinished apiextensions.CustomResourceDefinitionConditionType = "AutoBackupFinished"
+
+	// ConditionAutoBackupFailed defines a status condition that indicates that a pre-upgrade
+	// backup for an Aerospike cluster has failed
+	ConditionAutoBackupFailed apiextensions.CustomResourceDefinitionConditionType = "AutoBackupFailed"
 )
 
 type ActionType string

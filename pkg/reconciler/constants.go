@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	kind = "AerospikeCluster"
-
 	configVolumeName = "config"
 	configMountPath  = "/opt/aerospike/etc/"
 
@@ -85,6 +83,9 @@ const (
 	// UpgradeStatusFailedAnnotationValue is the value of the annotation added
 	// to AerospikeCluster resources that have not been successfully upgraded.
 	UpgradeStatusFailedAnnotationValue = "failed"
+	// UpgradeStatusBackupAnnotationValue is the value of the annotation added
+	// to AerospikeCluster resources that are undergoing a pre-upgrade backup.
+	UpgradeStatusBackupAnnotationValue = "backup"
 )
 
 var asConfigTemplate = template.Must(template.New("aerospike-config").Parse(aerospikeConfig))

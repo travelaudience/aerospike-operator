@@ -70,6 +70,88 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 	return nil
 }
 
+func (r *AerospikeClusterReconciler) signalBackupStarted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+	// grab a copy of aerospikeCluster in its current state so we can later
+	// create a patch
+	oldCluster := aerospikeCluster.DeepCopy()
+
+	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
+		Type:               aerospikev1alpha1.ConditionAutoBackupStarted,
+		Status:             apiextensions.ConditionTrue,
+		Reason:             events.ReasonClusterAutoBackupStarted,
+		Message:            "cluster backup started",
+		LastTransitionTime: metav1.NewTime(time.Now()),
+	})
+	setAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusBackupAnnotationValue)
+
+	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
+		return nil, err
+	}
+
+	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterAutoBackupStarted,
+		"cluster backup started")
+
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+	}).Debugf("cluster backup started")
+
+	return aerospikeCluster, nil
+}
+
+func (r *AerospikeClusterReconciler) signalBackupFinished(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+	// grab a copy of aerospikeCluster in its current state so we can later
+	// create a patch
+	oldCluster := aerospikeCluster.DeepCopy()
+
+	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
+		Type:               aerospikev1alpha1.ConditionAutoBackupFinished,
+		Status:             apiextensions.ConditionTrue,
+		Reason:             events.ReasonClusterAutoBackupFinished,
+		Message:            "cluster backup finished",
+		LastTransitionTime: metav1.NewTime(time.Now()),
+	})
+
+	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
+		return nil, err
+	}
+
+	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterAutoBackupFinished,
+		"cluster backup finished")
+
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+	}).Debugf("cluster backup finished")
+
+	return aerospikeCluster, nil
+}
+
+func (r *AerospikeClusterReconciler) signalBackupFailed(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+	// grab a copy of aerospikeCluster in its current state so we can later
+	// create a patch
+	oldCluster := aerospikeCluster.DeepCopy()
+
+	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
+		Type:               aerospikev1alpha1.ConditionAutoBackupFailed,
+		Status:             apiextensions.ConditionTrue,
+		Reason:             events.ReasonClusterAutoBackupFailed,
+		Message:            "cluster backup failed",
+		LastTransitionTime: metav1.NewTime(time.Now()),
+	})
+
+	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
+		return nil, err
+	}
+
+	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterAutoBackupFailed,
+		"cluster backup failed")
+
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+	}).Debugf("cluster backup failed")
+
+	return aerospikeCluster, nil
+}
+
 func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch

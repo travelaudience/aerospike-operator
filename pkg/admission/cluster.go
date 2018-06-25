@@ -13,7 +13,17 @@ import (
 
 const (
 	// aerospikeClusterMaxNameLen represents the maximum length of an AerospikeCluster's metadata.name.
-	aerospikeClusterMaxNameLen = 61
+	// the length corresponds to the maximum length of a pod name (63 characters) minus the dash and
+	// the index (two digits).
+	aerospikeClusterMaxNameLen = 60
+	// aerospikeNamespaceMaxNameLen represents the maximum length of an AerospikeCluster's namespace name.
+	// The length corresponds to the  maximum length of a pod name (63 characters) minus 40 chars
+	// corresponding to the following:
+	// -XX.YY.ZZ.WW-XX.YY.ZZ.WW-upgrade-restore, where XX.YY.ZZ.WW appears twice and corresponds to the
+	// source and target versions of Aerospike, upgrade is the sufix appended by reconciler and
+	// backup/restore sufix is appended to the jobs by backups handler. (restore is used for calculation
+	// because it has a greater length)
+	aerospikeNamespaceMaxNameLen = 23
 )
 
 func (s *ValidatingAdmissionWebhook) admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {
@@ -47,8 +57,12 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 		return fmt.Errorf("the name of the cluster cannot exceed %d characters", aerospikeClusterMaxNameLen)
 	}
 
-	// validate that every namespace's replication factor is less than or equal to the cluster's node count.
+	// validate every namespace's name and that its replication factor
+	// is less than or equal to the cluster's node count.
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
+		if len(ns.Name) > aerospikeNamespaceMaxNameLen {
+			return fmt.Errorf("the name of a namespace cannot exceed %d characters", aerospikeNamespaceMaxNameLen)
+		}
 		if ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
 			return fmt.Errorf("replication factor of %d requested for namespace %s but the cluster has only %d nodes", ns.ReplicationFactor, ns.Name, aerospikeCluster.Spec.NodeCount)
 		}

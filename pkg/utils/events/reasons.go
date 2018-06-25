@@ -60,4 +60,16 @@ const (
 	// ReasonClusterUpgradeFinished is the reason used in corev1.Event objects indicating that a
 	// cluster upgrade has finished
 	ReasonClusterUpgradeFinished = "ClusterUpgradeFinished"
+
+	// ReasonClusterAutoBackupStarted is the reason used in corev1.Event objects indicating that a
+	// cluster backup has started
+	ReasonClusterAutoBackupStarted = "ClusterAutoBackupStarted"
+
+	// ReasonClusterAutoBackupFinished is the reason used in corev1.Event objects indicating that a
+	// cluster backup has finished
+	ReasonClusterAutoBackupFinished = "ClusterAutoBackupFinished"
+
+	// ReasonClusterAutoBackupFailed is the reason used in corev1.Event objects indicating that a
+	// cluster backup has failed
+	ReasonClusterAutoBackupFailed = "ClusterAutoBackupFailed"
 )

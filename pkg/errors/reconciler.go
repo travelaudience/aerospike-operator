@@ -19,5 +19,6 @@ package errors
 import "fmt"
 
 var (
-	PodUpgradeFailed = fmt.Errorf("pod upgrade failed")
+	PodUpgradeFailed    = fmt.Errorf("pod upgrade failed")
+	ClusterBackupFailed = fmt.Errorf("cluster backup failed")
 )

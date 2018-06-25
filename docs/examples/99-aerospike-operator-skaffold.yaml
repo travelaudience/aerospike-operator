@@ -37,12 +37,20 @@ rules:
   - aerospike.travelaudience.com
   resources:
   - aerospikeclusters
-  - aerospikenamespacebackups
   - aerospikenamespacerestores
   verbs:
   - create
   - get
   - update
+- apiGroups:
+  - aerospike.travelaudience.com
+  resources:
+  - aerospikenamespacebackups
+  verbs:
+  - list
+  - patch
+  - watch
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

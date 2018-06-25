@@ -25,20 +25,22 @@ import (
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/errors"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 )
 
 type AerospikeClusterReconciler struct {
-	kubeclientset      kubernetes.Interface
-	aerospikeclientset aerospikeclientset.Interface
-	podsLister         listersv1.PodLister
-	configMapsLister   listersv1.ConfigMapLister
-	servicesLister     listersv1.ServiceLister
-	pvcsLister         listersv1.PersistentVolumeClaimLister
-	scsLister          storagelistersv1.StorageClassLister
-	recorder           record.EventRecorder
+	kubeclientset          kubernetes.Interface
+	aerospikeclientset     aerospikeclientset.Interface
+	podsLister             listersv1.PodLister
+	configMapsLister       listersv1.ConfigMapLister
+	servicesLister         listersv1.ServiceLister
+	pvcsLister             listersv1.PersistentVolumeClaimLister
+	scsLister              storagelistersv1.StorageClassLister
+	aerospikeBackupsLister aerospikelisters.AerospikeNamespaceBackupLister
+	recorder               record.EventRecorder
 }
 
 func New(kubeclientset kubernetes.Interface,
@@ -48,16 +50,18 @@ func New(kubeclientset kubernetes.Interface,
 	servicesLister listersv1.ServiceLister,
 	pvcsLister listersv1.PersistentVolumeClaimLister,
 	scsLister storagelistersv1.StorageClassLister,
+	aerospikeBackupsLister aerospikelisters.AerospikeNamespaceBackupLister,
 	recorder record.EventRecorder) *AerospikeClusterReconciler {
 	return &AerospikeClusterReconciler{
-		kubeclientset:      kubeclientset,
-		aerospikeclientset: aerospikeclientset,
-		podsLister:         podsLister,
-		configMapsLister:   configMapsLister,
-		servicesLister:     servicesLister,
-		pvcsLister:         pvcsLister,
-		scsLister:          scsLister,
-		recorder:           recorder,
+		kubeclientset:          kubeclientset,
+		aerospikeclientset:     aerospikeclientset,
+		podsLister:             podsLister,
+		configMapsLister:       configMapsLister,
+		servicesLister:         servicesLister,
+		pvcsLister:             pvcsLister,
+		scsLister:              scsLister,
+		aerospikeBackupsLister: aerospikeBackupsLister,
+		recorder:               recorder,
 	}
 }
 
@@ -81,10 +85,45 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	// the appropriate annotations (for internal use) and conditions
 	upgrade := aerospikeCluster.Status.Version != "" && aerospikeCluster.Spec.Version != aerospikeCluster.Status.Version
 	if upgrade {
-		var err error
-		aerospikeCluster, err = r.signalUpgradeStarted(aerospikeCluster)
-		if err != nil {
-			return err
+		// start the backup if no annotation is present
+		if status, ok := aerospikeCluster.Annotations[UpgradeStatusAnnotationKey]; !ok {
+			var err error
+			if aerospikeCluster, err = r.signalBackupStarted(aerospikeCluster); err != nil {
+				return err
+			}
+			return r.backupCluster(aerospikeCluster)
+		} else if status == UpgradeStatusBackupAnnotationValue {
+			// check if autobackups have finished
+			if backupsCompleted, err := r.isClusterBackupFinished(aerospikeCluster); err != nil {
+				// if a backup failed, signal with the appropriate annotations
+				// and conditions
+				if err == errors.ClusterBackupFailed {
+					if _, err := r.signalBackupFailed(aerospikeCluster); err != nil {
+						log.Errorf("failed to signal failed pre-upgrade backups: %v", err)
+					}
+					if _, err := r.signalUpgradeFailed(aerospikeCluster); err != nil {
+						log.Errorf("failed to signal failed upgrade: %v", err)
+					}
+				}
+				// return the original error
+				return err
+
+			} else if backupsCompleted {
+				// set the appropriate annotations and conditions
+				if aerospikeCluster, err = r.signalBackupFinished(aerospikeCluster); err != nil {
+					return err
+				}
+				if aerospikeCluster, err = r.signalUpgradeStarted(aerospikeCluster); err != nil {
+					return err
+				}
+
+			} else {
+				// backups did not finish yet, we may quit for now
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+				}).Debug("waiting for backups to finish before upgrading")
+				return nil
+			}
 		}
 	}
 

@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
@@ -119,7 +120,7 @@ func buildConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) *v1.Co
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
-					Kind:               kind,
+					Kind:               crd.AerospikeClusterKind,
 					Name:               aerospikeCluster.Name,
 					UID:                aerospikeCluster.UID,
 					Controller:         pointers.NewBool(true),

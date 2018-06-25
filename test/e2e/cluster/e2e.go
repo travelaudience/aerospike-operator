@@ -49,7 +49,7 @@ var _ = Describe("AerospikeCluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("cannot be created with len(metadata.name)==62", func() {
+		It("cannot be created with len(metadata.name)==61", func() {
 			testCreateAerospikeClusterWithLengthyName(tf, ns)
 		})
 		It("cannot be created with spec.nodeCount==0", func() {
