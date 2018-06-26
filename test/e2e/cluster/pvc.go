@@ -30,7 +30,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-func testVolumesSizeMatchNamespaceSpec(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int, nsSize1 int, nsSize2 int) {
+func testVolumesSizeMatchNamespaceSpec(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nsSize1 int, nsSize2 int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	ns1 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, nsSize1)
@@ -44,7 +44,7 @@ func testVolumesSizeMatchNamespaceSpec(tf *framework.TestFramework, ns *v1.Names
 
 	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
-	Expect(len(pods.Items)).To(Equal(nodeCount))
+	Expect(int32(len(pods.Items))).To(Equal(nodeCount))
 
 	for _, pod := range pods.Items {
 		Expect(pod.Spec.Volumes).NotTo(BeEmpty())
@@ -67,7 +67,7 @@ func testVolumesSizeMatchNamespaceSpec(tf *framework.TestFramework, ns *v1.Names
 
 }
 
-func testVolumeIsReused(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {
+func testVolumeIsReused(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {
 	Expect(nodeCount).To(BeNumerically(">", 1))
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount

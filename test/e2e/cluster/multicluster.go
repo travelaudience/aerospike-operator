@@ -27,7 +27,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-func testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {
+func testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {
 	aerospikeCluster1 := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster1.Spec.NodeCount = nodeCount + 1
 	asc1, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster1)
@@ -57,9 +57,9 @@ func testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf *framework.Te
 
 	size1, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", asc1.Name, asc1.Namespace), 3000)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(size1).To(Equal(nodeCount))
+	Expect(int32(size1)).To(Equal(nodeCount))
 
 	size2, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", asc2.Name, asc2.Namespace), 3000)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(size2).To(Equal(nodeCount))
+	Expect(int32(size2)).To(Equal(nodeCount))
 }

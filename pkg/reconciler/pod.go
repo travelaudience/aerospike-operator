@@ -50,7 +50,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 	}
 	// grab the current and desired size of the cluster
 	currentSize := len(pods)
-	desiredSize := aerospikeCluster.Spec.NodeCount
+	desiredSize := int(aerospikeCluster.Spec.NodeCount)
 
 	// scale down if necessary
 	for i := currentSize - 1; i >= desiredSize; i-- {
@@ -69,7 +69,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 	}
 	// re-grab the current and desired size of the cluster
 	currentSize = len(pods)
-	desiredSize = aerospikeCluster.Spec.NodeCount
+	desiredSize = int(aerospikeCluster.Spec.NodeCount)
 
 	// create/upgrade/restart existing pods as required
 	for i := 0; i < desiredSize; i++ {
@@ -468,7 +468,7 @@ func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *a
 func computeMemoryRequest(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) resource.Quantity {
 	sum := 0
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
-		s, err := strconv.Atoi(strings.TrimSuffix(ns.MemorySize, "G"))
+		s, err := strconv.Atoi(strings.TrimSuffix(*ns.MemorySize, "G"))
 		if err != nil {
 			// ns.MemorySize has been validated before, so it is highly unlikely
 			// than an error occurs at this point. however, if it does occur, we

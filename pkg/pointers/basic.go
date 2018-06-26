@@ -46,3 +46,9 @@ func NewInt64FromFloat64(v float64) *int64 {
 	res := int64(v)
 	return &res
 }
+
+// NewString returns a pointer to a string with the content of v.
+func NewString(v string) *string {
+	res := v
+	return &res
+}

@@ -63,7 +63,7 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 		if len(ns.Name) > aerospikeNamespaceMaxNameLen {
 			return fmt.Errorf("the name of a namespace cannot exceed %d characters", aerospikeNamespaceMaxNameLen)
 		}
-		if ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
+		if ns.ReplicationFactor != nil && *ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
 			return fmt.Errorf("replication factor of %d requested for namespace %s but the cluster has only %d nodes", ns.ReplicationFactor, ns.Name, aerospikeCluster.Spec.NodeCount)
 		}
 	}

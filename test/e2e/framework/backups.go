@@ -26,6 +26,7 @@ import (
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
+	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 )
 
@@ -65,7 +66,7 @@ func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alph
 				Bucket: GCSBucketName,
 				Secret: GCSSecretName,
 			},
-			TTL: ttl,
+			TTL: pointers.NewString(ttl),
 		},
 	}
 }

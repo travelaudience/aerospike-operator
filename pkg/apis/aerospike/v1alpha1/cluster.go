@@ -25,57 +25,84 @@ import (
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AerospikeCluster is a specification for an AerospikeCluster resource
+// AerospikeCluster represents an Aerospike cluster.
 type AerospikeCluster struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// Standard object metadata.
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AerospikeClusterSpec   `json:"spec"`
+	// The specification of the Aerospike cluster.
+	Spec AerospikeClusterSpec `json:"spec"`
+	// The status of the Aerospike cluster.
 	Status AerospikeClusterStatus `json:"status"`
 }
 
-// AerospikeClusterSpec is the spec for an AerospikeCluster resource
+// AerospikeClusterSpec represents the desired state of an Aerospike cluster.
 type AerospikeClusterSpec struct {
-	NodeCount  int                      `json:"nodeCount"`
-	Version    string                   `json:"version"`
+	// The number of nodes in the cluster.
+	NodeCount int32 `json:"nodeCount"`
+	// The version of Aerospike to be deployed.
+	Version string `json:"version"`
+	// The specification of the namespaces in the cluster.
 	Namespaces []AerospikeNamespaceSpec `json:"namespaces"`
+	// The specification of how automatic backups will be performed.
 	// +optional
 	BackupSpec *AerospikeClusterBackupSpec `json:"backupSpec,omitempty"`
 }
 
-// AerospikeClusterStatus is the status for an AerospikeCluster resource
+// AerospikeClusterStatus represents the current state of an Aerospike cluster.
 type AerospikeClusterStatus struct {
+	// The current AerospikeClusterSpec of the resource.
 	AerospikeClusterSpec
+	// The conditions that describe the current state of the resource.
 	Conditions []apiextensions.CustomResourceDefinitionCondition `json="conditions"`
 }
 
-// AerospikeNamespaceSpec is the spec for an AerospikeNamespace object
+// AerospikeNamespaceSpec represents the configuration of an Aerospike namespace.
 type AerospikeNamespaceSpec struct {
-	Name              string      `json:"name"`
-	ReplicationFactor int         `json:"replicationFactor"`
-	MemorySize        string      `json:"memorySize"`
-	DefaultTTL        string      `json:"defaultTTL"`
-	Storage           StorageSpec `json:"storage"`
+	// The name of the Aerospike namespace.
+	Name string `json:"name"`
+	// The number of replicas (including the master copy) for this namespace.
+	// If absent, the default value provided by Aerospike will be used.
+	// +optional
+	ReplicationFactor *int32 `json:"replicationFactor,omitempty"`
+	// The amount of memory (gibibytes) to be used for index and data, suffixed with G.
+	// If absent, the default value provided by Aerospike will be used.
+	// +optional
+	MemorySize *string `json:"memorySize,omitempty"`
+	// Default record time-to-live (seconds) since it is created or last updated, suffixed with s.
+	// When TTL is reached, the record is deleted automatically.
+	// A TTL of 0s means the record never expires.
+	// If absent, the default value provided by Aerospike will be used.
+	// +optional
+	DefaultTTL *string `json:"defaultTTL,omitempty"`
+	// Specifies how data for the namespace will be stored.
+	Storage StorageSpec `json:"storage"`
 }
 
-// AerospikeClusterBackupSpec is the spec for AerospikeCluster backups
+// AerospikeClusterBackupSpec represents the desired configuration for storing automatic backups.
 type AerospikeClusterBackupSpec struct {
+	// Specifies how backups will be stored.
 	Storage BackupStorageSpec `json:"storage"`
 }
 
-// StorageSpec is the spec for a Storage object
+// StorageSpec represents the desired configuration for storing data in a given namespace.
 type StorageSpec struct {
-	Type             string `json:"type"`
-	Size             string `json:"size"`
+	// The storage engine to be used for the namespace (file or device).
+	Type string `json:"type"`
+	// The size (gibibytes) of the persistent volume to use for storing data in this namespace, suffixed with G.
+	Size string `json:"size"`
+	// The name of the storage class to use to create persistent volumes.
 	StorageClassName string `json:"storageClassName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AerospikeClusterList is a list of AerospikeCluster resources
+// AerospikeClusterList represents a list of Aerospike clusters.
 type AerospikeClusterList struct {
 	metav1.TypeMeta `json:",inline"`
+	// Standard list metadata.
 	metav1.ListMeta `json:"metadata"`
-
+	// The list of Aerospike clusters.
 	Items []AerospikeCluster `json:"items"`
 }

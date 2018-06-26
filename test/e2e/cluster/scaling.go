@@ -27,7 +27,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-func testNodeCountAfterScaling(tf *framework.TestFramework, ns *v1.Namespace, initialNodeCount int, finalNodeCount int) {
+func testNodeCountAfterScaling(tf *framework.TestFramework, ns *v1.Namespace, initialNodeCount, finalNodeCount int32) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = initialNodeCount
 	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -44,11 +44,11 @@ func testNodeCountAfterScaling(tf *framework.TestFramework, ns *v1.Namespace, in
 	Expect(asc.Status.NodeCount).To(Equal(finalNodeCount))
 }
 
-func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, initialNodeCount int, finalNodeCount int) {
+func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, initialNodeCount, finalNodeCount int32) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = initialNodeCount
 	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{
-		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", int(math.Min(float64(initialNodeCount), float64(finalNodeCount))), 1, 0, 1),
+		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", int32(math.Min(float64(initialNodeCount), float64(finalNodeCount))), 1, 0, 1),
 	}
 	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())

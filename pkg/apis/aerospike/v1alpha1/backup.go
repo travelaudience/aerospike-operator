@@ -39,7 +39,8 @@ type AerospikeNamespaceBackupSpec struct {
 	Target TargetNamespace `json:"target"`
 	// +optional
 	Storage *BackupStorageSpec `json:"storage,omitempty"`
-	TTL     string             `json:"ttl"`
+	// +optional
+	TTL *string `json:"ttl,omitempty"`
 }
 
 // TargetNamespace specifies the cluster and namespace to backup

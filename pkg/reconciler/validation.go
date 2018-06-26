@@ -21,7 +21,7 @@ func (r *AerospikeClusterReconciler) validate(aerospikeCluster *aerospikev1alpha
 
 func (r *AerospikeClusterReconciler) validateReplicationFactor(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) bool {
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
-		if ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
+		if ns.ReplicationFactor != nil && *ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
 			r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonValidationError,
 				"replication factor of %d requested for namespace %s but the cluster has only %d nodes",
 				ns.ReplicationFactor,

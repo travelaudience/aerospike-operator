@@ -148,18 +148,24 @@ func getNamespaceProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, nam
 
 	props[nsNameKey] = namespace.Name
 
-	if namespace.ReplicationFactor <= aerospikeCluster.Spec.NodeCount && namespace.ReplicationFactor > 0 {
-		props[nsReplicationFactorKey] = namespace.ReplicationFactor
-	} else if namespace.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
-		props[nsReplicationFactorKey] = aerospikeCluster.Spec.NodeCount
+	if namespace.ReplicationFactor != nil {
+		if *namespace.ReplicationFactor <= aerospikeCluster.Spec.NodeCount && *namespace.ReplicationFactor > 0 {
+			props[nsReplicationFactorKey] = namespace.ReplicationFactor
+		} else if *namespace.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
+			props[nsReplicationFactorKey] = aerospikeCluster.Spec.NodeCount
+		}
 	}
 
-	if namespace.MemorySize != "" {
-		props[nsMemorySizeKey] = namespace.MemorySize
+	if namespace.MemorySize != nil {
+		if *namespace.MemorySize != "" {
+			props[nsMemorySizeKey] = namespace.MemorySize
+		}
 	}
 
-	if value, err := strconv.Atoi(strings.TrimSuffix(namespace.DefaultTTL, "s")); err == nil {
-		props[nsDefaultTTLKey] = value
+	if namespace.DefaultTTL != nil {
+		if value, err := strconv.Atoi(strings.TrimSuffix(*namespace.DefaultTTL, "s")); err == nil {
+			props[nsDefaultTTLKey] = value
+		}
 	}
 
 	props[nsStorageTypeKey] = namespace.Storage.Type

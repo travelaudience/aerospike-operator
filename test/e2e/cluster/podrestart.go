@@ -21,10 +21,11 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-func testNodeCountAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {
+func testNodeCountAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -42,7 +43,7 @@ func testNodeCountAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, no
 	Expect(asc.Status.NodeCount).To(Equal(nodeCount))
 }
 
-func testNodeCountAfterRestartAndScaling(tf *framework.TestFramework, ns *v1.Namespace, initialNodeCount int, finalNodeCount int) {
+func testNodeCountAfterRestartAndScaling(tf *framework.TestFramework, ns *v1.Namespace, initialNodeCount, finalNodeCount int32) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = initialNodeCount
 	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -60,10 +61,10 @@ func testNodeCountAfterRestartAndScaling(tf *framework.TestFramework, ns *v1.Nam
 	Expect(asc.Status.NodeCount).To(Equal(finalNodeCount))
 }
 
-func testNoDataLossAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int, nRecords int) {
+func testNoDataLossAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nRecords int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
-	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = 2
+	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = pointers.NewInt32(2)
 	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -87,10 +88,10 @@ func testNoDataLossAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, n
 	c2.Close()
 }
 
-func testNoDataLossAfterRestartAndScaleDown(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int, nRecords int) {
+func testNoDataLossAfterRestartAndScaleDown(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nRecords int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount + 1
-	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = 2
+	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = pointers.NewInt32(2)
 	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 

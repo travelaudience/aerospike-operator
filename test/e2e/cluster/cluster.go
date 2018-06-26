@@ -88,7 +88,7 @@ func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFr
 	Expect(status.ErrStatus.Message).To(MatchRegexp("replication factor of \\d+ requested for namespace .+ but the cluster has only \\d+ nodes"))
 }
 
-func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int) {
+func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -99,7 +99,7 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 
 	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
-	Expect(len(pods.Items)).To(Equal(nodeCount))
+	Expect(int32(len(pods.Items))).To(Equal(nodeCount))
 }
 
 func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace) {
