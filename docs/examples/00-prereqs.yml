@@ -46,6 +46,14 @@ rules:
   - watch
 - apiGroups: [""]
   resources:
+  - endpoints
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups: [""]
+  resources:
   - pods
   verbs:
   - delete

@@ -23,12 +23,18 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/travelaudience/aerospike-operator/pkg/admission"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
@@ -57,16 +63,31 @@ func init() {
 func main() {
 	fs.Parse(os.Args[1:])
 
+	// workaround for https://github.com/kubernetes/kubernetes/issues/17162
+	flag.CommandLine.Parse([]string{})
+
 	if debug.DebugEnabled {
 		log.SetLevel(log.DebugLevel)
 	}
-
 	log.WithFields(log.Fields{
 		"version": versioning.OperatorVersion,
 	}).Infof("aerospike-operator is starting")
 
-	// set up signals so we handle the first shutdown signal gracefully
-	stopCh := signals.SetupSignalHandler()
+	// grab the name of the current namespace so we can do leader election
+	namespace := os.Getenv("POD_NAMESPACE")
+	if namespace == "" {
+		log.Fatalf("POD_NAMESPACE must be set")
+	}
+	// grab the name of the current pod so we can do leader election
+	name := os.Getenv("POD_NAME")
+	if name == "" {
+		log.Fatalf("POD_NAME must be set")
+	}
+	// grab the hostname of the current pod so we can do leader election
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatalf("failed to get hostname: %v", err)
+	}
 
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
@@ -78,18 +99,61 @@ func main() {
 		log.Fatalf("error building kubernetes clientset: %v", err)
 	}
 
+	// setup a resourcelock for leader election
+	rl, err := resourcelock.New(
+		resourcelock.EndpointsResourceLock,
+		namespace,
+		"aerospike-operator",
+		kubeClient.CoreV1(),
+		resourcelock.ResourceLockConfig{
+			Identity:      hostname,
+			EventRecorder: createRecorder(kubeClient, name, namespace),
+		},
+	)
+	// run leader election
+	leaderelection.RunOrDie(leaderelection.LeaderElectionConfig{
+		Lock:          rl,
+		LeaseDuration: 15 * time.Second,
+		RenewDeadline: 10 * time.Second,
+		RetryPeriod:   2 * time.Second,
+		Callbacks: leaderelection.LeaderCallbacks{
+			OnStartedLeading: func(stopCh <-chan struct{}) {
+				run(stopCh, namespace, cfg, kubeClient)
+			},
+			OnStoppedLeading: func() {
+				log.Fatalf("lost leader election")
+			},
+		},
+	})
+}
+
+func createRecorder(kubeClient kubernetes.Interface, name, namespace string) record.EventRecorder {
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(log.Infof)
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: typedcorev1.New(kubeClient.Core().RESTClient()).Events(namespace)})
+	return eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: name})
+}
+
+func run(stopCh <-chan struct{}, namespace string, cfg *restclient.Config, kubeClient *kubernetes.Clientset) {
+	// set up signals so we handle the first shutdown signal gracefully
+	shCh := signals.SetupSignalHandler()
+	// also stop the operator when stopCh received a message
+	go func() {
+		<-stopCh
+		close(shCh)
+	}()
+
 	aerospikeClient, err := aerospikeclientset.NewForConfig(cfg)
 	if err != nil {
-		log.Fatalf("error building aerospike clientset: %v", err)
+		log.Fatalf("failed to create aerospike clientset: %v", err)
 	}
-
 	extsClient, err := extsclientset.NewForConfig(cfg)
 	if err != nil {
-		log.Fatalf("error building apiextensions clientset: %v", err)
+		log.Fatalf("failed to create apiextensions clientset: %v", err)
 	}
 
 	if err := crd.NewCRDRegistry(extsClient).RegisterCRDs(); err != nil {
-		log.Fatalf("error creating custom resource definitions: %v", err)
+		log.Fatalf("failed to create custom resource definitions: %v", err)
 	}
 
 	aerospikescheme.AddToScheme(scheme.Scheme)
@@ -103,8 +167,7 @@ func main() {
 
 	// if --admission-enabled is true create, register and run the validating admission webhook
 	readyCh := make(chan interface{}, 0)
-	go admission.NewValidatingAdmissionWebhook(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory).RegisterAndRun(readyCh)
-
+	go admission.NewValidatingAdmissionWebhook(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory).RegisterAndRun(namespace, readyCh)
 	// wait for the webhook to be ready to start the controllers
 	<-readyCh
 
@@ -114,7 +177,7 @@ func main() {
 	for _, c := range controllers {
 		wg.Add(1)
 		go func(c controller.Controller) {
-			if err := c.Run(2, stopCh); err != nil {
+			if err := c.Run(2, shCh); err != nil {
 				log.Error(err)
 			}
 			wg.Done()
@@ -122,8 +185,8 @@ func main() {
 	}
 
 	// start the shared informer factories
-	go kubeInformerFactory.Start(stopCh)
-	go aerospikeInformerFactory.Start(stopCh)
+	go kubeInformerFactory.Start(shCh)
+	go aerospikeInformerFactory.Start(shCh)
 
 	log.Debug("waiting for all controllers to shut down gracefully")
 	wg.Wait()

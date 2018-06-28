@@ -11,18 +11,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
-	"net"
 	"net/http"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/watch"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelistersv1 "k8s.io/client-go/listers/core/v1"
@@ -34,6 +34,7 @@ import (
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
 	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 )
 
 var (
@@ -82,18 +83,11 @@ func NewValidatingAdmissionWebhook(
 }
 
 // RegisterAndRun registers a validating admission webhook and starts the underlying server.
-func (s *ValidatingAdmissionWebhook) RegisterAndRun(readyCh chan interface{}) {
+func (s *ValidatingAdmissionWebhook) RegisterAndRun(namespace string, readyCh chan interface{}) {
 	// exit early if the webhook has been disabled
 	if !Enabled {
 		log.Warn("the validating admission webhook has been disabled")
 		close(readyCh)
-		return
-	}
-
-	// use the value of the POD_NAMESPACE envvar as the namespace
-	namespace := os.Getenv("POD_NAMESPACE")
-	if namespace == "" {
-		log.Warn("POD_NAMESPACE must be set for the validating admission webhook to be registered")
 		return
 	}
 
@@ -240,18 +234,35 @@ func (s *ValidatingAdmissionWebhook) RegisterAndRun(readyCh chan interface{}) {
 		},
 	}
 
+	// watch the endpoints resource associated with the webhook service and
+	// signal back once there is at least one ready address
+	go func() {
+		// grab a watcher for the endpoints resource
+		w, err := s.kubeClient.CoreV1().Endpoints(namespace).Watch(listoptions.ObjectByName(ServiceName))
+		if err != nil {
+			log.Errorf("failed to get endpoints for %s: %v", ServiceName, err)
+		}
+		// keep watching the endpoints resource for a ready address
+		last, err := watch.Until(5*time.Minute, w, func(event watch.Event) (bool, error) {
+			for _, set := range event.Object.(*v1.Endpoints).Subsets {
+				if len(set.Addresses) >= 1 {
+					return true, nil
+				}
+			}
+			return false, nil
+		})
+		if err != nil {
+			log.Errorf("failed to watch endpoints for %s: %v", ServiceName, err)
+		}
+		if last == nil {
+			log.Errorf("failed to watch endpoints for %s: no events received", ServiceName)
+		}
+		// signal back that we've got at least one ready address
+		close(readyCh)
+	}()
+
 	// start listening on the specified port
-	l, err := net.Listen("tcp", srv.Addr)
-	if err != nil {
-		log.Errorf("failed to start admission webhook: %v", err)
-		return
-	}
-
-	// signal that we're ready to accept connections
-	close(readyCh)
-
-	// accept incoming connections
-	if err := srv.ServeTLS(l, "", ""); err != nil && err != http.ErrServerClosed {
+	if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Errorf("failed to serve admission webhook: %v", err)
 		return
 	}

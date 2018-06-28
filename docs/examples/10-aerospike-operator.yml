@@ -21,14 +21,14 @@ metadata:
   name: aerospike-operator
   namespace: aerospike-operator
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: aerospike-operator
   strategy:
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -36,15 +36,27 @@ spec:
     spec:
       containers:
       - name: aerospike-operator
-        image: quay.io/travelaudience/aerospike-operator:0.5
+        image: quay.io/travelaudience/aerospike-operator:0.6.0-dev
         imagePullPolicy: Always
-        ports:
-        - containerPort: 8443
         args:
         - /usr/local/bin/aerospike-operator
+        ports:
+        - containerPort: 8443
         env:
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 1
       serviceAccountName: aerospike-operator

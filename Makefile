@@ -73,8 +73,9 @@ test.e2e: FOCUS?=
 test.e2e: GCS_BUCKET_NAME?=
 test.e2e: GCS_SECRET_NAME?=
 test.e2e: TIMEOUT?=3600s
+test.e2e: POD?=$(shell kubectl -n aerospike-operator get pods --no-headers -o custom-columns=:metadata.name | head -n1)
 test.e2e:
-	kubectl -n aerospike-operator exec aerospike-operator -- go test -v -timeout=$(TIMEOUT) ./test/e2e \
+	kubectl -n aerospike-operator exec $(POD) -- go test -v -timeout=$(TIMEOUT) ./test/e2e \
 		-ginkgo.flakeAttempts=$(FLAKE_ATTEMPTS) \
 		-ginkgo.focus=$(FOCUS) \
 		-gcs-bucket-name=$(GCS_BUCKET_NAME) \
