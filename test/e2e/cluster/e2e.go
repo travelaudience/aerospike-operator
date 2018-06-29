@@ -111,11 +111,8 @@ var _ = Describe("AerospikeCluster", func() {
 		It("does not conflict with another AerospikeCluster", func() {
 			testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf, ns, 1)
 		})
-		It("cannot perform upgrade between minor versions", func() {
-			testAerospikeUpgradeBetweenMinorVersions(tf, ns, "4.0.0.4", "4.1.0.1")
-		})
 		It("does not lose data in a namespace after an upgrade and makes automatic backup of namespaces before upgrade", func() {
-			testNoDataLossOnAerospikeUpgrade(tf, ns, 2, 10000, "4.0.0.4", "4.0.0.5")
+			testNoDataLossOnAerospikeUpgrade(tf, ns, 2, 10000, "4.2.0.3", "4.2.0.4")
 		})
 	})
 })

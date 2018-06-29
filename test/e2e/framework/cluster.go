@@ -48,7 +48,7 @@ func (tf *TestFramework) NewAerospikeCluster(version string, nodeCount int32, na
 
 func (tf *TestFramework) NewAerospikeClusterWithDefaults() aerospikev1alpha1.AerospikeCluster {
 	aerospikeNamespace := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1)
-	return tf.NewAerospikeCluster("4.0.0.4", 1, []aerospikev1alpha1.AerospikeNamespaceSpec{aerospikeNamespace})
+	return tf.NewAerospikeCluster("4.2.0.3", 1, []aerospikev1alpha1.AerospikeNamespaceSpec{aerospikeNamespace})
 }
 
 func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha1.AerospikeNamespaceSpec {

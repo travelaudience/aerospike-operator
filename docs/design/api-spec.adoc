@@ -98,7 +98,7 @@ cluster.
 
 ==== Validations
 
-* `version` must be a supported version. Currently only `4.0.0.4` is supported.
+* `version` must be a supported version. Currently only `4.2.0.3` and `4.2.0.4` are supported.
 * `nodeCount` must be an integer between 1 and 8.
 * `namespaces` must have at least one element and at most two elements.
 
@@ -112,7 +112,7 @@ metadata:
   name: example-aerospike-cluster
   namespace: example-namespace
 spec:
-  version: "4.0.0.4"
+  version: "4.2.0.3"
   nodeCount: 3
   backupSpec:
       storage:
@@ -369,7 +369,7 @@ metadata:
   name: example-aerospike-cluster
   namespace: example-namespace
 spec:
-  version: "4.0.0.4"
+  version: "4.2.0.3"
   nodeCount: 5
   namespaces:
   - name: aerospike-namespace-0
@@ -380,7 +380,7 @@ spec:
       type: file
       size: 4G
 status:
-  version: "4.0.0.4"
+  version: "4.2.0.3"
   nodeCount: 3
   namespaces:
   - name: aerospike-namespace-0
@@ -405,7 +405,7 @@ metadata:
   name: example-aerospike-cluster
   namespace: example-namespace
 spec:
-  version: "4.0.0.4"
+  version: "4.2.0.3"
   nodeCount: 5
   namespaces:
   - replicationFactor: 2
@@ -415,7 +415,7 @@ spec:
       type: file
       size: 4G
 status:
-  version: "4.0.0.4"
+  version: "4.2.0.3"
   nodeCount: 5
   namespaces:
   - replicationFactor: 2
