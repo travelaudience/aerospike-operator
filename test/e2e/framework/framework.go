@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	watchTimeout = 5 * time.Minute
+	watchTimeout = 10 * time.Minute
 )
 
 type TestFramework struct {

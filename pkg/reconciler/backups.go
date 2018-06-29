@@ -56,7 +56,7 @@ func (r *AerospikeClusterReconciler) isClusterBackupFinished(aerospikeCluster *a
 func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ns string) error {
 	backup := aerospikev1alpha1.AerospikeNamespaceBackup{
 		ObjectMeta: v1.ObjectMeta{
-			Name: getBackupName(aerospikeCluster, ns),
+			Name: GetBackupName(ns, aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version),
 			Labels: map[string]string{
 				selectors.LabelAppKey:       selectors.LabelAppVal,
 				selectors.LabelClusterKey:   aerospikeCluster.Name,
@@ -91,8 +91,8 @@ func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aer
 }
 
 func (r *AerospikeClusterReconciler) isBackupCompleted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ns string) (bool, error) {
-	// get the aerospikenamespacebackup resource
-	backup, err := r.aerospikeBackupsLister.AerospikeNamespaceBackups(aerospikeCluster.Namespace).Get(getBackupName(aerospikeCluster, ns))
+	// get the AerospikeNamespaceBackup resource
+	backup, err := r.aerospikeBackupsLister.AerospikeNamespaceBackups(aerospikeCluster.Namespace).Get(GetBackupName(ns, aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version))
 	if err != nil {
 		return false, err
 	}
@@ -110,9 +110,10 @@ func (r *AerospikeClusterReconciler) isBackupCompleted(aerospikeCluster *aerospi
 	return false, nil
 }
 
-func getBackupName(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ns string) string {
+// GetBackupName returns the name of a backup created automatically before upgrading
+func GetBackupName(ns, sourceVersion, targetVersion string) string {
 	return fmt.Sprintf("%s-%s-%s-upgrade", ns,
-		strings.Replace(aerospikeCluster.Status.Version, ".", "", -1),
-		strings.Replace(aerospikeCluster.Spec.Version, ".", "", -1),
+		strings.Replace(sourceVersion, ".", "", -1),
+		strings.Replace(targetVersion, ".", "", -1),
 	)
 }

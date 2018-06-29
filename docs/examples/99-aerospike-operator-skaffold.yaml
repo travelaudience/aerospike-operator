@@ -47,6 +47,7 @@ rules:
   resources:
   - aerospikenamespacebackups
   verbs:
+  - get
   - list
   - patch
   - watch
