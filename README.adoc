@@ -22,6 +22,11 @@ introduced at any moment.
 
 * Kubernetes 1.10+
 
+WARNING: Versions of Kubernetes prior to 1.10.5 are affected by
+https://github.com/kubernetes/kubernetes/issues/62382[#62382], which can cause failed backup and restore jobs to
+re-create pods indefinitely. Hence, running `aerospike-operator` on top of Kubernetes 1.10.5 or later is strongly
+recommended.
+
 NOTE: Support for Kubernetes 1.11 is being planned and will be implemented as
 soon as it is generally available.
 
