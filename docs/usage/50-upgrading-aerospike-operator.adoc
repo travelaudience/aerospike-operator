@@ -1,0 +1,37 @@
+= Upgrading `aerospike-operator`
+This document describes how to upgrade the version of aerospike-operator running in one's
+Kubernetes cluster.
+:icons: font
+:toc:
+
+== Upgrading `aerospike-operator`
+
+Newer versions of `aerospike-operator` can bring new features, important
+bugfixes and support for newer versions of Aerospike. As such, one is strongly
+encouraged to keep one's deployment of `aerospike-operator` as up-to-date as
+possible.
+
+`aerospike-operator` is typically deployed in a Kubernetes cluster using a
+https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[Deployment]
+resource (such as the one in `docs/examples/10-aerospike-operator.yaml`). In
+this scenario, upgrading `aerospike-operator` can be easily done by changing the
+`.spec.image` field to point at the desired image
+(e.g. `quay.io/travelaudience/aerospike-operator:0.6.0`). Depending on the value
+of the `.spec.strategy` field, Kubernetes will update each of the running pods
+to the desired version. The following values are recommended for a smooth
+transition between versions of `aerospike-operator`:
+
+|====
+| `.spec.replicas` | `2`
+| `.spec.strategy.type` | `RollingUpdate`
+| `.spec.strategy.rollingUpdate.maxUnavailable` | `0`
+| `.spec.strategy.rollingUpdate.maxSurge` | `1`
+|====
+
+== Downgrading `aerospike-operator`
+
+While it is theoretically possible to revert to an earlier version of
+`aerospike-operator`, in practice one is strongly advised not to do a downgrade.
+Later versions of `aerospike-operator` may introduce support for later versions
+of Aerospike or drop support for earlier ones, and existing `AerospikeCluster`
+resources can be rendered inoperable as a by-product of such a procedure.

@@ -1,0 +1,40 @@
+= Metrics
+This document describes how aerospike-operator exposes metrics for each Aerospike node.
+:icons: font
+:toc:
+
+Every pod created by `aerospike-operator` features a sidecar container running
+`asprom` footnote:[https://github.com/alicebob/asprom]. This container is
+responsible for exporting metrics from the current Aerospike node in Prometheus
+format.
+
+`asprom` listens on `:9145` and exposes a `/metrics` endpoint that Prometheus
+can scrape. One can easily test the endpoint by port-forwarding to a running
+pod:
+
+[source,bash]
+----
+$ kubectl port-forward pod/aerospike-cluster-0-0 9145:9145
+Forwarding from 127.0.0.1:9145 -> 9145
+Forwarding from [::1]:9145 -> 9145
+----
+
+At this point, a request to `http://127.0.0.1:9145/metrics` will output the
+metrics for the `aerospike-cluster-0-0` pod:
+
+[source,bash]
+----
+$ curl http://127.0.0.1:9145/metrics
+# HELP aerospike_node_batch_error batch error
+# TYPE aerospike_node_batch_error gauge
+aerospike_node_batch_error 0
+# HELP aerospike_node_batch_index_complete batch index complete
+# TYPE aerospike_node_batch_index_complete gauge
+aerospike_node_batch_index_complete 0
+(...)
+----
+
+Pods in a given Aerospike cluster can be discovered by Prometheus using the
+headless service for the cluster created by `aerospike-operator`. For further
+details one should refer to the Prometheus
+https://prometheus.io/docs/prometheus/latest/configuration/configuration/#%3Cdns_sd_config%3E[configuration guide].

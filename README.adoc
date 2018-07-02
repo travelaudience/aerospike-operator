@@ -30,94 +30,28 @@ recommended.
 NOTE: Support for Kubernetes 1.11 is being planned and will be implemented as
 soon as it is generally available.
 
-== Before proceeding
-
-=== RBAC in GKE
-
-Due to a https://cloud.google.com/container-engine/docs/role-based-access-control#defining_permissions_in_a_role[known issue with RBAC on GKE],
-one must grant themselves the `cluster-admin` role *manually* before proceeding
-to install `aerospike-operator`. In order to do so, one must run
-
-[source,bash]
-----
-$ MY_GCLOUD_USER=$(gcloud info \
-  | grep Account \
-  | awk -F'[][]' '{print $2}')
-$ kubectl create clusterrolebinding \
-  <cluster-role-binding-name> \
-  --clusterrole=cluster-admin \
-  --user=${MY_GCLOUD_USER}
-----
-
-One must replace `<cluster-role-binding-name>` above with a unique, meaningful
-name.
-
-== Installing
-
-To install `aerospike-operator` in a Kubernetes cluster one should first run
-
-[source,bash]
-----
-$ kubectl create -f docs/examples/00-prereqs.yml
-namespace "aerospike-operator" created
-serviceaccount "aerospike-operator" created
-clusterrole.rbac.authorization.k8s.io "aerospike-operator" created
-clusterrolebinding.rbac.authorization.k8s.io "aerospike-operator" created
-----
-
-This will create a namespace for `aerospike-operator`, a dedicated service
-account and setup the required RBAC permissions. One should then run
-
-[source,bash]
-----
-$ kubectl create -f docs/examples/10-aerospike-operator.yml
-service "aerospike-operator" created
-deployment "aerospike-operator" created
-----
-
-== Creating an Aerospike cluster
-
-To create an Aerospike cluster for testing purposes one may run
-
-[source,bash]
-----
-$ kubectl create -f docs/examples/20-aerospike-cluster.yml
-aerospikecluster "aerospike-cluster-0" created
-----
-
-This will create a single-node Aerospike cluster named `aerospike-cluster-0` on
-the `default` namespace. This Aerospike cluster can be reached from inside the
-Kubernetes cluster at `aerospike-cluster-0.default.svc.cluster.local`.
-
-== Uninstalling
-
-To uninstall `aerospike-operator`, one should first list all existing resources:
-
-[source,bash]
-----
-$ kubectl get aerospikeclusters,aerospikenamespacebackups,aerospikenamespacerestores --all-namespaces
-NAMESPACE     NAME                                    AGE
-namespace-0   aerospikeclusters/aerospike-cluster-0   12h
-namespace-1   aerospikeclusters/aerospike-cluster-1   10h
-----
-
-One should then delete each of these resources:
-
-[source,bash]
-----
-$ kubectl -n namespace-0 delete aerospikeclusters/aerospike-cluster-0
-$ kubectl -n namespace-1 delete aerospikeclusters/aerospike-cluster-1
-----
-
-Finally, one should proceed to uninstalling `aerospike-operator` itself:
-
-[source,bash]
-----
-$ kubectl delete -f docs/examples/10-aerospike-operator.yml
-$ kubectl delete -f docs/examples/00-prereqs.yml
-----
-
 == Documentation
 
-To understand the design and architecture of `aerospike-operator` one should
-have a look at the `docs/design/` directory in this repository.
+One can find comprehensive usage documentation in the `docs/usage` directory of
+this repository. Existing documentation covers the following topics:
+
+1. <<./docs/usage/00-installation-guide.adoc#,Installation Guide>> provides
+   instructions on how to install and configure `aerospike-operator`.
+1. <<./docs/usage/10-managing-clusters.adoc#,Managing Clusters>> includes
+   details on how to create, configure, inspect and scale Aerospike clusters.
+1. <<./docs/usage/20-backing-up-namespaces.adoc#,Backing-up Namespaces>> details
+   how to create backups of data in an Aerospike cluster.
+1. <<./docs/usage/30-restoring-namespaces.adoc#,Restoring Namespaces>> provides
+   instructions on how to restore the abovementioned backups.
+1. <<./docs/usage/40-upgrading-clusters.adoc#,Upgrading Clusters>> details how
+   to upgrade an Aerospike cluster to a later version.
+1. <<./docs/usage/50-upgrading-aerospike-operator.adoc#,Upgrading `aerospike-operator`>>
+   describes how to upgrade the version of `aerospike-operator` itself.
+1. <<./docs/usage/80-metrics.adoc#,Metrics>> includes information on how to
+   consume the metrics exported by `aerospike-operator`.
+1. <<./docs/usage/90-limitations.adoc#,Limitations>> provides a list of
+   limitations that exist in the current version of `aerospike-operator`.
+
+In addition to these documents, and in order to understand the design and
+architecture of `aerospike-operator`, one should have a look at the `docs/design/`
+directory of this repository.
