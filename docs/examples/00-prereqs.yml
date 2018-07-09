@@ -97,9 +97,18 @@ rules:
   - aerospike.travelaudience.com
   resources:
   - aerospikeclusters
-  - aerospikenamespacebackups
   - aerospikenamespacerestores
   verbs:
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - aerospike.travelaudience.com
+  resources:
+  - aerospikenamespacebackups
+  verbs:
+  - create
+  - get
   - list
   - patch
   - watch
