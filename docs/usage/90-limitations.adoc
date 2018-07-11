@@ -3,14 +3,18 @@ This document provides a list of the current limitations of aerospike-operator.
 :icons: font
 :toc:
 
-As of this writing, `aerospike-operator` has the following limitations:
+As of this writing, `aerospike-operator` and the Aerospike cluster it manages
+have the following limitations:
 
 * `aerospike-operator` supports Aerospike Community Edition only
   footnote:[All limits in the https://www.aerospike.com/products/product-matrix/[Product Matrix] apply to clusters managed by `aerospike-operator`.].
+* There must be exactly one Aerospike namespace per Aerospike cluster.
 * Fully customizing the Aerospike configuration file is not supported
   footnote:[The list of configuration properties whose value can be customized is provided in the <<../design/api-spec.adoc,API spec>> document].
 * Raw device storage is not supported
   footnote:[Support for raw device storage is planned and will be introduced when Kubernetes supports https://github.com/kubernetes/features/issues/351[raw block devices].],
   and file storage support is limited to 2TB per namespace.
-* Once created, an Aerospike namespace cannot be updated or deleted.
+* The replication factor and the storage spec for an existing Aerospike
+  namespace cannot be changed. In particular, this means that resizing existing
+  persistent volumes is not supported.
 * The backup and restore functionality supports Google Cloud Storage only.

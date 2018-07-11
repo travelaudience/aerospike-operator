@@ -14,8 +14,9 @@ it introduces:
 [[custom-resource-definitions]]
 * <<api-spec.adoc#aerospikecluster,`AerospikeCluster`>>: represents an Aerospike
 cluster managed by `aerospike-operator`. It specifies the version of Aerospike
-to be deployed, the number of nodes in the cluster and the list and properties
-of the Aerospike namespaces in the cluster.
+to be deployed, the number of nodes in the cluster, and configuration properties
+for the Aerospike namespace managed by the Aerospike cluster
+footnoteref:[single-namespace,The number of Aerospike namespaces per Aerospike cluster is currently limited to one].
 * <<api-spec.adoc#aerospikenamespacebackup,`AerospikeNamespaceBackup`>>:
 represents a single backup operation targeting a given Aerospike namespace, as
 well as how the backup data should be stored in a cloud storage provider.
@@ -34,8 +35,8 @@ three main controllers in `aerospike-operator`:
 
 [[controllers]]
 * *Cluster Controller:* This controller is responsible for managing an Aerospike
-  cluster based on the spec provided in an `AerospikeCluster` resource. It is
-  also responsible for managing the Aerospike namespaces in the cluster.
+  cluster based on the spec provided in the corresponding `AerospikeCluster`
+  resource.
 * *Backup Controller:* This controller is responsible for creating backups of
   Aerospike namespaces based on the spec provided in an
   `AerospikeNamespaceBackup` resource.
@@ -75,11 +76,11 @@ image::img/lifecycle.png["Lifecycle"]
 Every pod in a given Aerospike cluster will run two containers, the main one
 being Aerospike server. An exporter of Aerospike metrics in Prometheus format
 will run in every pod as a sidecar container, allowing for scrapping metrics
-from the node it is running on. Every pod will have a number of persistent
-volumes attached (one per Aerospike namespace). Each of these volumes are
-created and managed by `aerospike-operator` and will store the data for a single
-Aerospike namespace. A config map containing the Aerospike configuration will
-also be mounted at each pod.
+from the node it is running on. Every pod will have a single persistent volume
+attached. Persistent volumes for an Aerospike cluster are backed by persistent
+volume claims created and managed by `aerospike-operator`, and will store the
+data for the Aerospike namespace managed by the Aerospike cluster. A config map
+containing the Aerospike configuration will also be mounted in each pod.
 
 Jobs launched by `aerospike-operator` will run a custom container that will be
 responsible for interacting with `asbackup` or `asrestore` and with the cloud
@@ -90,7 +91,7 @@ consistency of the backup data. A _pre-existing_ secret containing credentials
 to access the cloud storage provider will be mounted in each job. This secret is
 _not_ managed by `aerospike-operator`, and must be created by the user according
 to a pre-established structure described in
-<<backup-and-restore.adoc#gcs-credentials,Google Cloud Storage Credentials>>.
+<<../usage/20-backing-up-namespaces#aerospike-namespace-backup-secret,GoogleCloud Storage Credentials>>.
 Jobs discover pods in the Aerospike cluster using the Aerospike service, then
 connect to these pods in order to backup and restore data for a given Aerospike
 namespace.
@@ -107,13 +108,14 @@ briefly describe the responsibilities of each of these controllers.
 
 The _cluster controller_ is responsible for managing an Aerospike cluster based
 on the spec provided in an `AerospikeCluster` resource, and for managing the
-Aerospike namespaces that exist in this cluster and the means of storage for this
+Aerospike namespace that exists in this cluster and the means of storage for its
 data. This includes creating or deleting pods, creating the service used for
 clustering and discovery, creating and updating the underlying Aerospike
-configuration and ensuring that operations such as scaling up or down happen
-smoothly, taking into account any possible rebalancing operations that may be
-happening at a given moment. A simplified overview of this controller's
-mechanism of action can be seen in the picture below:
+configuration, creating the necessary persistent volume claims and ensuring that
+operations such as scaling up or down happen smoothly, taking into account any
+possible rebalancing operations that may be happening at a given moment. A
+simplified overview of this controller's mechanism of action can be seen in the
+picture below:
 
 image::img/cluster-actions.png["Cluster controller",width=50%]
 
@@ -132,14 +134,14 @@ about the changes.
 with the new desired state, taking the necessary actions in order to bring
 current and desired states in sync. This means, for instance, creating pods
 in a scale-up operation, deleting pods in a scale-down operation, creating the
-necessary service and managing the persistent volumes where Aerospike namespace
-data will be stored.
+necessary service and managing the persistent volumes claims that back the
+persistent volumes where data will be stored.
 
 It should be noted that the cluster controller also watches pods belonging to a
 given Aerospike cluster. Whenever one of the pods gets terminated (e.g., due to
 an accidental delete or a node crash), `aerospike-operator` will create a new
 pod to replace it. The same happens with services, config maps and persistent
-volumes.
+volume claims.
 
 <<toc,Back>>
 
@@ -242,8 +244,49 @@ registration happens).
 === AerospikeCluster
 
 The `aerospikeclusters.aerospike.travelaudience.com` webhook is called whenever
-a given `AerospikeCluster` resource is created or updated, and enforces that:
+a given `AerospikeCluster` resource is _created_ or _updated_. When any of these
+operations is performed, the webhook enforces that the following rules are met
+on the `AerospikeCluster` resource:
 
-* No Aerospike namespaces have been removed or changed.
-* For every new Aerospike namespace, the replication factor is less than or equal to the
-  size of the cluster.
+* The name of the `AerospikeCluster` resource is no longer than 60 characters;
+* There is exactly one Aerospike namespace in the cluster;
+* The name of the Aerospike namespace is no longer than 23 characters;
+* The replication factor of the Aerospike namespace is less than or equal to
+  the size of the cluster;
+* The `.backupSpec` field, if specified, points to an existing and valid secret.
+
+Additionally, and whenever an _update_ (but not _create_) operation is
+performed, the webhook enforces that the following rules are met:
+
+* The name of the Aerospike namespace hasn't been changed;
+* The replication factor of the Aerospike namespace hasn't been changed;
+* The storage spec of the Aerospike namespace hasn't been changed;
+
+Finally, and for the special case of an _update_ operation that requests a
+_version upgrade_, the webhook enforces that the following rules are met:
+
+* The only change to the `.spec` field is `.spec.version`;
+* The transition between the current version (i.e. `.status.version`) and the
+  desired version (i.e. `.spec.version`) is valid and supported.
+
+=== AerospikeNamespaceBackup
+
+The `aerospikeclusters.aerospike.travelaudience.com` webhook is called whenever
+a given `AerospikeNamespaceBackup` resource is _created_, and enforces that the
+following rules are met on the `AerospikeNamespaceBackup` resource:
+
+* The target Aerospike cluster and Aerospike namespace both exist;
+* Either the current resource or the target Aerospike cluster contain a storage
+  spec to be used when performing the backup;
+* The secret pointed to by the abovementioned storage spec exists and is valid. 
+
+=== AerospikeNamespaceRestore
+
+The `aerospikeclusters.aerospike.travelaudience.com` webhook is called whenever
+a given `AerospikeNamespaceRestore` resource is _created_, and enforces that the
+following rules are met on the `AerospikeNamespaceRestore` resource:
+
+* The target Aerospike cluster and Aerospike namespace both exist;
+* Either the current resource or the target Aerospike cluster contain a storage
+  spec to be used when performing the restore;
+* The secret pointed to by the abovementioned storage spec exists and is valid. 

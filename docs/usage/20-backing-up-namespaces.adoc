@@ -244,7 +244,6 @@ namespace, one may use `kubectl`:
 $ kubectl -n kubernetes-namespace-0 get aerospikenamespacebackups
 NAME                                   AGE
 aerospike-namespace-0-20180702T1451Z   8m
-aerospike-namespace-1-20180702T1451Z   8m
 ----
 
 One may also use the `asnb` short name instead of
@@ -255,7 +254,6 @@ One may also use the `asnb` short name instead of
 $ kubectl -n kubernetes-namespace-0 get asnb
 NAME                                   AGE
 aerospike-namespace-0-20180702T1451Z   8m
-aerospike-namespace-1-20180702T1451Z   8m
 ----
 
 To list all `AerospikeNamespaceBackup` resources in the current Kubernetes
@@ -266,7 +264,6 @@ cluster, one may run
 $ kubectl get asnb --all-namespaces
 NAMESPACE                NAME                                   AGE
 kubernetes-namespace-0   aerospike-namespace-0-20180702T1451Z   8m
-kubernetes-namespace-0   aerospike-namespace-1-20180702T1451Z   8m
 kubernetes-namespace-1   aerospike-namespace-0-20180702T1556Z   2m
 ----
 

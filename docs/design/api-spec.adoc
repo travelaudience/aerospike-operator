@@ -25,7 +25,7 @@ More info:
 ==== Validations
 
 * `metadata` must be non-null.
-* `metadata.name` cannot exceed 52 characters.
+* `metadata.name` cannot exceed 60 characters.
 * `spec` must be non-null.
 
 <<toc,Back>>
@@ -92,7 +92,10 @@ cluster.
 | Field | Description | Scheme | Required
 | version | The version of Aerospike to be deployed. | string | true
 | nodeCount | The number of nodes in the cluster. | int32 | true
-| namespaces | The specification of the Aerospike namespaces in the cluster. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
+| namespaces | The specification of the Aerospike namespaces in the cluster.
+Must have exactly one element.
+footnote:[Even though the `.spec.namespaces` field must have exactly one element, it was decided to make it an array in order to allow extensibility of the API in the future.]
+. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
 | backupSpec | The specification of how Aerospike namespace backups made by aerospike-operator should be performed and stored. | <<aerospikebackupspec,AerospikeBackupSpec>> | false
 |===
 
@@ -100,7 +103,7 @@ cluster.
 
 * `version` must be a supported version. Currently only `4.2.0.3` and `4.2.0.4` are supported.
 * `nodeCount` must be an integer between 1 and 8.
-* `namespaces` must have at least one element and at most two elements.
+* `namespaces` must have **exactly one** `AerospikeNamespaceSpec` object.
 
 ==== Example
 
@@ -127,13 +130,6 @@ spec:
     storage:
       type: file
       size: 150G
-  - name: aerospike-namespace-1
-    replicationFactor: 3
-    memorySize: 8G
-    defaultTTL: 0s
-    storage:
-      type: file
-      size: 300G
 ----
 
 <<toc,Back>>
@@ -176,7 +172,7 @@ More info:
 
 ==== Validations
 
-* `name` must be a non-empty string.
+* `name` must be a non-empty string having at most 23 characters.
 * `replicationFactor` must be an integer between 1 and
   <<aerospikeclusterspec,`nodeCount`>> (if present).
 * `memorySize` must represent a positive quantity (if present).

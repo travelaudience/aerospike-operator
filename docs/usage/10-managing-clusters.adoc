@@ -29,9 +29,9 @@ environments.
 
 After making sure that enough Kubernetes nodes are available, one should also
 make sure that these nodes have enough RAM to meet the demands of an Aerospike
-node. How much RAM needs to be available depends on several factors, including
-the value of the `memorySize` property of each namespace that the Aerospike
-cluster will manage.
+node. How much RAM needs to be available depends on several factors, but at the
+bare minimum it must be equal to the value of the `memorySize` property of the
+Aerospike namespace that the Aerospike cluster will manage.
 
 Finally, one should make sure that an adequate
 https://kubernetes.io/docs/concepts/storage/storage-classes/[storage class] is
@@ -45,9 +45,8 @@ storage class supporting dynamic provisioning to be available.
 The interface for creating Aerospike clusters using `aerospike-operator` is the
 <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>> custom resource
 definition. This custom resource definition allows for specifying the _desired_
-topology of the cluster, as well as configuration properties for the managed
-namespaces
-footnote:[An Aerospike cluster managed by `aerospike-operator` must have at least one and at most two namespaces configured.].
+topology of the cluster, as well as configuration properties for the Aerospike
+namespace it will manage.
 
 The `AerospikeCluster` custom resource definition is namespaced, meaning
 that every Aerospike cluster is created and managed within a Kubernetes
@@ -86,7 +85,12 @@ The resulting cluster will:
 
 * Have two nodes (pods) running Aerospike 4.2.0.3
   footnote:[Pods created by `aerospike-operator` are based on the official `aerospike/aerospike-server:<tag>` image].
-* Manage a single Aerospike namespace called `aerospike-namespace-0`.
+* Manage an Aerospike namespace called `aerospike-namespace-0`.
+
+WARNING: As described in the <<../design/api-spec.adoc#toc,API spec>> document,
+and even though `.spec.namespaces` is an array, `aerospike-operator` enforces
+the existence of a _single_ Aerospike namespace per Aerospike cluster. To create
+multiple Aerospike namespaces one should create multiple Aerospike clusters.
 
 In its turn, the `aerospike-namespace-0` Aerospike namespace managed by this
 Aerospike cluster will:
@@ -154,8 +158,8 @@ Jul 02 2018 14:02:03 GMT: INFO (info): (ticker.c:408) {aerospike-namespace-0} ob
 
 `aerospike-operator` will also create a
 https://kubernetes.io/docs/concepts/services-networking/service/#headless-services[headless service]
-in the `kubernetes-namespace-0` namespace that can be used to discover Aerospike
-nodes and connect to the cluster:
+in the `kubernetes-namespace-0` Kubernetes namespace that can be used to
+discover Aerospike nodes and connect to the Aerospike cluster:
 
 [source,bash]
 ----
@@ -239,72 +243,14 @@ kubernetes-namespace-0   aerospike-cluster-0   8m
 kubernetes-namespace-1   aerospike-cluster-1   4m
 ----
 
-[[creating-an-aerospike-namespace]]
-== Creating an Aerospike namespace
+== Creating and deleting Aerospike namespaces
 
-The interface for creating an Aerospike namespace in an Aerospike cluster
-managed by `aerospike-operator` is also the
-<<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>> custom resource
-definition. To create a second Aerospike namespace on an existing Aerospike
-cluster, one should edit the corresponding `AerospikeCluster` custom resource
-and add an item under `.spec.namespaces`:
-
-[source,yaml]
-----
-apiVersion: aerospike.travelaudience.com/v1alpha1
-kind: AerospikeCluster
-metadata:
-  name: aerospike-cluster-0
-  namespace: kubernetes-namespace-0
-spec:
-  version: "4.2.0.3"
-  nodeCount: 2
-  namespaces:
-  - name: aerospike-namespace-0
-    replicationFactor: 2
-    memorySize: 4G
-    storage:
-      type: file
-      size: 16G
-      storageClass: ssd
-  # One should describe the new Aerospike namespace here.
-  - name: aerospike-namespace-1
-    replicationFactor: 2
-    memorySize: 8G
-    storage:
-      type: file
-      size: 32G
-      storageClass: ssd
-----
-
-Editing the `aerospike-cluster-0` Aerospike cluster as described will cause
-`aerospike-operator` to provision a new 32GiB volume per Aerospike node to
-accomodate the data for the new Aerospike namespace:
-
-[source,bash]
-----
-$ kubectl -n kubernetes-namespace-0 edit asc aerospike-cluster-0
-(...)
-aerospikecluster.aerospike.travelaudience.com "aerospike-cluster-0" edited
-----
-
-One can make sure that the
-namespace has been correctly initialized by inspecting the logs of a pod in the
-Aerospike cluster a few seconds after the operation:
-
-[source,bash]
-----
-$ kubectl -n kubernetes-namespace-0 logs -f aerospike-cluster-0-0 aerospike-server
-(...)
-Jul 02 2018 14:05:03 GMT: INFO (info): (ticker.c:408) {aerospike-namespace-0} objects: all 0 master 0 prole 0 non-replica 0
-(...)
-Jul 02 2018 14:05:03 GMT: INFO (info): (ticker.c:408) {aerospike-namespace-1} objects: all 0 master 0 prole 0 non-replica 0
-(...)
-----
-
-It should be noted that adding an Aerospike namespace to an existing cluster is
-handled by `aerospike-operator` as a configuration update. As such, every remark
-in <<configuration-updates>> applies to this scenario.
+As described in the <<../design/api-spec.adoc#toc,API spec>> document, an
+Aerospike cluster managed by `aerospike-operator` is limited to having exactly
+one Aerospike namespace. Hence, to create a new Aerospike namespace one must
+create a new `AerospikeCluster` resource. Similarly, to delete an existing
+Aerospike namespace one must delete the `AerospikeCluster` resource that
+contains it.
 
 [[configuration-updates]]
 == Updating the Aerospike configuration
@@ -323,9 +269,8 @@ the value of configuration properties such as `high-water-memory-pct` or
 
 Some of the configuration properties exposed by the `AerospikeCluster` custom
 resource definition, such as `replicationFactor`, can only be set when creating
-the Aerospike cluster. Some other properties, such as `namespaces`, can be
-tweaked on a live Aerospike cluster (as described in the example
-<<creating-an-aerospike-namespace,above>>).
+the Aerospike cluster. Some other properties, such as `memorySizeGB`, can be
+tweaked on a live Aerospike cluster.
 
 When a configuration change to a live Aerospike cluster is detected,
 `aerospike-operator` will perform a _rolling restart_
@@ -396,10 +341,11 @@ aerospike-cluster-0-2   0/2       Terminating   0          4m
 ----
 
 WARNING: It is not possible to set `.spec.nodeCount` to a value that is smaller
-than the greatest value of replication factor across the cluster's namespaces.
-For instance, if a given Aerospike cluster manages two Aerospike namespaces with
-replication factors of two and three, it is not possible to scale the cluster
-down to less than three Aerospike nodes.
+than the value of the replication factor of the managed Aerospike namespace
+(i.e. the value of `.spec.namespaces[0].replicationFactor`). For instance, if a
+given Aerospike cluster manages an Aerospike namespace with a replication factor
+of three, it is not possible to scale said cluster down to less than three
+Aerospike nodes.
 
 == Deleting an Aerospike cluster
 

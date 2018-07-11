@@ -96,13 +96,14 @@ reused when creating the new pod.
 
 By following the recommended procedure, `aerospike-operator` ensures maximum
 service and data availability during cluster maintenance in almost all scenarios
-footnote:[For clusters with namespaces using a replication factor of 1, full
-data availability _during_ the upgrade procedure cannot be ensured.].
+footnote:[For clusters using a replication factor of 1, full data availability _during_ the upgrade procedure cannot be ensured.].
 Furthermore, and in order to ensure the safety of the data managed by the
-cluster, `aerospike-operator` will create a backup of each namespace in the
-target cluster to cloud storage before actually starting the upgrade process.
-These backups can later be manually restored to a new Aerospike cluster shall
-the upgrade process fail. An overview of the whole procedure is provided below:
+cluster, `aerospike-operator` will create a backup of each namespace
+footnoteref:[single-namespace,The number of Aerospike namespaces per Aerospike cluster is currently limited to a single one]
+in the target cluster to cloud storage before actually starting the upgrade
+process. These backups can later be manually restored to a new Aerospike cluster
+shall the upgrade process fail. An overview of the whole procedure is provided
+below:
 
 image::img/upgrade-process.png["Upgrade process provided by `aerospike-operator`",width=95%]
 

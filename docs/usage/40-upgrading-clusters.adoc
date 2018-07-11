@@ -23,16 +23,16 @@ support for performing version upgrades in live Aerospike clusters.
 === Pre-requisites
 
 Before actually starting an upgrade operation, `aerospike-operator` performs a
-*mandatory* backup of each of the Aerospike namespaces present in the target
-Aerospike cluster. This is done in order to guarantee the safety of the data in
-case of a major failure during the upgrade process. Hence, and before being able
-to upgrade an Aerospike cluster, one must configure automatic pre-upgrade
-backups for the target Aerospike cluster. This is done by making sure that the <<./20-backing-up-namespaces.adoc#aerospike-namespace-backup-prerequisites,pre-requisites>>
+*mandatory* backup of the Aerospike namespace managed by the target Aerospike
+cluster. This is done in order to guarantee the safety of the data in case of a
+major failure during the upgrade process. Hence, and before being able to
+upgrade an Aerospike cluster, one must configure automatic pre-upgrade backups
+for the target Aerospike cluster. This is done by making sure that the <<./20-backing-up-namespaces.adoc#aerospike-namespace-backup-prerequisites,pre-requisites>>
 for the core backup functionality have been met, and by specifying a spec for
 these backups in the associated `AerospikeCluster` resource.
 
-WARNING: Although `aerospike-operator` performs pre-upgrade backups of all the
-Aerospike namespaces present in the target Aerospike cluster before actually
+WARNING: Although `aerospike-operator` performs pre-upgrade backups of the
+Aerospike namespace managed by the target Aerospike cluster before actually
 starting the upgrade process, automatic restore of these backups in case of a
 failure during the upgrade is **NOT** supported.
 
@@ -101,8 +101,8 @@ official repository.
 It should be noted that after upgrading an Aerospike cluster to a later version,
 downgrading is *NOT* supported. To downgrade to an older version one must create
 a new `AerospikeCluster` resource based on the desired version and
-<<./30-restoring-namespaces.adoc#,restore>> each of the namespaces from the
-pre-upgrade backup created as part of the upgrade process.
+<<./30-restoring-namespaces.adoc#,restore>> the managed Aerospike namespace
+using the pre-upgrade backup created as part of the upgrade process.
 
 === Performing an upgrade
 
@@ -118,9 +118,9 @@ on the associated Aerospike cluster.
 WARNING: Maximum service availability during the rolling upgrade process can
 only be guaranteed when the target Aerospike cluster consists of more than one
 node (i.e., has a value of `.spec.nodeCount` greater than one). Similarly,
-maximum data availability can only be ensured for namespaces having a
-replication factor greater than one (i.e. having a value of
-`.spec.replicationFactor` greater than one).
+maximum data availability can only be ensured if the managed Aerospike namespace
+has a replication factor greater than one (i.e.
+`.spec.namespaces[0].replicationFactor` is greater than one).
 
 WARNING: In order to ensure that the upgrade operation has the least possible
 impact on service and data availability, `aerospike-operator` will refuse to
@@ -157,13 +157,6 @@ spec:
     storage:
       type: file
       size: 1G
-  - name: aerospike-namespace-1
-    replicationFactor: 2
-    memorySize: 1G
-    defaultTTL: 0s
-    storage:
-      type: file
-      size: 1G
 ----
 
 At this point, setting `.spec.version` to `4.2.0.4` in the `aerospike-cluster-0`
@@ -176,16 +169,15 @@ $ kubectl -n kubernetes-namespace-0 edit asc aerospike-cluster-0  # .spec.versio
 aerospikecluster.aerospike.travelaudience.com "aerospike-cluster-0" edited
 ----
 
-After a few moments, two `AerospikeNamespaceBackup` resources will have been
-created (one per Aerospike namespace), and a `ClusterAutoBackupStarted`
-condition will have been appended to the `AerospikeCluster` resource:
+After a few moments, an `AerospikeNamespaceBackup` resource will have been
+created, and a `ClusterAutoBackupStarted` condition will have been appended to
+the `AerospikeCluster` resource:
 
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikenamespacebackups
 NAME                                      AGE
 aerospike-namespace-0-4203-4204-upgrade   2m
-aerospike-namespace-1-4203-4204-upgrade   2m
 ----
 [source,bash]
 ----
@@ -206,9 +198,9 @@ Events:
   Normal  ClusterUpgradeStarted      2m               aerospikecluster  cluster backup started
 ----
 
-Depending on the size of each Aerospike namespace, it can take from a few
-minutes to a few hours for these backups to complete. By the time the associated
-jobs are complete, a `ClusterAutoBackupFinished` condition will be appended to
+Depending on the size of the managed Aerospike namespace, it can take from a few
+minutes to a few hours for this backup to complete. By the time the underlying
+job are complete, a `ClusterAutoBackupFinished` condition will be appended to
 the `AerospikeCluster` resource:
 
 [source,bash]
@@ -334,5 +326,5 @@ the target version. In the presence of a failure during the upgrade process,
 moment on, `aerospike-operator` stops processing this Aerospike cluster and
 manual disaster recovery is required. In such a scenarion, the best approach to
 proper disaster recovery is to create a new Aerospike cluster and restore the
-pre-upgrade backups made by `aerospike-operator` by following the steps detailed
+pre-upgrade backup made by `aerospike-operator` by following the steps detailed
 in <<./30-restoring-namespaces.adoc#restoring-namespaces,Restoring Namespaces>>.
