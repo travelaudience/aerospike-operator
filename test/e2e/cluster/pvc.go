@@ -30,12 +30,11 @@ import (
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-func testVolumesSizeMatchNamespaceSpec(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nsSize1 int, nsSize2 int) {
+func testVolumesSizeMatchesNamespaceSpec(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nsSize int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
-	ns1 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, nsSize1)
-	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, nsSize2)
-	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{ns1, ns2}
+	ns1 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, nsSize)
+	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{ns1}
 	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -58,8 +57,6 @@ func testVolumesSizeMatchNamespaceSpec(tf *framework.TestFramework, ns *v1.Names
 				switch claim.Labels[selectors.LabelNamespaceKey] {
 				case ns1.Name:
 					Expect(capacity).To(Equal(ns1.Storage.Size))
-				case ns2.Name:
-					Expect(capacity).To(Equal(ns2.Storage.Size))
 				}
 			}
 		}

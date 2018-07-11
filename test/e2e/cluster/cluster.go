@@ -58,21 +58,19 @@ func testCreateAerospikeClusterWithZeroNamespaces(tf *framework.TestFramework, n
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{}
 	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
-	Expect(errors.IsInvalid(err)).To(BeTrue())
-	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("spec.namespaces.*should have at least 1 items")))
+	Expect(err).To(HaveOccurred())
+	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("the number of namespaces in the cluster must be exactly one")))
 }
 
-func testCreateAerospikeClusterWithThreeNamespaces(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithTwoNamespaces(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1),
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 1),
-		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-2", 1, 1, 0, 1),
 	}
 	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
-	Expect(errors.IsInvalid(err)).To(BeTrue())
-	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("spec.namespaces.*should have at most 2 items")))
+	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("the number of namespaces in the cluster must be exactly one")))
 }
 
 func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFramework, ns *v1.Namespace) {

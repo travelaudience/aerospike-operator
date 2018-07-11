@@ -57,6 +57,11 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 		return fmt.Errorf("the name of the cluster cannot exceed %d characters", aerospikeClusterMaxNameLen)
 	}
 
+	// enforce the existence of a single namespace per cluster
+	if len(aerospikeCluster.Spec.Namespaces) != 1 {
+		return fmt.Errorf("the number of namespaces in the cluster must be exactly one")
+	}
+
 	// validate every namespace's name and that its replication factor
 	// is less than or equal to the cluster's node count.
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
@@ -153,11 +158,17 @@ func validateNamespaces(old, new *v1alpha1.AerospikeCluster) error {
 	}
 	// validate that there were no changes to existing namespaces
 	for name := range newnss {
+		// if the namespace didn't exist before, there's nothing to validate
 		if _, ok := oldnss[name]; !ok {
 			continue
 		}
-		if !reflect.DeepEqual(oldnss[name], newnss[name]) {
-			return fmt.Errorf("cannot change the spec for namespace %s", name)
+		// make sure that the replication factor hasn't been changed
+		if *oldnss[name].ReplicationFactor != *newnss[name].ReplicationFactor {
+			return fmt.Errorf("cannot change the replication factor for namespace %s", name)
+		}
+		// make sure that the storage spec hasn't been changed
+		if !reflect.DeepEqual(oldnss[name].Storage, newnss[name].Storage) {
+			return fmt.Errorf("cannot change the storage spec for namespace %s", name)
 		}
 	}
 	return nil

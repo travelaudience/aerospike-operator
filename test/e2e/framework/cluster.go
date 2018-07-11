@@ -107,12 +107,12 @@ func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha1.Aerosp
 	return tf.WaitForClusterNodeCount(res, nodeCount)
 }
 
-func (tf *TestFramework) AddAerospikeNamespaceAndScaleAndWait(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ns aerospikev1alpha1.AerospikeNamespaceSpec, nodeCount int32) error {
+func (tf *TestFramework) ChangeNamespaceMemorySizeAndScaleClusterAndWait(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, newMemorySizeGB int, nodeCount int32) error {
 	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	res.Spec.Namespaces = append(res.Spec.Namespaces, ns)
+	res.Spec.Namespaces[0].MemorySize = pointers.NewString(fmt.Sprintf("%dG", newMemorySizeGB))
 	res.Spec.NodeCount = nodeCount
 	if _, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(res.Namespace).Update(res); err != nil {
 		return err

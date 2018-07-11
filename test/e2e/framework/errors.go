@@ -23,12 +23,16 @@ import (
 func (tf *TestFramework) ErrorCauses(err error) []string {
 	switch t := err.(type) {
 	case errors.APIStatus:
-		causes := t.Status().Details.Causes
-		res := make([]string, len(causes))
-		for _, cause := range causes {
-			res = append(res, cause.Message)
+		if t.Status().Details == nil {
+			return []string{t.Status().Message}
+		} else {
+			causes := t.Status().Details.Causes
+			res := make([]string, len(causes))
+			for _, cause := range causes {
+				res = append(res, cause.Message)
+			}
+			return res
 		}
-		return res
 	default:
 		return []string{}
 	}

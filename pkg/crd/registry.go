@@ -18,12 +18,14 @@ package crd
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
@@ -64,14 +66,46 @@ func (r *CRDRegistry) RegisterCRDs() error {
 }
 
 func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error {
+	// attempt to register the crd as instructed
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("registering crd")
 	_, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
-	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return err
-		}
-		log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd already registered")
+	if err == nil {
+		// registration was successful
+		return nil
 	}
+	if !errors.IsAlreadyExists(err) {
+		// the crd doesn't exist yet but we got an unexpected error while creating
+		return err
+	}
+
+	// at this point the crd already exists but its spec may differ since the
+	// api is not stable yet. as such, we must do our best to update the crd.
+
+	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd is already registered")
+
+	// fetch the latest version of the crd
+	d, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.Name, v1.GetOptions{})
+	if err != nil {
+		// we've failed to fetch the latest version of the crd
+		return nil
+	}
+	if reflect.DeepEqual(d.Spec, crd.Spec) {
+		// if the specs match there's nothing to do
+		return nil
+	}
+
+	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("updating crd")
+
+	// set the resulting object's spec according to the current spec
+	d.Spec = crd.Spec
+
+	// attempt to update the crd
+	if _, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(d); err != nil {
+		return err
+	}
+
+	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd has been updated")
+
 	return nil
 }
 

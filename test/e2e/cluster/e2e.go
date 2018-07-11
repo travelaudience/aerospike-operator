@@ -63,8 +63,8 @@ var _ = Describe("AerospikeCluster", func() {
 		It("cannot be created with len(spec.namespaces)==0", func() {
 			testCreateAerospikeClusterWithZeroNamespaces(tf, ns)
 		})
-		It("cannot be created with len(spec.namespaces)==3", func() {
-			testCreateAerospikeClusterWithThreeNamespaces(tf, ns)
+		It("cannot be created with len(spec.namespaces)==2", func() {
+			testCreateAerospikeClusterWithTwoNamespaces(tf, ns)
 		})
 		It("cannot be created if spec.namespaces.replicationFactor[*] > spec.nodeCount", func() {
 			testCreateAerospikeClusterWithInvalidReplicationFactor(tf, ns)
@@ -75,8 +75,8 @@ var _ = Describe("AerospikeCluster", func() {
 		It("accepts connections on the service port", func() {
 			testConnectToAerospikeCluster(tf, ns)
 		})
-		It("assigns each pod a persistent volume per Aerospike namespace with the requested size", func() {
-			testVolumesSizeMatchNamespaceSpec(tf, ns, 1, 2, 4)
+		It("assigns each pod a persistent volume per namespace with the requested size", func() {
+			testVolumesSizeMatchesNamespaceSpec(tf, ns, 1, 2)
 		})
 		It("reuses the persistent volume of a deleted pod", func() {
 			testVolumeIsReused(tf, ns, 2)

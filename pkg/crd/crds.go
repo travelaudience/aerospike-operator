@@ -120,9 +120,7 @@ var (
 										Pattern: `^\d+\.\d+\.\d+(\.\d+)?$`,
 									},
 									"namespaces": {
-										Type:     "array",
-										MaxItems: pointers.NewInt64(2),
-										MinItems: pointers.NewInt64(1),
+										Type: "array",
 										Items: &extsv1beta1.JSONSchemaPropsOrArray{
 											Schema: &extsv1beta1.JSONSchemaProps{
 												Title: "namespace",

@@ -34,8 +34,7 @@ func testNodeCountAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, no
 	err = tf.WaitForClusterNodeCount(asc, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 4)
-	err = tf.AddAerospikeNamespaceAndScaleAndWait(asc, ns2, nodeCount)
+	err = tf.ChangeNamespaceMemorySizeAndScaleClusterAndWait(asc, 4, nodeCount)
 
 	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
@@ -52,8 +51,7 @@ func testNodeCountAfterRestartAndScaling(tf *framework.TestFramework, ns *v1.Nam
 	err = tf.WaitForClusterNodeCount(asc, initialNodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 4)
-	err = tf.AddAerospikeNamespaceAndScaleAndWait(asc, ns2, finalNodeCount)
+	err = tf.ChangeNamespaceMemorySizeAndScaleClusterAndWait(asc, 4, finalNodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
@@ -77,8 +75,7 @@ func testNoDataLossAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, n
 	Expect(err).NotTo(HaveOccurred())
 	c1.Close()
 
-	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 2, 1, 0, 1)
-	err = tf.AddAerospikeNamespaceAndScaleAndWait(res, ns2, nodeCount)
+	err = tf.ChangeNamespaceMemorySizeAndScaleClusterAndWait(res, 4, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	c2, err := framework.NewAerospikeClient(res)
@@ -104,8 +101,7 @@ func testNoDataLossAfterRestartAndScaleDown(tf *framework.TestFramework, ns *v1.
 	Expect(err).NotTo(HaveOccurred())
 	c1.Close()
 
-	ns2 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 2, 1, 0, 1)
-	err = tf.AddAerospikeNamespaceAndScaleAndWait(asc, ns2, nodeCount+1)
+	err = tf.ChangeNamespaceMemorySizeAndScaleClusterAndWait(asc, 4, nodeCount+1)
 	Expect(err).NotTo(HaveOccurred())
 
 	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
