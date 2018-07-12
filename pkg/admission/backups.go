@@ -19,9 +19,17 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceBackup(ar av1beta1.A
 
 	// if this is an update to .spec, return an error
 	if ar.Request.Operation == av1beta1.Update {
-		if old, err := decodeAerospikeNamespaceBackup(ar.Request.OldObject.Raw); err != nil {
+		old, err := decodeAerospikeNamespaceBackup(ar.Request.OldObject.Raw)
+		if err != nil {
 			return admissionResponseFromError(err)
-		} else if !reflect.DeepEqual(obj.Spec, old.Spec) {
+		}
+		// reject the update if the .status field was deleted
+		emptyStatus := v1alpha1.AerospikeNamespaceBackupStatus{}
+		if !reflect.DeepEqual(old.Status, emptyStatus) && reflect.DeepEqual(obj.Status, emptyStatus) {
+			return admissionResponseFromError(fmt.Errorf("the .status field cannot be deleted"))
+		}
+		// reject updates to the .spec field
+		if !reflect.DeepEqual(obj.Spec, old.Spec) {
 			return admissionResponseFromError(fmt.Errorf("the spec of an aerospikenamespacebackup resource cannot be changed after creation"))
 		}
 	}
@@ -44,9 +52,17 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceRestore(ar av1beta1.
 
 	// if this is an update to .spec, return an error
 	if ar.Request.Operation == av1beta1.Update {
-		if old, err := decodeAerospikeNamespaceRestore(ar.Request.OldObject.Raw); err != nil {
+		old, err := decodeAerospikeNamespaceRestore(ar.Request.OldObject.Raw)
+		if err != nil {
 			return admissionResponseFromError(err)
-		} else if !reflect.DeepEqual(obj.Spec, old.Spec) {
+		}
+		// reject the update if the .status field was deleted
+		emptyStatus := v1alpha1.AerospikeNamespaceRestoreStatus{}
+		if !reflect.DeepEqual(old.Status, emptyStatus) && reflect.DeepEqual(obj.Status, emptyStatus) {
+			return admissionResponseFromError(fmt.Errorf("the .status field cannot be deleted"))
+		}
+		// reject updates to the .spec field
+		if !reflect.DeepEqual(obj.Spec, old.Spec) {
 			return admissionResponseFromError(fmt.Errorf("the spec of an aerospikenamespacerestore resource cannot be changed after creation"))
 		}
 	}

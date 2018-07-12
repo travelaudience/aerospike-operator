@@ -288,6 +288,14 @@ hours. The actual amount of time depends on factors such as the amount of data
 stored by each node and whether the restart causes evictions to occur.
 Configuration updates should be carefully planned before being applied.
 
+IMPORTANT: Update operations against a given `AerospikeCluster` resource
+**MUST NOT** target the `.status` field or any of its subfields. In particular,
+this means that updates to `AerospikeCluster` resources should **ALWAYS** be
+done using `kubectl edit` or `kubectl patch` and double-checked for changes to
+`.status`. Commands such as `kubectl replace` may cause the `.status` field to
+be updated inadvertently, and may leave the target `AerospikeCluster` resource
+in an inconsistent or inoperable state.
+
 == Scaling an Aerospike cluster
 
 As load increases or decreases, one may want to scale a given Aerospike cluster
@@ -308,6 +316,14 @@ aerospike-cluster-0-0   2/2       Running   0          8m
 aerospike-cluster-0-1   2/2       Running   0          8m
 aerospike-cluster-0-2   2/2       Running   0          2m
 ----
+
+IMPORTANT: Update operations against a given `AerospikeCluster` resource
+**MUST NOT** target the `.status` field or any of its subfields. In particular,
+this means that updates to `AerospikeCluster` resources should **ALWAYS** be
+done using `kubectl edit` or `kubectl patch` and double-checked for changes to
+`.status`. Commands such as `kubectl replace` may cause the `.status` field to
+be updated inadvertently, and may leave the target `AerospikeCluster` resource
+in an inconsistent or inoperable state.
 
 At this point, inspecting the logs for the new `aerospike-cluster-0-2` pod will
 reveal that it has successfully joined the existing cluster:
@@ -362,3 +378,20 @@ and data in the target Aerospike cluster to be **deleted without notice**. All
 data in the target Aerospike cluster will be effectively lost unless a previous
 backup exists. **Persistent volumes associated with the Aerospike cluster will
 also be deleted**.
+
+IMPORTANT: When deleting an `AerospikeCluster` using `kubectl delete` one
+**MUST** make sure that the value of the `--cascade` flag is set to `true`. This
+is the default value for this command, and **MUST NOT** be changed. Running
+`kubectl delete --cascade=false` against an `AerospikeCluster`  resource will
+cause existing dependent resources (pods, services, etc...) to be left untouched
+(i.e. _orphaned_), requiring manual cleanup by an operator to be deleted from
+the Kubernetes cluster.
+
+IMPORTANT: When deleting and recreating an `AerospikeCluster` using
+`kubectl replace --force` one **MUST** make sure that the value of the
+`--cascade` flag is set to `true`. This is **NOT** the default value for this
+command, and **MUST be explicitly set**. Running `kubectl replace --force`
+without `--cascade=true` against an `AerospikeCluster` resource will cause
+existing dependent resources (pods, services, etc...) to be left untouched
+(i.e. _orphaned_), requiring manual cleanup by an operator to be deleted from
+the Kubernetes cluster.
