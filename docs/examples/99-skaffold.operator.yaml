@@ -52,6 +52,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 100m
+          limits:
+            memory: 64Mi
+            cpu: 100m
         readinessProbe:
           httpGet:
             path: /healthz
