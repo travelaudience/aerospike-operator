@@ -57,7 +57,6 @@ func init() {
 	fs.BoolVar(&debug.DebugEnabled, "debug", false, "Whether to enable debug mode.")
 	fs.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	fs.BoolVar(&admission.Enabled, "admission-enabled", true, "Whether to enable the validating admission webhook.")
-	fs.StringVar(&admission.ServiceName, "admission-service-name", "aerospike-operator", "The name of the service used to expose the admission webhook.")
 }
 
 func main() {
@@ -65,6 +64,9 @@ func main() {
 
 	// workaround for https://github.com/kubernetes/kubernetes/issues/17162
 	flag.CommandLine.Parse([]string{})
+
+	// set up signals so we handle the first shutdown signal gracefully
+	shCh := signals.SetupSignalHandler()
 
 	if debug.DebugEnabled {
 		log.SetLevel(log.DebugLevel)
@@ -99,6 +101,19 @@ func main() {
 		log.Fatalf("error building kubernetes clientset: %v", err)
 	}
 
+	aerospikeClient, err := aerospikeclientset.NewForConfig(cfg)
+	if err != nil {
+		log.Fatalf("failed to create aerospike clientset: %v", err)
+	}
+
+	// register (if enabled) and run the validating admission webhook and health
+	// endpoint
+	wh := admission.NewValidatingAdmissionWebhook(namespace, kubeClient, aerospikeClient)
+	if err := wh.Register(); err != nil {
+		log.Fatalf("failed to register admission webhook: %v", err)
+	}
+	go wh.Run(shCh)
+
 	// setup a resourcelock for leader election
 	rl, err := resourcelock.New(
 		resourcelock.EndpointsResourceLock,
@@ -117,8 +132,18 @@ func main() {
 		RenewDeadline: 10 * time.Second,
 		RetryPeriod:   2 * time.Second,
 		Callbacks: leaderelection.LeaderCallbacks{
-			OnStartedLeading: func(stopCh <-chan struct{}) {
-				run(stopCh, namespace, cfg, kubeClient)
+			OnStartedLeading: func(leCh <-chan struct{}) {
+				// stop the controllers when either leCh or shCh are closed
+				stopCh := make(chan struct{})
+				go func() {
+					select {
+					case <-leCh:
+						close(stopCh)
+					case <-shCh:
+						close(stopCh)
+					}
+				}()
+				run(stopCh, cfg, kubeClient, aerospikeClient)
 			},
 			OnStoppedLeading: func() {
 				log.Fatalf("lost leader election")
@@ -134,24 +159,11 @@ func createRecorder(kubeClient kubernetes.Interface, name, namespace string) rec
 	return eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: name})
 }
 
-func run(stopCh <-chan struct{}, namespace string, cfg *restclient.Config, kubeClient *kubernetes.Clientset) {
-	// set up signals so we handle the first shutdown signal gracefully
-	shCh := signals.SetupSignalHandler()
-	// also stop the operator when stopCh received a message
-	go func() {
-		<-stopCh
-		close(shCh)
-	}()
-
-	aerospikeClient, err := aerospikeclientset.NewForConfig(cfg)
-	if err != nil {
-		log.Fatalf("failed to create aerospike clientset: %v", err)
-	}
+func run(stopCh chan struct{}, cfg *restclient.Config, kubeClient *kubernetes.Clientset, aerospikeClient *aerospikeclientset.Clientset) {
 	extsClient, err := extsclientset.NewForConfig(cfg)
 	if err != nil {
 		log.Fatalf("failed to create apiextensions clientset: %v", err)
 	}
-
 	if err := crd.NewCRDRegistry(extsClient).RegisterCRDs(); err != nil {
 		log.Fatalf("failed to create custom resource definitions: %v", err)
 	}
@@ -165,11 +177,9 @@ func run(stopCh <-chan struct{}, namespace string, cfg *restclient.Config, kubeC
 	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 	restoreController := controller.NewAerospikeNamespaceRestoreController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 
-	// if --admission-enabled is true create, register and run the validating admission webhook
-	readyCh := make(chan interface{}, 0)
-	go admission.NewValidatingAdmissionWebhook(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory).RegisterAndRun(namespace, readyCh)
-	// wait for the webhook to be ready to start the controllers
-	<-readyCh
+	// start the shared informer factories
+	go kubeInformerFactory.Start(stopCh)
+	go aerospikeInformerFactory.Start(stopCh)
 
 	// start the controllers
 	var wg sync.WaitGroup
@@ -177,17 +187,23 @@ func run(stopCh <-chan struct{}, namespace string, cfg *restclient.Config, kubeC
 	for _, c := range controllers {
 		wg.Add(1)
 		go func(c controller.Controller) {
-			if err := c.Run(2, shCh); err != nil {
+			if err := c.Run(2, stopCh); err != nil {
 				log.Error(err)
 			}
 			wg.Done()
 		}(c)
 	}
 
-	// start the shared informer factories
-	go kubeInformerFactory.Start(shCh)
-	go aerospikeInformerFactory.Start(shCh)
-
-	log.Debug("waiting for all controllers to shut down gracefully")
+	// wait for controllers to stop
 	wg.Wait()
+
+	// confirm successful shutdown
+	log.WithFields(log.Fields{
+		"version": versioning.OperatorVersion,
+	}).Infof("aerospike-operator has been shut down")
+
+	// there is a goroutine in the background that is trying to renew the leader
+	// election lock. as such we must manually exit now that we know controllers
+	// have been shutdown properly.
+	os.Exit(0)
 }

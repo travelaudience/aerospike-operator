@@ -239,7 +239,11 @@ cluster, and they must be registered using the Kubernetes API in order to be
 called. In the case of `aerospike-operator`, introduced webhooks are exposed via
 the application itself, and are registered when the application starts (unless
 admission is explicitly disabled when starting the application, in which case no
-registration happens).
+registration happens). In order to properly register and expose these webhooks,
+`aerospike-operator` creates a Kubernetes secret containing a self-signed TLS
+certificate and a private key. It should be noted that these artifacts are
+intended to be used by Kubernetes alone when calling the webhooks, and are not
+required to be known by end-users of `aerospike-operator`.
 
 === AerospikeCluster
 

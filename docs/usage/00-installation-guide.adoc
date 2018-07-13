@@ -87,9 +87,17 @@ aerospikenamespacebackups.aerospike.travelaudience.com    2m
 aerospikenamespacerestores.aerospike.travelaudience.com   2m
 ----
 
-`aerospike-operator` will also register a
+`aerospike-operator` will also create a secret containing TLS artifacts and
+register a
 https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/[validating admission webhook]:
 
+[source,bash]
+----
+kubectl -n aerospike-operator get secrets
+NAME                     TYPE                DATA      AGE
+aerospike-operator-tls   kubernetes.io/tls   2         2m
+(...)
+----
 [source,bash]
 ----
 $ kubectl get validatingwebhookconfiguration
@@ -113,10 +121,6 @@ WARNING: Disabling the validating admission webhook prevents
 scenarios, the user may end up creating an invalid configuration or triggering
 an unsupported operation.
 
-TIP: When running `aerospike-operator` with the `--admission-enabled=false`
-flag, the `aerospike-operator` service is not required and may be safely
-deleted.
-
 [[configuration]]
 == Configuring `aerospike-operator`
 
@@ -126,7 +130,6 @@ The following flags are supported:
 |===
 | Flag                       | Default | Description
 | `--admission-enabled`      | `true` | Whether to enable the validating admission webhook.
-| `--admission-service-name` | `aerospike-operator` | The name of the service used to expose the admission webhook.
 | `--debug`                  | `false` | Whether to enable debug mode.
 | `--kubeconfig`             | `""`    | Path to a kubeconfig. Only required if out-of-cluster.
 |===

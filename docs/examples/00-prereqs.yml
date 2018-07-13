@@ -19,8 +19,9 @@ rules:
   resources:
   - validatingwebhookconfigurations
   verbs:
-  - delete
   - create
+  - get
+  - update
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -52,9 +53,7 @@ rules:
   - endpoints
   verbs:
   - get
-  - list
   - update
-  - watch
 - apiGroups: [""]
   resources:
   - pods
@@ -67,6 +66,8 @@ rules:
   resources:
   - secrets
   verbs:
+  - create
+  - get
   - list
   - watch
 - apiGroups:

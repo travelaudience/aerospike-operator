@@ -56,7 +56,7 @@ spec:
             path: /healthz
             port: 8443
             scheme: HTTPS
-          initialDelaySeconds: 10
-          periodSeconds: 5
+          initialDelaySeconds: 3
+          periodSeconds: 2
           failureThreshold: 1
       serviceAccountName: aerospike-operator
