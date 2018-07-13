@@ -1,0 +1,3 @@
+FROM alpine:3.7
+COPY bin/aerospike-operator /aerospike-operator
+CMD ["/aerospike-operator", "-debug"]

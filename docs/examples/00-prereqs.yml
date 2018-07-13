@@ -29,7 +29,6 @@ rules:
   verbs:
   - create
   - get
-  - list
   - update
   - watch
 - apiGroups: [""]
@@ -68,8 +67,6 @@ rules:
   verbs:
   - create
   - get
-  - list
-  - watch
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -101,8 +98,8 @@ rules:
   - aerospike.travelaudience.com
   resources:
   - aerospikeclusters
-  - aerospikenamespacerestores
   verbs:
+  - get
   - list
   - patch
   - watch
@@ -113,6 +110,14 @@ rules:
   verbs:
   - create
   - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - aerospike.travelaudience.com
+  resources:
+  - aerospikenamespacerestores
+  verbs:
   - list
   - patch
   - watch

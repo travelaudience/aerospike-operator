@@ -4,13 +4,13 @@ build:
   artifacts:
   - imageName: eu.gcr.io/aerospike-operator/aerospike-operator
     docker:
-      dockerfilePath: Dockerfile.skaffold
+      dockerfilePath: Dockerfile.skaffold.operator
     workspace: .
 deploy:
   kubectl:
     manifests:
       - docs/examples/00-prereqs.yml
-      - docs/examples/99-aerospike-operator-skaffold.yaml
+      - docs/examples/99-skaffold.operator.yaml
 profiles:
 - name: gke
   build:

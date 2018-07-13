@@ -1,0 +1,96 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aerospike-operator-e2e
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+- apiGroups: [""]
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups: [""]
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+- apiGroups:
+  - aerospike.travelaudience.com
+  resources:
+  - aerospikeclusters
+  verbs:
+  - create
+  - get
+  - update
+  - watch
+- apiGroups:
+  - aerospike.travelaudience.com
+  resources:
+  - aerospikenamespacebackups
+  verbs:
+  - create
+  - get
+  - watch
+- apiGroups: 
+  - aerospike.travelaudience.com
+  resources:
+  - aerospikenamespacerestores
+  verbs:
+  - create
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aerospike-operator-e2e
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aerospike-operator-e2e
+subjects:
+- kind: ServiceAccount
+  name: aerospike-operator-e2e
+  namespace: aerospike-operator-e2e
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: aerospike-operator
+  name: aerospike-operator-e2e
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: aerospike-operator
+  name: aerospike-operator-e2e
+  namespace: aerospike-operator-e2e
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: aerospike-operator
+  name: aerospike-operator-e2e
+  namespace: aerospike-operator-e2e
+spec:
+  containers:
+  - name: aerospike-operator-e2e
+    image: eu.gcr.io/aerospike-operator/aerospike-operator-e2e
+    imagePullPolicy: Always
+  restartPolicy: Never
+  serviceAccountName: aerospike-operator-e2e
