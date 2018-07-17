@@ -76,6 +76,9 @@ $ kubectl --namespace kubernetes-namespace-0 create secret generic \
     --from-file /path/to/key.json
 ----
 
+IMPORTANT: The name of the key containing the base64-encoded content of the
+credential **MUST** be called `key.json`.
+
 WARNING: Since secrets in Kubernetes are namespace-scoped, this operation must be
 repeated for every Kubernetes namespace where an Aerospike cluster exists.
 
