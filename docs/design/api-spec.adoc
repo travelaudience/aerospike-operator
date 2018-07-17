@@ -96,7 +96,7 @@ cluster.
 Must have exactly one element.
 footnote:[Even though the `.spec.namespaces` field must have exactly one element, it was decided to make it an array in order to allow extensibility of the API in the future.]
 . | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
-| backupSpec | The specification of how Aerospike namespace backups made by aerospike-operator should be performed and stored. | <<aerospikebackupspec,AerospikeBackupSpec>> | false
+| backupSpec | The specification of how Aerospike namespace backups made by aerospike-operator should be performed and stored. It is only required to be present if one wants to perform version upgrades on the Aerospike cluster. | <<aerospikebackupspec,AerospikeBackupSpec>> | false
 |===
 
 ==== Validations
