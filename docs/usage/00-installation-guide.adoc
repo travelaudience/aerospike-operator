@@ -32,6 +32,24 @@ unique, meaningful name.
 [[installing]]
 == Installing `aerospike-operator`
 
+=== Quickstart
+
+In order to install `aerospike-operator` using the default configuration,
+one may run
+
+[source,bash]
+----
+$ kubectl create -f docs/examples/00-prereqs.yml
+$ kubectl create -f docs/examples/10-aerospike-operator.yml
+----
+
+This will quickly get `aerospike-operator` up and running in one's Kubernetes
+cluster. In order to understand what happens behind the scenes, or in case one
+wants to tweak the `aerospike-operator` configuration, one should read the next
+section carefully.
+
+=== Advanced installation
+
 To install `aerospike-operator` in one's Kubernetes cluster, one must first run
 
 [source,bash]
