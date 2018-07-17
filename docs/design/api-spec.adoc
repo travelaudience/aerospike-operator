@@ -102,7 +102,7 @@ footnote:[Even though the `.spec.namespaces` field must have exactly one element
 ==== Validations
 
 * `version` must be a supported version. Currently only `4.2.0.3` and `4.2.0.4` are supported.
-* `nodeCount` must be an integer between 1 and 8.
+* `nodeCount` must be an integer between 1 and 8. It must also be greater than or equal to the replication factor defined for the Aerospike namespace managed by a given Aerospike cluster.
 * `namespaces` must have **exactly one** `AerospikeNamespaceSpec` object.
 
 ==== Example
