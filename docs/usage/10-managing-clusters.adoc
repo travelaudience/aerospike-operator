@@ -100,7 +100,7 @@ spec:
     storage:
       type: file
       size: 16G
-      storageClass: ssd
+      storageClassName: ssd
 ----
 
 Creating such a resource will make `aerospike-operator` create an Aerospike
@@ -148,7 +148,7 @@ spec:
     storage:
       type: file
       size: 16G
-      storageClass: ssd
+      storageClassName: ssd
 EOF
 aerospikecluster.aerospike.travelaudience.com "aerospike-cluster-0" created
 ----
