@@ -23,8 +23,9 @@ introduced at any moment.
 * Kubernetes 1.10+
 
 WARNING: Versions of Kubernetes prior to 1.10.5 are affected by
-https://github.com/kubernetes/kubernetes/issues/62382[#62382], which can cause failed backup and restore jobs to
-re-create pods indefinitely. Hence, running `aerospike-operator` on top of Kubernetes 1.10.5 or later is strongly
+https://github.com/kubernetes/kubernetes/issues/62382[#62382], which can cause
+failed backup and restore jobs to re-create pods indefinitely. Hence, running
+`aerospike-operator` on top of Kubernetes 1.10.5 or later is strongly
 recommended.
 
 NOTE: Support for Kubernetes 1.11 is being planned and will be implemented as
@@ -32,8 +33,9 @@ soon as it is generally available.
 
 == Documentation
 
-One can find comprehensive usage documentation in the `docs/usage` directory of
-this repository. Existing documentation covers the following topics:
+One can find comprehensive usage documentation in the
+link:./docs/usage[`docs/usage/`] directory of this repository. Existing
+documentation covers the following topics:
 
 1. <<./docs/usage/00-installation-guide.adoc#,Installation Guide>> provides
    instructions on how to install and configure `aerospike-operator`.
@@ -53,5 +55,5 @@ this repository. Existing documentation covers the following topics:
    limitations that exist in the current version of `aerospike-operator`.
 
 In addition to these documents, and in order to understand the design and
-architecture of `aerospike-operator`, one should have a look at the `docs/design/`
-directory of this repository.
+architecture of `aerospike-operator`, one should have a look at the
+link:./docs/design/[`docs/design/`] directory of this repository.
