@@ -1,6 +1,6 @@
 [[toc]]
-= API Types
-This document describes the types introduced by aerospike-operator.
+= API Specification
+This document describes the aerospike-operator API.
 :icons: font
 :toc:
 

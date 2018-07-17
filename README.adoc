@@ -42,7 +42,7 @@ https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`].
 
 One can find comprehensive usage documentation in the
 link:./docs/usage[`docs/usage/`] directory of this repository. Existing
-documentation covers the following topics:
+usage documentation covers the following topics:
 
 1. <<./docs/usage/00-installation-guide.adoc#,Installation Guide>> provides
    instructions on how to install and configure `aerospike-operator`.
@@ -63,4 +63,13 @@ documentation covers the following topics:
 
 In addition to these documents, and in order to understand the design and
 architecture of `aerospike-operator`, one should have a look at the
-link:./docs/design/[`docs/design/`] directory of this repository.
+link:./docs/design/[`docs/design/`] directory of this repository. Existing
+design documentation covers the following topics:
+
+1. <<./docs/design/api-spec.adoc#,API Specification>> describes the API
+   introduced by `aerospike-operator`.
+1. <<./docs/design/architecture.adoc#,Architecture>> describes the design of
+   `aerospike-operator` and the interactions between the custom resource
+   definitions it introduces, its internal components and Kubernetes.
+1. <<./docs/design/upgrades.adoc#,Upgrades>> describes how upgrade operations
+   are performed by `aerospike-operator`.

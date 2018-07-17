@@ -1,10 +1,10 @@
 [[toc]]
-= Design
+= Architecture
 This document describes the design of aerospike-operator and the interactions between the custom resource definitions it introduces, its internal components and Kubernetes.
 :icons: font
 :toc:
 
-== Architecture
+== Overview
 
 `aerospike-operator` runs within a Kubernetes cluster and actively monitors
 changes to a number of
