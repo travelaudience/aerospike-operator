@@ -31,6 +31,13 @@ recommended.
 NOTE: Support for Kubernetes 1.11 is being planned and will be implemented as
 soon as it is generally available.
 
+== Supported versions
+
+`aerospike-operator` currently supports launching Aerospike clusters running
+Aerospike Server CE
+https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`] and
+https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`].
+
 == Documentation
 
 One can find comprehensive usage documentation in the
