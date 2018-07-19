@@ -170,7 +170,7 @@ func run(stopCh chan struct{}, cfg *restclient.Config, kubeClient *kubernetes.Cl
 	if err != nil {
 		log.Fatalf("failed to create apiextensions clientset: %v", err)
 	}
-	if err := crd.NewCRDRegistry(extsClient).RegisterCRDs(); err != nil {
+	if err := crd.NewCRDRegistry(extsClient, aerospikeClient).RegisterCRDs(); err != nil {
 		log.Fatalf("failed to create custom resource definitions: %v", err)
 	}
 
