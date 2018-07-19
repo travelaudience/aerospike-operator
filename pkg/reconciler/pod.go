@@ -322,10 +322,12 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 					},
 				},
 			},
+			// let the reconcile loop handle pod restarts
+			RestartPolicy: v1.RestartPolicyNever,
 		},
 	}
 
-	// Only enable in production, so it can be used in 1 node clusters while debugging (minikube)
+	// only enable in production, so it can be used in 1 node clusters while debugging (minikube)
 	if !debug.DebugEnabled {
 		pod.Spec.Affinity = &v1.Affinity{
 			PodAntiAffinity: &v1.PodAntiAffinity{
@@ -388,34 +390,56 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			select {
 			case <-ticker.C:
 				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarting,
-					"waiting for aerospike to start on pod %s",
-					meta.Key(res),
-				)
-			case <-done:
-				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarted,
-					"aerospike started on pod %s",
-					meta.Key(res),
-				)
+					"waiting for aerospike to start on pod %s", meta.Key(res))
+			case success := <-done:
+				if success {
+					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarted,
+						"aerospike started on pod %s", meta.Key(res))
+				} else {
+					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonNodeStartedFailed,
+						"could not start aerospike on pod %s", meta.Key(res))
+				}
 				return
 			}
 		}
 	}()
 
+	currentPod := res
 	err = r.waitForPodCondition(res, func(event watch.Event) (bool, error) {
-		pod = event.Object.(*v1.Pod)
-		return isPodRunningAndReady(pod), nil
+		switch event.Type {
+		case watch.Error:
+			return false, fmt.Errorf("got event of type error: %+v", event.Object)
+		case watch.Deleted:
+			currentPod = event.Object.(*v1.Pod)
+			return false, fmt.Errorf("pod %s has been deleted", meta.Key(currentPod))
+		default:
+			currentPod = event.Object.(*v1.Pod)
+			if isPodInTerminalState(currentPod) {
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+					logfields.Pod:              meta.Key(currentPod),
+				}).Warn("pod is in terminal state")
+				if err := r.deletePod(aerospikeCluster, currentPod); err != nil {
+					return false, err
+				}
+				return false, fmt.Errorf("pod %s in terminal state has been deleted", meta.Key(currentPod))
+
+			}
+			return isPodRunningAndReady(currentPod), nil
+		}
 	}, watchCreatePodTimeout)
+	done <- err == nil
+	close(done)
 	if err != nil {
 		return nil, err
 	}
-	close(done)
 
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 		logfields.Pod:              meta.Key(res),
 	}).Debug("pod created and running")
 
-	return pod, nil
+	return currentPod, nil
 }
 
 func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {

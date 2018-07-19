@@ -13,6 +13,10 @@ const (
 	// running and ready.
 	ReasonNodeStarted = "NodeStarted"
 
+	// ReasonNodeStartedFailed is the reason used in corev1.Event objects created when pods have
+	// failed to start.
+	ReasonNodeStartedFailed = "NodeStartedFailed"
+
 	// ReasonNodeUpgradeStarted is the reason used in corev1.Event objects created when an
 	// upgrade operation starts on a pod.
 	ReasonNodeUpgradeStarted = "NodeUpgradeStarted"

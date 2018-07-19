@@ -40,6 +40,15 @@ func ObjectByName(name string) metav1.ListOptions {
 	}
 }
 
+// ObjectByNameAndVersion returns the options for a list/watch operation that searches for an object based on
+// its name and the specified version.
+func ObjectByNameAndVersion(name, version string) metav1.ListOptions {
+	return metav1.ListOptions{
+		FieldSelector:   selectors.ObjectByName(name).String(),
+		ResourceVersion: version,
+	}
+}
+
 // PodsByClusterName returns the options for a list/watch operation that searches for pods belonging
 // to a given AerospikeCluster.
 func PodsByClusterName(name string) metav1.ListOptions {

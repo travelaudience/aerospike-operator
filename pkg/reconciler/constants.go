@@ -115,6 +115,16 @@ const (
 	// UpgradeStatusBackupAnnotationValue is the value of the annotation added
 	// to AerospikeCluster resources that are undergoing a pre-upgrade backup.
 	UpgradeStatusBackupAnnotationValue = "backup"
+
+	// terminal state reasons when pod status is Pending
+	// container image pull failed
+	ReasonImagePullBackOff = "ImagePullBackOff"
+	// unable to inspect image
+	ReasonImageInspectError = "ImageInspectError"
+	// general image pull error
+	ReasonErrImagePull = "ErrImagePull"
+	// get http error when pulling image from registry
+	ReasonRegistryUnavailable = "RegistryUnavailable"
 )
 
 var asConfigTemplate = template.Must(template.New("aerospike-config").Parse(aerospikeConfig))

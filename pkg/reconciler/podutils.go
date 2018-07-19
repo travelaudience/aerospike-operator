@@ -60,17 +60,47 @@ func isPodRunningAndReady(pod *v1.Pod) bool {
 	return pod.Status.Phase == v1.PodRunning && podutil.IsPodReady(pod)
 }
 
+func isPodInTerminalState(pod *v1.Pod) bool {
+	// pod is in terminal state if its .status.phase is Failed, or
+	// if its .status.phase is Pending and the reason is "ImagePullBackOff"
+	switch pod.Status.Phase {
+	case v1.PodFailed:
+		return true
+	case v1.PodPending:
+		for _, containerStatus := range pod.Status.ContainerStatuses {
+			if waiting := containerStatus.State.Waiting; waiting != nil {
+				switch waiting.Reason {
+				case ReasonImagePullBackOff:
+					fallthrough
+				case ReasonImageInspectError:
+					fallthrough
+				case ReasonErrImagePull:
+					fallthrough
+				case ReasonRegistryUnavailable:
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.ConditionFunc, timeout time.Duration) error {
-	w, err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(listoptions.ObjectByName(pod.Name))
+	start := time.Now()
+	w, err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(listoptions.ObjectByNameAndVersion(pod.Name, pod.ResourceVersion))
 	if err != nil {
 		return err
 	}
-	start := time.Now()
+
+	lastPod := pod
 	last, err := watch.Until(timeout, w, fn)
 	if err != nil {
 		if err == watch.ErrWatchClosed {
 			if t := timeout - time.Since(start); t > 0 {
-				return r.waitForPodCondition(pod, fn, t)
+				if last != nil {
+					lastPod = last.Object.(*v1.Pod)
+				}
+				return r.waitForPodCondition(lastPod, fn, t)
 			}
 		}
 		return err

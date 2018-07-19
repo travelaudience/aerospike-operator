@@ -58,7 +58,7 @@ func (r *CRDRegistry) RegisterCRDs() error {
 			return err
 		}
 		// wait for the CustomResourceDefinition to be established
-		if err := r.awaitCRD(crd); err != nil {
+		if err := r.awaitCRD(crd, watchTimeout); err != nil {
 			return err
 		}
 	}
@@ -109,13 +109,16 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	return nil
 }
 
-func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition) error {
+func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition, timeout time.Duration) error {
+	start := time.Now()
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("waiting for crd to be established")
-	w, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(listoptions.ObjectByName(crd.Name))
+	w, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(listoptions.ObjectByNameAndVersion(crd.Name, crd.ResourceVersion))
 	if err != nil {
 		return err
 	}
-	last, err := watch.Until(watchTimeout, w, func(event watch.Event) (bool, error) {
+
+	lastCRD := crd
+	last, err := watch.Until(timeout, w, func(event watch.Event) (bool, error) {
 		// grab the current crd object from the event
 		obj := event.Object.(*extsv1beta1.CustomResourceDefinition)
 		// search for Established in .Status.Conditions and make sure it is True
@@ -132,6 +135,17 @@ func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition) error 
 		return false, nil
 	})
 	if err != nil {
+		// ErrWatchClosed is returned when the watch channel is closed before timeout in Until
+		if err == watch.ErrWatchClosed {
+			// re-establish retry until we reach the timeout
+			if t := timeout - time.Since(start); t > 0 {
+				// use the resource object of the last event if it exists
+				if last != nil {
+					lastCRD = last.Object.(*extsv1beta1.CustomResourceDefinition)
+				}
+				return r.awaitCRD(lastCRD, t)
+			}
+		}
 		return err
 	}
 	if last == nil {
