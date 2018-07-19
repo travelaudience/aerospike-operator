@@ -114,5 +114,8 @@ var _ = Describe("AerospikeCluster", func() {
 		It("does not lose data in a namespace after an upgrade and makes automatic backup of namespaces before upgrade", func() {
 			testNoDataLossOnAerospikeUpgrade(tf, ns, 2, 10000, "4.2.0.3", "4.2.0.4")
 		})
+		It("node IDs are kept after restart", func() {
+			testNodeIDsAfterRestart(tf, ns, 2)
+		})
 	})
 })

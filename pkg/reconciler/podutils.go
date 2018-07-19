@@ -23,12 +23,10 @@ import (
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 
-	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
@@ -89,12 +87,14 @@ func podHasMigrationsInProgress(pod *v1.Pod) (bool, error) {
 		return false, err
 	}
 	defer client.Close()
-	for _, node := range client.GetNodes() {
-		if node.GetHost().Name == pod.Status.PodIP {
+	// try to find the current node by its id/name
+	for _, node := range client.Cluster().GetNodes() {
+		// node.GetName returns an upper-case string, so we must ignore case
+		if strings.EqualFold(node.GetName(), pod.Annotations[nodeIdAnnotation]) {
 			return node.MigrationInProgress()
 		}
 	}
-	return false, nil
+	return false, fmt.Errorf("failed to find node %s in the cluster", pod.Annotations[nodeIdAnnotation])
 }
 
 func waitForMigrationsToFinishOnPod(pod *v1.Pod) error {
@@ -103,16 +103,14 @@ func waitForMigrationsToFinishOnPod(pod *v1.Pod) error {
 		return err
 	}
 	defer client.Close()
-	for _, node := range client.GetNodes() {
-		if node.GetHost().Name == pod.Status.PodIP {
-			log.WithFields(log.Fields{
-				logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
-				logfields.Pod:              meta.Key(pod),
-			}).Debug("waiting for migrations to finish")
+	// try to find the current node by its id/name
+	for _, node := range client.Cluster().GetNodes() {
+		// node.GetName returns an upper-case string, so we must ignore case
+		if strings.EqualFold(node.GetName(), pod.Annotations[nodeIdAnnotation]) {
 			return node.WaitUntillMigrationIsFinished(waitMigrationsTimeout)
 		}
 	}
-	return nil
+	return fmt.Errorf("failed to find node %s in the cluster", pod.Annotations[nodeIdAnnotation])
 }
 
 func getAerospikeServerVersionFromPod(pod *v1.Pod) (string, error) {

@@ -114,3 +114,35 @@ func testNoDataLossAfterRestartAndScaleDown(tf *framework.TestFramework, ns *v1.
 	Expect(err).NotTo(HaveOccurred())
 	c2.Close()
 }
+
+func testNodeIDsAfterRestart(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeCount = nodeCount
+	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(asc, nodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	c1, err := framework.NewAerospikeClient(asc)
+	Expect(err).NotTo(HaveOccurred())
+	nodeNamesBeforeRestart := c1.GetNodeNames()
+	c1.Close()
+
+	err = tf.ChangeNamespaceMemorySizeAndScaleClusterAndWait(asc, 4, nodeCount)
+
+	c2, err := framework.NewAerospikeClient(asc)
+	Expect(err).NotTo(HaveOccurred())
+	nodeNamesAfterRestart := c2.GetNodeNames()
+	c2.Close()
+
+	for _, node := range nodeNamesBeforeRestart {
+		found := false
+		for _, newNode := range nodeNamesAfterRestart {
+			if node == newNode {
+				found = true
+			}
+		}
+		Expect(found).To(Equal(true))
+	}
+}

@@ -17,7 +17,11 @@ limitations under the License.
 package reconciler
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -110,7 +114,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			continue
 		}
 		// check whether the pod needs to be restarted
-		if configMap.Annotations[configMapHashLabel] != pod.Annotations[configMapHashLabel] {
+		if configMap.Annotations[configMapHashAnnotation] != pod.Annotations[configMapHashAnnotation] {
 			if _, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, i); err != nil {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
@@ -146,9 +150,25 @@ func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospike
 }
 
 func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) (*v1.Pod, error) {
+	// initialConfigFilePath contains the path to the aerospike.conf file that
+	// will be created as a result of mounting the configmap (i.e. before
+	// templating)
+	initialConfigFilePath := path.Join(initialConfigMountPath, configFileName)
+	// finalConfigFilePath contains the path to the aerospike.conf file that
+	// will be used by the aerospike process (i.e. after templating)
+	finalConfigFilePath := path.Join(finalConfigMountPath, configFileName)
+	// podName contains the name of the pod
+	podName := fmt.Sprintf("%s-%d", aerospikeCluster.Name, index)
+	// nodeId will contain the value used as service.node-id for the pod
+	nodeId, err := computeNodeId(podName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute node id for %s: %v", podName, err)
+	}
+
+	// pod represents the pod that will be created
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%d", aerospikeCluster.Name, index),
+			Name: podName,
 			Labels: map[string]string{
 				selectors.LabelAppKey:     selectors.LabelAppVal,
 				selectors.LabelClusterKey: aerospikeCluster.Name,
@@ -165,10 +185,40 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 				},
 			},
 			Annotations: map[string]string{
-				configMapHashLabel: configMap.Annotations[configMapHashLabel],
+				configMapHashAnnotation: configMap.Annotations[configMapHashAnnotation],
+				nodeIdAnnotation:        nodeId,
 			},
 		},
 		Spec: v1.PodSpec{
+			// use a init container to set the value of service.node-id to the
+			// value of nodeId
+			InitContainers: []v1.Container{
+				{
+					Name:  "init",
+					Image: "busybox:1.29.1",
+					Command: []string{
+						"sh",
+						"-c",
+						fmt.Sprintf("sed 's/%s/%s/' %s>%s", serviceNodeIdValue, nodeId, initialConfigFilePath, finalConfigFilePath),
+					},
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      initialConfigVolumeName,
+							MountPath: initialConfigMountPath,
+						},
+						{
+							Name:      finalConfigVolumeName,
+							MountPath: finalConfigMountPath,
+						},
+					},
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse(initContainerCpuRequest),
+							v1.ResourceMemory: resource.MustParse(initContainerMemoryRequest),
+						},
+					},
+				},
+			},
 			Containers: []v1.Container{
 				{
 					Name:  "aerospike-server",
@@ -177,7 +227,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						"/usr/bin/asd",
 						"--foreground",
 						"--config-file",
-						"/opt/aerospike/etc/aerospike.conf",
+						finalConfigFilePath,
 					},
 					Ports: []v1.ContainerPort{
 						{
@@ -199,8 +249,8 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 					},
 					VolumeMounts: []v1.VolumeMount{
 						{
-							Name:      configVolumeName,
-							MountPath: configMountPath,
+							Name:      finalConfigVolumeName,
+							MountPath: finalConfigMountPath,
 						},
 					},
 					ReadinessProbe: &v1.Probe{
@@ -256,13 +306,19 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			},
 			Volumes: []v1.Volume{
 				{
-					Name: configVolumeName,
+					Name: initialConfigVolumeName,
 					VolumeSource: v1.VolumeSource{
 						ConfigMap: &v1.ConfigMapVolumeSource{
 							LocalObjectReference: v1.LocalObjectReference{
 								Name: configMap.Name,
 							},
 						},
+					},
+				},
+				{
+					Name: finalConfigVolumeName,
+					VolumeSource: v1.VolumeSource{
+						EmptyDir: &v1.EmptyDirVolumeSource{},
 					},
 				},
 			},
@@ -443,7 +499,15 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 				}
 			}
 		}()
+		log.WithFields(log.Fields{
+			logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
+			logfields.Pod:              meta.Key(pod),
+		}).Debug("waiting for migrations to finish")
 		if err := waitForMigrationsToFinishOnPod(pod); err != nil {
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
+				logfields.Pod:              meta.Key(pod),
+			}).Error("failed to wait for migrations to finish")
 			return err
 		}
 		close(done)
@@ -478,4 +542,18 @@ func computeMemoryRequest(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) 
 		sum += s
 	}
 	return resource.MustParse(fmt.Sprintf("%dGi", sum))
+}
+
+// computeNodeId computes the value to be used as the id of the aerospike node
+// that corresponds to podName.
+func computeNodeId(podName string) (string, error) {
+	// calculate the md5 hash of podName
+	podHash := md5.New()
+	_, err := io.WriteString(podHash, podName)
+	if err != nil {
+		return "", err
+	}
+	// an aerospike node's id cannot exceed 16 characters, so return the first
+	// 16 characters of the hash. this should be unique enough.
+	return hex.EncodeToString(podHash.Sum(nil))[0:16], nil
 }

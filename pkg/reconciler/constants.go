@@ -22,8 +22,20 @@ import (
 )
 
 const (
-	configVolumeName = "config"
-	configMountPath  = "/opt/aerospike/etc/"
+	// the name of the volume that will contain the original aerospike.conf
+	// created as a result of mounting the configmap (i.e. before templating)
+	initialConfigVolumeName = "aerospike-conf-src"
+	// the mount path of the volume that will contain the initial
+	// aerospike.conf created as a result of mounting the configmap
+	initialConfigMountPath = "/aerospike-conf-src"
+	// the name of the volume that will contain the final aerospike.conf file
+	// (i.e. after templating)
+	finalConfigVolumeName = "aerospike-conf"
+	// the mount path of the volume that will contain the final aerospike.conf
+	// file (i.e. after templating)
+	finalConfigMountPath = "/aerospike-conf"
+	// the name of the aerospike.conf file
+	configFileName = "aerospike.conf"
 
 	namespaceVolumePrefix = "data-ns"
 
@@ -43,10 +55,17 @@ const (
 
 	podOperationFeedbackPeriod = 2 * time.Minute
 
-	configMapHashLabel = "configMapHash"
+	// the name of the annotation that holds the hash of the mounted configmap
+	configMapHashAnnotation = "aerospike.travelaudience.com/config-map-hash"
+	// the name of the annotation that holds the aerospike node id
+	nodeIdAnnotation = "aerospike.travelaudience.com/node-id"
 
-	configFileName = "aerospike.conf"
-
+	// the name of the key that corresponds to the service.node-id property
+	// (used for templating)
+	serviceNodeIdKey = "nodeId"
+	// the value of the key that corresponds to the service.node-id property
+	// (used for templating)
+	serviceNodeIdValue    = "__SERVICE__NODE_ID__"
 	clusterMeshServiceKey = "meshAddress"
 	clusterMeshPortKey    = "meshPort"
 	clusterNamespacesKey  = "namespaces"
@@ -73,6 +92,11 @@ const (
 	asReadinessTimeoutSeconds      = 2
 	asReadinessPeriodSeconds       = 10
 	asReadinessFailureThreshold    = 3
+
+	// the cpu request for the init container
+	initContainerCpuRequest = "10m"
+	// the memory request for the init container
+	initContainerMemoryRequest = "32Mi"
 
 	// UpgradeStatusAnnotationKey is the name of the annotation added to
 	// AerospikeCluster resources that are being upgraded.
@@ -101,6 +125,7 @@ service {
 	transaction-queues 4
 	transaction-threads-per-queue 4
 	proto-fd-max 15000
+	node-id {{.nodeId}}
 }
 
 logging {

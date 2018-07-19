@@ -94,3 +94,7 @@ func (ac *AerospikeClient) ReadSequentialIntegers(asNamespace string, n int) err
 	}
 	return nil
 }
+
+func (ac *AerospikeClient) GetNodeNames() []string {
+	return ac.client.GetNodeNames()
+}

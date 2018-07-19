@@ -63,8 +63,8 @@ func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospike
 		return nil, err
 	}
 	// check whether the current configmap resource needs to be updated
-	outdated := asstrings.Hash(currentConfigMap.Data[configFileName]) != currentConfigMap.Annotations[configMapHashLabel] ||
-		desiredConfigMap.Annotations[configMapHashLabel] != currentConfigMap.Annotations[configMapHashLabel]
+	outdated := asstrings.Hash(currentConfigMap.Data[configFileName]) != currentConfigMap.Annotations[configMapHashAnnotation] ||
+		desiredConfigMap.Annotations[configMapHashAnnotation] != currentConfigMap.Annotations[configMapHashAnnotation]
 	// if the configmap is up-to-date, we're good to go
 	if !outdated {
 		log.WithFields(log.Fields{
@@ -128,7 +128,7 @@ func buildConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) *v1.Co
 				},
 			},
 			Annotations: map[string]string{
-				configMapHashLabel: asstrings.Hash(aerospikeConfig),
+				configMapHashAnnotation: asstrings.Hash(aerospikeConfig),
 			},
 		},
 		Data: map[string]string{configFileName: aerospikeConfig},
@@ -137,6 +137,7 @@ func buildConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) *v1.Co
 
 func getClusterProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, namespacesConfig []string) map[string]interface{} {
 	return map[string]interface{}{
+		serviceNodeIdKey:      serviceNodeIdValue,
 		clusterMeshServiceKey: aerospikeCluster.Name,
 		clusterMeshPortKey:    heartbeatPort,
 		clusterNamespacesKey:  namespacesConfig,
