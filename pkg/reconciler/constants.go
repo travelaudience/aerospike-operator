@@ -87,7 +87,6 @@ const (
 	aspromCpuRequest    = "10m"
 	aspromMemoryRequest = "32Mi"
 
-	asCpuRequest                   = "1000m"
 	asReadinessInitialDelaySeconds = 3
 	asReadinessTimeoutSeconds      = 2
 	asReadinessPeriodSeconds       = 10
@@ -97,6 +96,8 @@ const (
 	initContainerCpuRequest = "10m"
 	// the memory request for the init container
 	initContainerMemoryRequest = "32Mi"
+	// the default cpu request for the aerospike-server container
+	aerospikeServerContainerDefaultCpuRequest = 1
 	// the default memory request for the aerospike-server container
 	// matches the default value of namespace.memory-size
 	// https://www.aerospike.com/docs/reference/configuration#memory-size

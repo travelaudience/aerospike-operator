@@ -268,7 +268,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 					},
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
-							v1.ResourceCPU:    resource.MustParse(asCpuRequest),
+							v1.ResourceCPU:    computeCpuRequest(aerospikeCluster),
 							v1.ResourceMemory: computeMemoryRequest(aerospikeCluster),
 						},
 					},
@@ -535,8 +535,15 @@ func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *a
 	return r.createPodWithIndex(aerospikeCluster, configMap, index)
 }
 
-// computeMemoryRequest computes the amount of memory to be requested per pod based on the value of the memorySize field
-// of each namespace and returns the corresponding resource.Quantity.
+// computeCpuRequest computes the amount of cpu to be requested for the aerospike-server container and returns the
+// corresponding resource.Quantity. It currently returns aerospikeServerContainerDefaultCpuRequest parsed as a quantity,
+// but this may change in the future.
+func computeCpuRequest(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) resource.Quantity {
+	return resource.MustParse(strconv.Itoa(aerospikeServerContainerDefaultCpuRequest))
+}
+
+// computeMemoryRequest computes the amount of memory to be requested for the aerospike-server container based on the
+// value of the memorySize field of each namespace, and returns the corresponding resource.Quantity.
 func computeMemoryRequest(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) resource.Quantity {
 	sum := 0
 	for _, ns := range aerospikeCluster.Spec.Namespaces {

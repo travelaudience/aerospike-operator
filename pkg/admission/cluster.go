@@ -41,6 +41,9 @@ const (
 	// backup/restore sufix is appended to the jobs by backups handler. (restore is used for calculation
 	// because it has a greater length)
 	aerospikeNamespaceMaxNameLen = 23
+	// the default replication factor for an aerospike namespace
+	// https://www.aerospike.com/docs/reference/configuration#replication-factor
+	defaultNamespaceReplicationFactor int32 = 2
 )
 
 func (s *ValidatingAdmissionWebhook) admitAerospikeCluster(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {
@@ -85,8 +88,14 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 		if len(ns.Name) > aerospikeNamespaceMaxNameLen {
 			return fmt.Errorf("the name of a namespace cannot exceed %d characters", aerospikeNamespaceMaxNameLen)
 		}
-		if ns.ReplicationFactor != nil && *ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
-			return fmt.Errorf("replication factor of %d requested for namespace %s but the cluster has only %d nodes", ns.ReplicationFactor, ns.Name, aerospikeCluster.Spec.NodeCount)
+		// the current replication factor equals aerospike's default, unless it
+		// has been set by the user
+		currentReplicationFactor := defaultNamespaceReplicationFactor
+		if ns.ReplicationFactor != nil {
+			currentReplicationFactor = *ns.ReplicationFactor
+		}
+		if currentReplicationFactor > aerospikeCluster.Spec.NodeCount {
+			return fmt.Errorf("replication factor of %d requested for namespace %s but the cluster has only %d nodes", currentReplicationFactor, ns.Name, aerospikeCluster.Spec.NodeCount)
 		}
 	}
 
@@ -186,7 +195,7 @@ func validateNamespaces(old, new *v1alpha1.AerospikeCluster) error {
 			continue
 		}
 		// make sure that the replication factor hasn't been changed
-		if *oldnss[name].ReplicationFactor != *newnss[name].ReplicationFactor {
+		if oldnss[name].ReplicationFactor != nil && newnss[name].ReplicationFactor != nil && *oldnss[name].ReplicationFactor != *newnss[name].ReplicationFactor {
 			return fmt.Errorf("cannot change the replication factor for namespace %s", name)
 		}
 		// make sure that the storage spec hasn't been changed
