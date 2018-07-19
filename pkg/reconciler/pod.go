@@ -540,14 +540,24 @@ func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *a
 func computeMemoryRequest(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) resource.Quantity {
 	sum := 0
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
-		s, err := strconv.Atoi(strings.TrimSuffix(*ns.MemorySize, "G"))
-		if err != nil {
+		if ns.MemorySize == nil {
+			// ns.MemorySize is nil, which means we need to set a value that
+			// matches the aerospike default for namespace.memory-size
+			sum += aerospikeServerContainerDefaultMemoryRequestGi
+			continue
+		}
+		if s, err := strconv.Atoi(strings.TrimSuffix(*ns.MemorySize, "G")); err == nil {
+			// *ns.MemorySize was parsed successfully, so we use its value
+			sum += s
+		} else {
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+			}).Warn("failed to parse memory size for namespace %s: %v", err)
 			// ns.MemorySize has been validated before, so it is highly unlikely
 			// than an error occurs at this point. however, if it does occur, we
-			// must return something and so we pick 1Gi as the default quantity.
-			return resource.MustParse("1Gi")
+			// must return something, and so we pick the default memory request.
+			sum += aerospikeServerContainerDefaultMemoryRequestGi
 		}
-		sum += s
 	}
 	return resource.MustParse(fmt.Sprintf("%dGi", sum))
 }

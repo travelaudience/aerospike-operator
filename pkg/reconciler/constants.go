@@ -97,6 +97,10 @@ const (
 	initContainerCpuRequest = "10m"
 	// the memory request for the init container
 	initContainerMemoryRequest = "32Mi"
+	// the default memory request for the aerospike-server container
+	// matches the default value of namespace.memory-size
+	// https://www.aerospike.com/docs/reference/configuration#memory-size
+	aerospikeServerContainerDefaultMemoryRequestGi = 4
 
 	// UpgradeStatusAnnotationKey is the name of the annotation added to
 	// AerospikeCluster resources that are being upgraded.
