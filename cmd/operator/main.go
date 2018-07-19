@@ -114,8 +114,10 @@ func main() {
 	}
 	go wh.Run(shCh)
 
+	log.Info("attempting to become leader")
+
 	// setup a resourcelock for leader election
-	rl, err := resourcelock.New(
+	rl, _ := resourcelock.New(
 		resourcelock.EndpointsResourceLock,
 		namespace,
 		"aerospike-operator",
@@ -133,6 +135,7 @@ func main() {
 		RetryPeriod:   2 * time.Second,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(leCh <-chan struct{}) {
+				log.Info("started leading")
 				// stop the controllers when either leCh or shCh are closed
 				stopCh := make(chan struct{})
 				go func() {
@@ -146,7 +149,10 @@ func main() {
 				run(stopCh, cfg, kubeClient, aerospikeClient)
 			},
 			OnStoppedLeading: func() {
-				log.Fatalf("lost leader election")
+				log.Fatalf("stopped leading")
+			},
+			OnNewLeader: func(id string) {
+				log.Infof("current leader: %s", id)
 			},
 		},
 	})

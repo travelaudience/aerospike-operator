@@ -96,9 +96,9 @@ func (c *genericController) Run(threadiness int, stopCh <-chan struct{}) error {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	c.logger.Debug("started workers")
+	c.logger.Info("started workers")
 	<-stopCh
-	c.logger.Debug("shutting down workers")
+	c.logger.Info("shutting down workers")
 
 	return nil
 }

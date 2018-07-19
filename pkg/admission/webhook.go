@@ -150,6 +150,7 @@ func (s *ValidatingAdmissionWebhook) Run(stopCh chan struct{}) {
 	}()
 
 	// start listening on the specified port
+	log.Info("starting admission webhook")
 	if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Errorf("failed to serve admission webhook: %v", err)
 		return

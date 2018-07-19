@@ -69,7 +69,7 @@ func New(kubeclientset kubernetes.Interface,
 func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-	}).Debug("checking whether reconciliation is needed")
+	}).Info("processing cluster")
 
 	// check if a previous upgrade operation has failed, in which case we return
 	if v, ok := aerospikeCluster.ObjectMeta.Annotations[UpgradeStatusAnnotationKey]; ok {

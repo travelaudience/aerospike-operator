@@ -479,6 +479,10 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 		go func() {
 			ticker := time.NewTicker(podOperationFeedbackPeriod)
 			defer ticker.Stop()
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
+				logfields.Pod:              meta.Key(pod),
+			}).Info("waiting for migrations to finish")
 			r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitForMigrationsStarted,
 				"waiting for migrations to finish on pod %s",
 				meta.Key(pod),
@@ -486,11 +490,19 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 			for {
 				select {
 				case <-ticker.C:
+					log.WithFields(log.Fields{
+						logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
+						logfields.Pod:              meta.Key(pod),
+					}).Info("waiting for migrations to finish")
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitingForMigrations,
 						"waiting for migrations to finish on pod %s",
 						meta.Key(pod),
 					)
 				case <-done:
+					log.WithFields(log.Fields{
+						logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
+						logfields.Pod:              meta.Key(pod),
+					}).Info("migrations finished")
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitForMigrationsFinished,
 						"migrations finished on pod %s",
 						meta.Key(pod),
@@ -499,10 +511,6 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 				}
 			}
 		}()
-		log.WithFields(log.Fields{
-			logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
-			logfields.Pod:              meta.Key(pod),
-		}).Debug("waiting for migrations to finish")
 		if err := waitForMigrationsToFinishOnPod(pod); err != nil {
 			log.WithFields(log.Fields{
 				logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],

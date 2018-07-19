@@ -76,6 +76,11 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha1.BackupResto
 		return nil
 	}
 
+	log.WithFields(log.Fields{
+		logfields.Kind: obj.GetKind(),
+		logfields.Key:  meta.Key(obj),
+	}).Infof("processing %s", obj.GetAction())
+
 	// get backupstoragespec from the "parent" aerospikecluster resource in case
 	// this field is not specified in the current resource
 	if obj.GetStorage() == nil {

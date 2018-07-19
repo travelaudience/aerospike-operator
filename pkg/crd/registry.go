@@ -138,6 +138,6 @@ func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition) error 
 		return fmt.Errorf("no events received for crd %s", meta.Key(crd))
 	}
 
-	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd established")
+	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Info("crd established")
 	return nil
 }
