@@ -91,7 +91,7 @@ cluster.
 |===
 | Field | Description | Scheme | Required
 | version | The version of Aerospike to be deployed. | string | true
-| nodeCount | The number of nodes in the cluster. | int32 | true
+| nodeCount | The number of nodes in the Aerospike cluster. | int32 | true
 | namespaces | The specification of the Aerospike namespaces in the cluster.
 Must have exactly one element.
 footnote:[Even though the `.spec.namespaces` field must have exactly one element, it was decided to make it an array in order to allow extensibility of the API in the future.]
@@ -134,15 +134,15 @@ spec:
 
 <<toc,Back>>
 
-[[aerospikebackupspec]]
-=== AerospikeBackupSpec
+[[aerospikeclusterbackupspec]]
+=== AerospikeClusterBackupSpec
 
-The AerospikeBackupSpec type specifies how Aerospike namespace backups made
-by aerospike-operator should be performed and stored.
+The AerospikeClusterBackupSpec type specifies how Aerospike namespace backups
+made by aerospike-operator before a version upgrade should be stored.
 
 |===
 | Field | Description | Scheme | Required
-| storage | The specification of how the backup is stored. | <<backupstoragespec,BackupStorageSpec>> | true
+| storage | Specifies how the backup should be stored. | <<backupstoragespec,BackupStorageSpec>> | true
 |===
 
 ==== Validations
@@ -160,10 +160,10 @@ namespace.
 |===
 | Field | Description | Scheme | Required
 | name | The name of the Aerospike namespace. | string | true
-| replicationFactor | The number of replicas (including the master copy) for this namespace. If absent, the default value provided by Aerospike will be used. | int32 | false
+| replicationFactor | The number of replicas (including the master copy) for this Aerospike namespace. If absent, the default value provided by Aerospike will be used. | int32 | false
 | memorySize | The amount of memory (_gibibytes_) to be used for index and data, suffixed with _G_. If absent, the default value provided by Aerospike will be used. | string | false
 | defaultTTL | Default record time-to-live (_seconds_) since it is created or last updated, suffixed with _s_. When TTL is reached, the record is deleted automatically. A TTL of `0s` means the record never expires. If absent, the default value provided by Aerospike will be used. | string | false
-| storage | Specifies how data will be stored. | <<storagespec,StorageSpec>> | true
+| storage | Specifies how data for the Aerospike namespace will be stored. | <<storagespec,StorageSpec>> | true
 |===
 
 More info:
@@ -222,7 +222,7 @@ operation.
 
 |===
 | Field | Description | Scheme | Required
-| target | The specification of the Aerospike cluster and namespace to backup. | <<targetnamespace,TargetNamespace>> | true
+| target | The specification of the Aerospike cluster and Aerospike namespace to backup. | <<targetnamespace,TargetNamespace>> | true
 | storage | The specification of how the backup will be stored. | <<backupstoragespec,BackupStorageSpec>> | false
 | ttl | The retention period (_days_) during which to keep backup data in cloud storage, suffixed with _d_. Defaults to `0d`, meaning the backup data will be kept forever. | string | false
 |===
@@ -267,7 +267,7 @@ operation.
 |===
 | Field | Description | Scheme | Required
 | target | The specification of the Aerospike cluster and namespace the backup will be restored to. | <<targetnamespace,TargetNamespace>> | true
-| storage | The specification of how the backup is retrieved. | <<backupstoragespec,BackupStorageSpec>> | false
+| storage | The specification of how the backup should be retrieved. | <<backupstoragespec,BackupStorageSpec>> | false
 |===
 
 More info:
@@ -302,13 +302,13 @@ spec:
 [[targetnamespace]]
 === TargetNamespace
 
-The TargetNamespace type specifies the Aerospike cluster and namespace a single backup or
-restore operation will target.
+The TargetNamespace type specifies the Aerospike cluster and Aerospike namespace
+a single backup or restore operation will target.
 
 |===
 | Field | Description | Scheme | Required
-| cluster | The name of the cluster in which the backup/restore operation will be performed. | string | true
-| namespace | The name of the namespace to backup/restore. | string | true
+| cluster | The name of the Aerospike cluster against which the backup/restore operation will be performed. | string | true
+| namespace | The name of the Aerospike namespace to backup/restore. | string | true
 |===
 
 ==== Validations
@@ -321,13 +321,13 @@ restore operation will target.
 [[backupstoragespec]]
 === BackupStorageSpec
 
-The BackupStorageSpec type specifies the configuration properties for the
-storage of a backup.
+The BackupStorageSpec type specifies the configuration for the storage of a
+backup.
 
 |===
 | Field | Description | Scheme | Required
 | type | The type of cloud storage to use for the backup (e.g., `gcs`) | string | true
-| bucket | The name of the bucket where a given backup is stored. | string | true
+| bucket | The name of the bucket where the backup is stored. | string | true
 | secret | The name of the secret containing credentials to access the bucket. | string | true
 |===
 

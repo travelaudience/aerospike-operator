@@ -1,5 +1,7 @@
 .idea/
+apiserver.local.config/
 bin/
+openapi_generated.go
 pkg/client/
 vendor/
 zz_generated.deepcopy.go

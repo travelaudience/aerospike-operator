@@ -3,8 +3,8 @@ VERSION?=0.7.0-dev
 
 build: BIN?=operator
 build: OUT?=bin/aerospike-operator
-run: GOOS?=linux
-run: GOARCH?=amd64
+build: GOOS?=linux
+build: GOARCH?=amd64
 build: dep gen
 	@GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build \
 		-a \
@@ -61,6 +61,23 @@ docker.tools:
 .PHONY: fmt
 fmt:
 	./hack/update-fmt.sh
+
+.PHONY: openapi
+openapi: CONTAINER_NAME?=aerospike-operator-openapi
+openapi: OPEN?=0
+openapi: PORT?=8080
+openapi:
+	@./hack/update-openapi.sh
+ifeq ($(OPEN),1)
+	@docker rm -f $(CONTAINER_NAME) || true && docker run \
+		-d \
+		-e SWAGGER_JSON=/swagger.json \
+		--name $(CONTAINER_NAME) \
+	    -p $(PORT):8080 \
+	    -v $(PWD)/docs/design/swagger.json:/swagger.json \
+	    swaggerapi/swagger-ui:3.17.4
+	@open http://localhost:$(PORT)/
+endif
 
 .PHONY: gen
 gen: export CODEGEN_PKG=../../../k8s.io/code-generator

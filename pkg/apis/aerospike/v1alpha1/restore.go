@@ -24,26 +24,35 @@ import (
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:openapi-gen=true
 
-// AerospikeNamespaceRestore is a specification for an AerospikeNamespaceRestore resource
+// AerospikeNamespaceRestore represents a single restore operation targeting a single Aerospike namespace.
 type AerospikeNamespaceRestore struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// Standard object metadata.
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AerospikeNamespaceRestoreSpec   `json:"spec"`
+	// The specification of the restore operation.
+	Spec AerospikeNamespaceRestoreSpec `json:"spec"`
+	// The status of the restore operation.
 	Status AerospikeNamespaceRestoreStatus `json:"status"`
 }
 
-// AerospikeNamespaceRestoreSpec is the spec for an AerospikeNamespaceRestore resource
+// AerospikeNamespaceRestoreSpec specifies the configuration for a restore operation.
 type AerospikeNamespaceRestoreSpec struct {
+	// The specification of the Aerospike cluster and namespace the backup will be restored to.
 	Target TargetNamespace `json:"target"`
+	// The specification of how the backup should be retrieved.
 	// +optional
 	Storage *BackupStorageSpec `json:"storage,omitempty"`
 }
 
 // AerospikeNamespaceRestoreStatus is the status for an AerospikeNamespaceRestore resource
 type AerospikeNamespaceRestoreStatus struct {
+	// The configuration for the restore operation.
 	AerospikeNamespaceRestoreSpec
+	// Details about the current condition of the AerospikeNamespaceRestore resource.
+	// +k8s:openapi-gen=false
 	Conditions []apiextensions.CustomResourceDefinitionCondition `json="conditions"`
 }
 
@@ -52,8 +61,10 @@ type AerospikeNamespaceRestoreStatus struct {
 // AerospikeNamespaceRestoreList is a list of AerospikeNamespaceRestore resources
 type AerospikeNamespaceRestoreList struct {
 	metav1.TypeMeta `json:",inline"`
+	// Standard list metadaata.
 	metav1.ListMeta `json:"metadata"`
 
+	// The list of AerospikeNamespaceRestore resources.
 	Items []AerospikeNamespaceRestore `json:"items"`
 }
 

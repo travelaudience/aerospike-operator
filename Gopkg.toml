@@ -22,6 +22,14 @@
   name = "github.com/aerospike/aerospike-client-go"
   version = "v1.33.0"
 
+[[override]]
+  name = "k8s.io/apiserver"
+  version = "kubernetes-1.10.5"
+
+[[override]]
+  branch = "release-7.0"
+  name = "github.com/appscode/kutil"
+
 [prune]
   go-tests = true
   unused-packages = true

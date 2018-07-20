@@ -24,51 +24,69 @@ import (
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:openapi-gen=true
 
-// AerospikeNamespaceBackup is a specification for an AerospikeNamespaceBackup resource
+// AerospikeNamespaceBackup represents a single backup operation targeting a single Aerospike namespace.
 type AerospikeNamespaceBackup struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// Standard object metadata.
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AerospikeNamespaceBackupSpec   `json:"spec"`
+	// The specification of the backup operation.
+	Spec AerospikeNamespaceBackupSpec `json:"spec"`
+	// The status of the backup operation.
 	Status AerospikeNamespaceBackupStatus `json:"status"`
 }
 
-// AerospikeNamespaceBackupSpec is the spec for an AerospikeNamespaceBackup resource
+// AerospikeNamespaceBackupSpec specifies the configuration for a backup operation.
 type AerospikeNamespaceBackupSpec struct {
+	// The specification of the Aerospike cluster and Aerospike namespace to backup.
 	Target TargetNamespace `json:"target"`
+	// The specification of how the backup will be stored.
 	// +optional
 	Storage *BackupStorageSpec `json:"storage,omitempty"`
+	// The retention period (days) during which to keep backup data in cloud storage, suffixed with d.
+	// Defaults to 0d, meaning the backup data will be kept forever.
 	// +optional
 	TTL *string `json:"ttl,omitempty"`
 }
 
-// TargetNamespace specifies the cluster and namespace to backup
+// TargetNamespace specifies the Aerospike cluster and namespace a single backup or restore operation will target.
 type TargetNamespace struct {
-	Cluster   string `json:"cluster"`
+	// The name of the Aerospike cluster against which the backup/restore operation will be performed.
+	Cluster string `json:"cluster"`
+	// The name of the Aerospike namespace to backup/restore.
 	Namespace string `json:"namespace"`
 }
 
-// BackupStorageSpec specifies how the backup will be stored
+// BackupStorageSpec specifies the configuration for the storage of a backup.
 type BackupStorageSpec struct {
-	Type   string `json:"type"`
+	// The type of cloud storage to use for the backup (e.g., gcs).
+	Type string `json:"type"`
+	// The name of the bucket where the backup is stored.
 	Bucket string `json:"bucket"`
+	// The name of the secret containing credentials to access the bucket.
 	Secret string `json:"secret"`
 }
 
-// AerospikeNamespaceBackupStatus is the status for an AerospikeNamespaceBackup resource
+// AerospikeNamespaceBackupStatus is the status for an AerospikeNamespaceBackup resource.
 type AerospikeNamespaceBackupStatus struct {
+	// The configuration for the backup operation.
 	AerospikeNamespaceBackupSpec
+	// Details about the current condition of the AerospikeNamespaceBackup resource.
+	// +k8s:openapi-gen=false
 	Conditions []apiextensions.CustomResourceDefinitionCondition `json="conditions"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AerospikeNamespaceBackupList is a list of AerospikeNamespaceBackup resources
+// AerospikeNamespaceBackupList represents a list of AerospikeNamespaceBackup resources.
 type AerospikeNamespaceBackupList struct {
 	metav1.TypeMeta `json:",inline"`
+	// Standard list metadata.
 	metav1.ListMeta `json:"metadata"`
 
+	// The list of AerospikeNamespaceBackup resources.
 	Items []AerospikeNamespaceBackup `json:"items"`
 }
 
