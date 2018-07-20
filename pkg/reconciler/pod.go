@@ -391,13 +391,25 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			case <-ticker.C:
 				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarting,
 					"waiting for aerospike to start on pod %s", meta.Key(res))
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: res.Labels[selectors.LabelClusterKey],
+					logfields.Pod:              meta.Key(res),
+				}).Infof("waiting for aerospike to start on pod %s", meta.Key(res))
 			case success := <-done:
 				if success {
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarted,
 						"aerospike started on pod %s", meta.Key(res))
+					log.WithFields(log.Fields{
+						logfields.AerospikeCluster: res.Labels[selectors.LabelClusterKey],
+						logfields.Pod:              meta.Key(res),
+					}).Infof("aerospike started on pod %s", meta.Key(res))
 				} else {
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonNodeStartedFailed,
 						"could not start aerospike on pod %s", meta.Key(res))
+					log.WithFields(log.Fields{
+						logfields.AerospikeCluster: res.Labels[selectors.LabelClusterKey],
+						logfields.Pod:              meta.Key(res),
+					}).Infof("could not start aerospike on pod %s", meta.Key(res))
 				}
 				return
 			}
@@ -436,7 +448,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-		logfields.Pod:              meta.Key(res),
+		logfields.Pod:              meta.Key(currentPod),
 	}).Debug("pod created and running")
 
 	return currentPod, nil
