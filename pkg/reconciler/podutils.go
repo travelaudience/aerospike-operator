@@ -20,13 +20,17 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 
+	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
@@ -143,22 +147,75 @@ func waitForMigrationsToFinishOnPod(pod *v1.Pod) error {
 	return fmt.Errorf("failed to find node %s in the cluster", pod.Annotations[nodeIdAnnotation])
 }
 
-func getAerospikeServerVersionFromPod(pod *v1.Pod) (string, error) {
+func runInfoCommandOnPod(pod *v1.Pod, command string) (map[string]string, error) {
 	addr := fmt.Sprintf("%s:%d", pod.Status.PodIP, ServicePort)
-	conn, err := as.NewConnection(addr, 5*time.Second)
+	conn, err := as.NewConnection(addr, aerospikeClientTimeout)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	return as.RequestInfo(conn, command)
+}
+
+func getAerospikeServerVersionFromPod(pod *v1.Pod) (string, error) {
+	res, err := runInfoCommandOnPod(pod, "build")
 	if err != nil {
 		return "", err
 	}
-
-	res, err := as.RequestInfo(conn, "build")
-	if err != nil {
-		return "", err
-	}
-
 	version, ok := res["build"]
 	if !ok {
 		return "", fmt.Errorf("failed to get aerospike version from pod %v", meta.Key(pod))
 	}
 
 	return version, nil
+}
+
+func executeInfoCommandOnAllNodes(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, command string) error {
+	client, err := as.NewClient(fmt.Sprintf("%s.%s", aerospikeCluster.Name, aerospikeCluster.Namespace), ServicePort)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	nodes := client.GetNodes()
+	var wg sync.WaitGroup
+	wg.Add(len(nodes))
+	errorOccured := make(chan error, len(nodes))
+	defer close(errorOccured)
+	// execute the command in a goroutine
+	for _, node := range nodes {
+		go func(node *as.Node) {
+			_, err := node.RequestInfo(command)
+			if err != nil {
+				errorOccured <- err
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: aerospikeCluster.Name,
+					logfields.Node:             node.GetName(),
+				}).Infof("error executing %q on node %s: %s", command, node.GetName(), err)
+			}
+			wg.Done()
+		}(node)
+	}
+	wg.Wait()
+	select {
+	case <-errorOccured:
+		return fmt.Errorf("failed to execute command %q in one or more nodes", command)
+	default:
+		return nil
+	}
+}
+
+func tipClearNode(pod *v1.Pod) error {
+	_, err := runInfoCommandOnPod(pod, "tip-clear:host-port-list=all")
+	return err
+}
+
+func addTipToNode(pod *v1.Pod) error {
+	command := fmt.Sprintf("tip:host=%s;port=%d", pod.Labels[selectors.LabelClusterKey], heartbeatPort)
+	_, err := runInfoCommandOnPod(pod, command)
+	return err
+}
+
+func alumniResetAllNodes(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+	return executeInfoCommandOnAllNodes(aerospikeCluster, "services-alumni-reset")
 }

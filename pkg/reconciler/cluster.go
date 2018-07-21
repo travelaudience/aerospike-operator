@@ -150,6 +150,7 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 		return err
 	}
 
+	oldCluster := aerospikeCluster.DeepCopy()
 	// make sure that pods are up-to-date with the spec
 	if err := r.ensurePods(aerospikeCluster, configMap, upgrade); err != nil {
 		// if a pod upgrade failed, signal with the appropriate annotations
@@ -164,7 +165,11 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	}
 
 	// update the status field of aerospikeCluster
-	if err := r.updateStatus(aerospikeCluster); err != nil {
+	r.updateStatus(aerospikeCluster)
+
+	// patch the cluster with the changes performed in the ensurePods and
+	// updateStatus
+	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
 		return err
 	}
 

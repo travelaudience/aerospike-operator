@@ -24,6 +24,7 @@ const (
 	AerospikeNamespaceBackup  = "aerospikenamespacebackup"
 	AerospikeNamespaceRestore = "aerospikenamespacerestore"
 	Pod                       = "pod"
+	Node                      = "node"
 	Service                   = "service"
 	ConfigMap                 = "configmap"
 	PersistentVolumeClaim     = "persistentvolumeclaim"

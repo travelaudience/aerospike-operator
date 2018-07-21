@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 )
 
 // DoubleQuoted returns the provided string surrounded by double-quotes, escaping any existing
@@ -32,5 +33,12 @@ func DoubleQuoted(str string) string {
 func Hash(s string) string {
 	h := sha256.New()
 	h.Write([]byte(s))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// HashSlice creates an unique identifier for a given slice of strings.
+func HashSlice(s []string) string {
+	h := sha256.New()
+	h.Write([]byte(strings.Join(s[:], "")))
 	return hex.EncodeToString(h.Sum(nil))
 }

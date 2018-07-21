@@ -31,16 +31,12 @@ import (
 
 // updateStatus updates the status of aerospikeCluster to match the spec.
 // IMPORTANT this method MUST only be called after a successful reconcile
-func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
-	// deepcopy aerospikeCluster so we can modify the status to later create the patch
-	new := aerospikeCluster.DeepCopy()
+func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) {
 	// update status to match the spec - the correctness of this is ensured by
 	// the reconcile loop
-	new.Status.Namespaces = aerospikeCluster.Spec.Namespaces
-	new.Status.NodeCount = aerospikeCluster.Spec.NodeCount
-	new.Status.Version = aerospikeCluster.Spec.Version
-	// update the status field of aerospikeCluster
-	return r.patchCluster(aerospikeCluster, new)
+	aerospikeCluster.Status.Namespaces = aerospikeCluster.Spec.Namespaces
+	aerospikeCluster.Status.NodeCount = aerospikeCluster.Spec.NodeCount
+	aerospikeCluster.Status.Version = aerospikeCluster.Spec.Version
 }
 
 // patchCluster updates the status field of the aerospikeCluster

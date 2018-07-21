@@ -54,11 +54,14 @@ const (
 	waitMigrationsTimeout  = 1 * time.Hour
 
 	podOperationFeedbackPeriod = 2 * time.Minute
+	aerospikeClientTimeout     = 10 * time.Second
 
 	// the name of the annotation that holds the hash of the mounted configmap
 	configMapHashAnnotation = "aerospike.travelaudience.com/config-map-hash"
 	// the name of the annotation that holds the aerospike node id
 	nodeIdAnnotation = "aerospike.travelaudience.com/node-id"
+	// the name of the annotation that holds the hash of the mesh as we know it
+	meshDigestAnnotation = "aerospike.travelaudience.com/mesh-hash"
 
 	// the name of the key that corresponds to the service.node-id property
 	// (used for templating)

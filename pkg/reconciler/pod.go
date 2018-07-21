@@ -43,6 +43,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
+	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
@@ -131,6 +132,54 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			// proceed to the next index
 			continue
 		}
+	}
+
+	// Due to the fact that the IPs of the pods in the cluster will most
+	// probably change as a result of a rolling restart/upgrade procedure,
+	// we should forcibly "reset" the list of nodes to which mesh-mode
+	// heartbeats are sent. This helps avoiding heartbeat-related warnings
+	// in Aerospike.
+	// For nodes other than the first one, there is always at least one
+	// "valid", active IP (the first node) and this is enough for Aerospike
+	// not to complain. Hence, there's no need to run tip-clear on those.
+	// The first node, however, will always see old IPs for each of the other
+	// nodes in the cluster (as their IPs changed after this node has been
+	// started). Hence, we must run tip-clear and tip against this node when
+	// we detect that IPs have changed. It should be noted that scaling up or
+	// down will also trigger this behaviour, but it doesn't have any adverse
+	// impact on the cluster.
+
+	// compute the hash of the cluster mesh as we know it
+	meshDigest, err := r.computeMeshHash(aerospikeCluster)
+	if err != nil {
+		return err
+	}
+	if currentMeshDigest, ok := aerospikeCluster.Annotations[meshDigestAnnotation]; !ok || meshDigest != currentMeshDigest {
+		if meshDigest != currentMeshDigest {
+			seedPod, err := r.getPodWithIndex(aerospikeCluster, 0)
+			if err != nil {
+				// we've failed to get the pod with the specified index
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+					logfields.PodIndex:         0,
+				}).Errorf("failed to get pod: %v", err)
+				// propagate the error
+				return err
+			}
+			// tip-clear node
+			if err := tipClearNode(seedPod); err != nil {
+				log.Warnf("failed to tip-clear seed node: %s", err)
+			}
+			// add tip seed to node
+			if err := addTipToNode(seedPod); err != nil {
+				log.Warnf("failed to add tip to seed node: %s", err)
+			}
+			// alumni-reset all nodes
+			if err := alumniResetAllNodes(aerospikeCluster); err != nil {
+				log.Warnf("failed to run alumni-reset: %s", err)
+			}
+		}
+		setAnnotation(aerospikeCluster, meshDigestAnnotation, meshDigest)
 	}
 
 	// signal that we're good and return
@@ -461,13 +510,14 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 }
 
 func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
+	// delete the pod
 	err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{
 		GracePeriodSeconds: pointers.NewInt64FromFloat64(terminationGracePeriod.Seconds()),
 	})
 	if err != nil {
 		return err
 	}
-
+	// wait for the pod to be successfully deleted
 	err = r.waitForPodCondition(pod, func(event watch.Event) (bool, error) {
 		return event.Type == watch.Deleted, nil
 	}, watchDeletePodTimeout)
@@ -479,7 +529,6 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 		logfields.Pod:              meta.Key(pod),
 	}).Debug("pod has been deleted")
-
 	return nil
 }
 
@@ -575,6 +624,20 @@ func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *a
 		return nil, err
 	}
 	return r.createPodWithIndex(aerospikeCluster, configMap, index)
+}
+
+func (r *AerospikeClusterReconciler) computeMeshHash(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (string, error) {
+	// get the existing pods for the cluster
+	pods, err := r.listClusterPods(aerospikeCluster)
+	if err != nil {
+		return "", err
+	}
+	// get the list of IP addresses
+	addrList := make([]string, len(pods))
+	for i, pod := range pods {
+		addrList[i] = pod.Status.PodIP
+	}
+	return asstrings.HashSlice(addrList), nil
 }
 
 // computeCpuRequest computes the amount of cpu to be requested for the aerospike-server container and returns the
