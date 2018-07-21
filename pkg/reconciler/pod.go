@@ -46,6 +46,12 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
+const (
+	// nodeIdPrefix is used as the prefix for node IDs so that they don't begin
+	// with a leading zero. "a" stands for aerospike.
+	nodeIdPrefix = "a"
+)
+
 func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, upgrade bool) error {
 	// list existing pods for the cluster
 	pods, err := r.listClusterPods(aerospikeCluster)
@@ -614,7 +620,8 @@ func computeNodeId(podName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// an aerospike node's id cannot exceed 16 characters, so return the first
-	// 16 characters of the hash. this should be unique enough.
-	return hex.EncodeToString(podHash.Sum(nil))[0:16], nil
+	// an aerospike node's id cannot exceed 16 characters, so we use the first
+	// 15 characters of the hash and a prefix to prevent the generated id from
+	// having leading zeros (which aerospike strips, causing trouble later on)
+	return fmt.Sprintf("%s%s", nodeIdPrefix, hex.EncodeToString(podHash.Sum(nil))[0:15]), nil
 }
