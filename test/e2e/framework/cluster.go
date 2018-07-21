@@ -117,8 +117,5 @@ func (tf *TestFramework) ChangeNamespaceMemorySizeAndScaleClusterAndWait(aerospi
 	if _, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(res.Namespace).Update(res); err != nil {
 		return err
 	}
-	return tf.WaitForClusterCondition(res, func(event watch.Event) (bool, error) {
-		obj := event.Object.(*aerospikev1alpha1.AerospikeCluster)
-		return len(obj.Status.Namespaces) == len(obj.Spec.Namespaces) && obj.Status.NodeCount == nodeCount, nil
-	}, watchTimeout)
+	return tf.WaitForClusterNodeCount(res, nodeCount)
 }

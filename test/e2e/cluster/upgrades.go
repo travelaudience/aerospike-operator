@@ -17,12 +17,15 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
+
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
@@ -62,6 +65,10 @@ func testNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework, ns *v1.Namesp
 	// upgrade Aerospike cluster to targetVersion
 	asc, err = tf.UpgradeClusterAndWait(asc, targetVersion)
 	Expect(err).NotTo(HaveOccurred())
+
+	clusterSize, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", asc.Name, asc.Namespace), 3000)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(clusterSize)).To(Equal(asc.Status.NodeCount))
 
 	// read data from the first namespace of the Aerospike cluster
 	c2, err := framework.NewAerospikeClient(asc)

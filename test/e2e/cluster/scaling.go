@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"math"
 
 	. "github.com/onsi/gomega"
@@ -24,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
@@ -42,6 +44,10 @@ func testNodeCountAfterScaling(tf *framework.TestFramework, ns *v1.Namespace, in
 	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(asc.Status.NodeCount).To(Equal(finalNodeCount))
+
+	clusterSize, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", asc.Name, asc.Namespace), 3000)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(clusterSize)).To(Equal(finalNodeCount))
 }
 
 func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, initialNodeCount, finalNodeCount int32) {
@@ -85,6 +91,10 @@ func testNoDowntimeDuringScaling(tf *framework.TestFramework, ns *v1.Namespace, 
 
 	err = tf.ScaleCluster(asc, finalNodeCount)
 	Expect(err).NotTo(HaveOccurred())
+
+	clusterSize, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", asc.Name, asc.Namespace), 3000)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(clusterSize)).To(Equal(finalNodeCount))
 
 	close(stopCh)
 	c1.Close()

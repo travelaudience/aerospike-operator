@@ -17,12 +17,15 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
+
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
@@ -98,6 +101,10 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(int32(len(pods.Items))).To(Equal(nodeCount))
+
+	clusterSize, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", res.Name, res.Namespace), 3000)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(clusterSize)).To(Equal(nodeCount))
 }
 
 func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace) {
