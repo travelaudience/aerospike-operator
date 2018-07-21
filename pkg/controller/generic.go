@@ -32,8 +32,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+// Controller encapsulates a controller for Kubernetes resources.
 type Controller interface {
-	Run(threadiness int, stopCh <-chan struct{}) error
+	// Run instructs the workers to start processing items from the queue.
+	Run(stopCh <-chan struct{}) error
 }
 
 // genericController contains basic functionality that is generic to all controllers
@@ -55,10 +57,12 @@ type genericController struct {
 	hasSyncedFuncs []cache.InformerSynced
 	// syncHandler is a function that takes a key (namespace/name) and processes the corresponding object
 	syncHandler func(key string) error
+	// the number of workers to use for processing items from the workqueue.
+	threadiness int
 }
 
 // newGenericController returns a new generic controller
-func newGenericController(name string, kubeClient kubernetes.Interface) *genericController {
+func newGenericController(name string, threadiness int, kubeClient kubernetes.Interface) *genericController {
 	logger := log.WithField("controller", name)
 
 	eventBroadcaster := record.NewBroadcaster()
@@ -67,9 +71,10 @@ func newGenericController(name string, kubeClient kubernetes.Interface) *generic
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: name})
 
 	return &genericController{
-		logger:    logger,
-		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), name),
-		recorder:  recorder,
+		logger:      logger,
+		workqueue:   workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), name),
+		recorder:    recorder,
+		threadiness: threadiness,
 	}
 }
 
@@ -77,7 +82,7 @@ func newGenericController(name string, kubeClient kubernetes.Interface) *generic
 // as syncing informer caches and starting workers. It will block until stopCh
 // is closed, at which point it will shutdown the workqueue and wait for
 // workers to finish processing their current work items.
-func (c *genericController) Run(threadiness int, stopCh <-chan struct{}) error {
+func (c *genericController) Run(stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
 	defer c.workqueue.ShutDown()
 
@@ -92,7 +97,7 @@ func (c *genericController) Run(threadiness int, stopCh <-chan struct{}) error {
 
 	c.logger.Debug("starting workers")
 	// Launch two workers to process AerospikeCluster resources
-	for i := 0; i < threadiness; i++ {
+	for i := 0; i < c.threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 

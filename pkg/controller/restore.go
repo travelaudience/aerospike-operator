@@ -33,6 +33,12 @@ import (
 	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
 )
 
+const (
+	// restoreControllerDefaultThreadiness is the number of workers the restore
+	// controller will use to process items from the queue.
+	restoreControllerDefaultThreadiness = 2
+)
+
 // AerospikeNamespaceRestoreController is the controller for AerospikeNamespaceRestore resources
 type AerospikeNamespaceRestoreController struct {
 	*genericController
@@ -58,7 +64,7 @@ func NewAerospikeNamespaceRestoreController(
 	aerospikeNamespaceRestoreLister := aerospikeNamespaceRestoreInformer.Lister()
 
 	c := &AerospikeNamespaceRestoreController{
-		genericController:               newGenericController("aerospikenamespacerestore", kubeClient),
+		genericController:               newGenericController("aerospikenamespacerestore", restoreControllerDefaultThreadiness, kubeClient),
 		aerospikeNamespaceRestoreLister: aerospikeNamespaceRestoreLister,
 	}
 	c.hasSyncedFuncs = []cache.InformerSynced{

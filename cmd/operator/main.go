@@ -193,7 +193,7 @@ func run(stopCh chan struct{}, cfg *restclient.Config, kubeClient *kubernetes.Cl
 	for _, c := range controllers {
 		wg.Add(1)
 		go func(c controller.Controller) {
-			if err := c.Run(2, stopCh); err != nil {
+			if err := c.Run(stopCh); err != nil {
 				log.Error(err)
 			}
 			wg.Done()

@@ -33,6 +33,14 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 )
 
+const (
+	// clusterControllerDefaultThreadiness is the number of workers the cluster
+	// controller will use to process items from the queue. since every worker
+	// will usually block for a long time when reconciling an aerospikecluster
+	// resource we must use a value that is higher than the usual.
+	clusterControllerDefaultThreadiness = 6
+)
+
 // AerospikeClusterController is the controller for AerospikeCluster resources
 type AerospikeClusterController struct {
 	*genericController
@@ -66,7 +74,7 @@ func NewAerospikeClusterController(
 	aerospikeNamespaceBackupsLister := aerospikeNamespaceBackupInformer.Lister()
 
 	c := &AerospikeClusterController{
-		genericController:       newGenericController("aerospikecluster", kubeClient),
+		genericController:       newGenericController("aerospikecluster", clusterControllerDefaultThreadiness, kubeClient),
 		aerospikeClustersLister: aerospikeClustersLister,
 	}
 	c.hasSyncedFuncs = []cache.InformerSynced{

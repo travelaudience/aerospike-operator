@@ -33,6 +33,12 @@ import (
 	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
 )
 
+const (
+	// backupControllerDefaultThreadiness is the number of workers the backup
+	// controller will use to process items from the queue.
+	backupControllerDefaultThreadiness = 2
+)
+
 // AerospikeNamespaceBackupController is the controller for AerospikeNamespaceBackup resources
 type AerospikeNamespaceBackupController struct {
 	*genericController
@@ -58,7 +64,7 @@ func NewAerospikeNamespaceBackupController(
 	aerospikeNamespaceBackupLister := aerospikeNamespaceBackupInformer.Lister()
 
 	c := &AerospikeNamespaceBackupController{
-		genericController:              newGenericController("aerospikenamespacebackup", kubeClient),
+		genericController:              newGenericController("aerospikenamespacebackup", backupControllerDefaultThreadiness, kubeClient),
 		aerospikeNamespaceBackupLister: aerospikeNamespaceBackupLister,
 	}
 	c.hasSyncedFuncs = []cache.InformerSynced{
