@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: aerospike-operator
-        image: eu.gcr.io/aerospike-operator/aerospike-operator
+        image: eu.gcr.io/<project-id>/aerospike-operator
         imagePullPolicy: Always
         args:
         - /aerospike-operator
