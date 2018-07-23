@@ -91,6 +91,6 @@ spec:
   containers:
   - name: aerospike-operator-e2e
     image: eu.gcr.io/<project-id>/aerospike-operator-e2e
-    imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
   restartPolicy: Never
   serviceAccountName: aerospike-operator-e2e
