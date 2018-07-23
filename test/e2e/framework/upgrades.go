@@ -19,7 +19,7 @@ package framework
 import (
 	"k8s.io/apimachinery/pkg/watch"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
 )
 
 // UpgradeClusterAndWait upgrades an Aerospike cluster to the specified targetVersion

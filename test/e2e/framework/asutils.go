@@ -22,7 +22,7 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
 )
 
 type AerospikeClient struct {

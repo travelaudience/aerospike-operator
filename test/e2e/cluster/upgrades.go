@@ -24,10 +24,10 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/asutils"
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/internal/asutils"
+	"github.com/travelaudience/aerospike-operator/internal/pointers"
+	"github.com/travelaudience/aerospike-operator/internal/reconciler"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

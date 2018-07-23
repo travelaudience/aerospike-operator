@@ -24,8 +24,8 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/asutils"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/internal/asutils"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

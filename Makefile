@@ -9,7 +9,7 @@ build: dep gen
 	@GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build \
 		-a \
 		-v \
-		-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/versioning.OperatorVersion=$(VERSION)" \
+		-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/internal/versioning.OperatorVersion=$(VERSION)" \
 		-tags=netgo \
 		-installsuffix=netgo \
 		-o=$(OUT) ./cmd/$(BIN)/main.go
@@ -40,7 +40,7 @@ run: PROFILE?=minikube
 run:
 	@GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build \
 		-v \
-		-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/versioning.OperatorVersion=$(VERSION)" \
+		-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/internal/versioning.OperatorVersion=$(VERSION)" \
 		-tags=netgo \
 		-installsuffix=netgo \
 		-o=bin/aerospike-operator ./cmd/operator/main.go
@@ -86,7 +86,7 @@ gen:
 
 .PHONY: test.unit
 test.unit:
-	go test -v ./cmd/... ./pkg/...
+	go test -v ./cmd/... ./internal/...
 
 .PHONY: test.e2e
 test.e2e: PROFILE?=minikube

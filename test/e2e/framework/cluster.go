@@ -23,10 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/internal/meta"
+	"github.com/travelaudience/aerospike-operator/internal/pointers"
+	"github.com/travelaudience/aerospike-operator/internal/utils/listoptions"
 )
 
 const (

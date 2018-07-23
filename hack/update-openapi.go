@@ -30,9 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kube-openapi/pkg/common"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike"
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/crd"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike"
+	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/internal/crd"
 )
 
 func main() {
