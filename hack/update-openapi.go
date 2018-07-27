@@ -21,43 +21,27 @@ import (
 
 	"github.com/appscode/kutil/openapi"
 	"github.com/go-openapi/spec"
+
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/apimachinery/announced"
-	"k8s.io/apimachinery/pkg/apimachinery/registered"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/sets"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/kube-openapi/pkg/common"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 )
 
 func main() {
-	f := make(announced.APIGroupFactoryRegistry)
-	r := registered.NewOrDie("")
 	s := runtime.NewScheme()
 	c := serializer.NewCodecFactory(s)
-	g := announced.NewGroupMetaFactory(
-		&announced.GroupMetaFactoryArgs{
-			GroupName:              aerospike.GroupName,
-			RootScopedKinds:        sets.NewString(),
-			VersionPreferenceOrder: []string{aerospikev1alpha1.SchemeGroupVersion.Version},
-		},
-		announced.VersionToSchemeFunc{
-			aerospikev1alpha1.SchemeGroupVersion.Version: aerospikev1alpha1.AddToScheme,
-		},
-	)
-	if err := g.Announce(f).RegisterAndEnable(r, s); err != nil {
-		log.Fatalf("failed to generate spec: %v", err)
-	}
+
+	utilruntime.Must(aerospikev1alpha1.AddToScheme(s))
+	utilruntime.Must(s.SetVersionPriority(aerospikev1alpha1.SchemeGroupVersion))
 
 	cfg := openapi.Config{
-		Registry: r,
-		Scheme:   s,
-		Codecs:   c,
+		Scheme: s,
+		Codecs: c,
 		Info: spec.InfoProps{
 			Description: "aerospike-operator manages Aerospike clusters atop Kubernetes, automating their creation and administration.",
 			Title:       aerospikev1alpha1.SchemeGroupVersion.Group,
@@ -70,10 +54,25 @@ func main() {
 		OpenAPIDefinitions: []common.GetOpenAPIDefinitions{
 			aerospikev1alpha1.GetOpenAPIDefinitions,
 		},
-		Resources: []schema.GroupVersionResource{
-			aerospikev1alpha1.SchemeGroupVersion.WithResource(crd.AerospikeClusterPlural),
-			aerospikev1alpha1.SchemeGroupVersion.WithResource(crd.AerospikeNamespaceBackupPlural),
-			aerospikev1alpha1.SchemeGroupVersion.WithResource(crd.AerospikeNamespaceRestorePlural),
+		Resources: []openapi.TypeInfo{
+			{
+				GroupVersion:    aerospikev1alpha1.SchemeGroupVersion,
+				Resource:        crd.AerospikeClusterPlural,
+				Kind:            crd.AerospikeClusterKind,
+				NamespaceScoped: true,
+			},
+			{
+				GroupVersion:    aerospikev1alpha1.SchemeGroupVersion,
+				Resource:        crd.AerospikeNamespaceBackupPlural,
+				Kind:            crd.AerospikeNamespaceBackupKind,
+				NamespaceScoped: true,
+			},
+			{
+				GroupVersion:    aerospikev1alpha1.SchemeGroupVersion,
+				Resource:        crd.AerospikeNamespaceRestorePlural,
+				Kind:            crd.AerospikeNamespaceRestoreKind,
+				NamespaceScoped: true,
+			},
 		},
 	}
 	if out, err := openapi.RenderOpenAPISpec(cfg); err != nil {

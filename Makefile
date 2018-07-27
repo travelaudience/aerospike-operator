@@ -1,5 +1,5 @@
 # VERSION holds the current version of aerospike-operator.
-VERSION?=0.7.0
+VERSION?=0.7.1-dev
 
 build: BIN?=operator
 build: OUT?=bin/aerospike-operator
@@ -19,7 +19,7 @@ build: dep gen
 # 'required' dependency in Gopkg.toml, and replaced by a call to dep ensure
 # (see https://github.com/golang/dep/issues/1306)
 .PHONY: dep
-dep: KUBERNETES_VERSION=1.10.5
+dep: KUBERNETES_VERSION=1.11.1
 dep: KUBERNETES_CODE_GENERATOR_PKG=k8s.io/code-generator
 dep: KUBERNETES_APIMACHINERY_PKG=k8s.io/apimachinery
 dep:

@@ -10,6 +10,12 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
+== Changes since `0.7.0`
+
+=== Improvements
+
+* Add support for Kubernetes 1.11+.
+
 == Changes since `0.6.0`
 
 === Breaking changes

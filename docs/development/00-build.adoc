@@ -16,7 +16,7 @@ their workstation:
 * `make`
 * https://github.com/GoogleContainerTools/skaffold[`skaffold`]
 
-To run `aerospike-operator` one needs a Kubernetes 1.10+ cluster. The build
+To run `aerospike-operator` one needs a Kubernetes 1.11+ cluster. The build
 toolchain includes `skaffold` profiles that allow for easy deployment in GKE
 and Minikube clusters.
 
@@ -38,7 +38,7 @@ To use the GKE profile, one needs to have the following:
   in one's workstation.
 ** One should set the value of the `GOOGLE_APPLICATION_CREDENTIALS` environment
    variable to `/path/to/key.json`.
-* A Google Kubernetes Engine 1.10+ cluster.
+* A Google Kubernetes Engine 1.11+ cluster.
 ** `kubectl` must be configured to connect to this cluster.
 ** One must also run
    https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker[`gcloud auth configure-docker`]
@@ -51,7 +51,7 @@ To use the GKE profile, one needs to have the following:
 === Minikube
 
 To use the Minikube profile, one only needs to have a Minikube cluster running
-Kubernetes 1.10+.
+Kubernetes 1.11+.
 
 == Cloning the repository
 

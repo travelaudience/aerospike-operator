@@ -7,11 +7,8 @@ This document details how to install aerospike-operator in a Kubernetes cluster.
 
 === Kubernetes
 
-`aerospike-operator` requires Kubernetes 1.10. Running `aerospike-operator` in
+`aerospike-operator` requires Kubernetes 1.11+. Running `aerospike-operator` in
 older Kubernetes versions is not supported.
-
-NOTE: Support for Kubernetes 1.11 is being planned and will be implemented as
-soon as it is generally available.
 
 === Google Kubernetes Engine
 
