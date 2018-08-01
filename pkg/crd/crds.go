@@ -150,6 +150,7 @@ var (
 																Type: "string",
 																Enum: []extsv1beta1.JSON{
 																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeFile))},
+																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeDevice))},
 																},
 															},
 															"size": {

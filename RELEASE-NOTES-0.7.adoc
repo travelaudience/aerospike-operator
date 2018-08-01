@@ -15,6 +15,7 @@ endif::[]
 === Improvements
 
 * Add support for Kubernetes 1.11+.
+* Add support for the https://www.aerospike.com/docs/operations/configure/namespace/storage/#recipe-for-an-ssd-storage-engine[`device`] (raw) storage type.
 
 == Changes since `0.6.0`
 

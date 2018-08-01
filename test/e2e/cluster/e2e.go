@@ -75,8 +75,11 @@ var _ = Describe("AerospikeCluster", func() {
 		It("accepts connections on the service port", func() {
 			testConnectToAerospikeCluster(tf, ns)
 		})
-		It("assigns each pod a persistent volume per namespace with the requested size", func() {
-			testVolumesSizeMatchesNamespaceSpec(tf, ns, 1, 2)
+		It("supports device storage", func() {
+			testDeviceStorage(tf, ns, 2, 10)
+		})
+		It("supports file storage", func() {
+			testFileStorage(tf, ns, 1, 2)
 		})
 		It("reuses the persistent volume of a deleted pod", func() {
 			testVolumeIsReused(tf, ns, 2)

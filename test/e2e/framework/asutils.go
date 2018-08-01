@@ -23,10 +23,13 @@ import (
 	as "github.com/aerospike/aerospike-client-go"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/asutils"
+	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 )
 
 type AerospikeClient struct {
 	client *as.Client
+	host   string
 }
 
 func NewAerospikeClient(aerospikeCluster *v1alpha1.AerospikeCluster) (*AerospikeClient, error) {
@@ -48,7 +51,7 @@ func NewAerospikeClient(aerospikeCluster *v1alpha1.AerospikeCluster) (*Aerospike
 	c.DefaultWritePolicy.MaxRetries = 2
 	c.DefaultWritePolicy.SleepBetweenRetries = 1 * time.Second
 
-	return &AerospikeClient{client: c}, nil
+	return &AerospikeClient{client: c, host: svc}, nil
 }
 
 func (ac *AerospikeClient) Close() {
@@ -97,4 +100,24 @@ func (ac *AerospikeClient) ReadSequentialIntegers(asNamespace string, n int) err
 
 func (ac *AerospikeClient) GetNodeNames() []string {
 	return ac.client.GetNodeNames()
+}
+
+func (ac *AerospikeClient) GetNamespaceStorageEngine(namespace string) (string, error) {
+	c, err := as.NewConnection(fmt.Sprintf("%s:%d", ac.host, reconciler.ServicePort), 10*time.Second)
+	if err != nil {
+		return "", err
+	}
+	infoCmd := fmt.Sprintf("namespace/%s", namespace)
+	r, err := as.RequestInfo(c, infoCmd)
+	if err != nil {
+		return "", err
+	}
+	stats := asutils.ParseStatistics(r[infoCmd])
+	if _, ok := stats["storage-engine.device"]; ok {
+		return v1alpha1.StorageTypeDevice, nil
+	}
+	if _, ok := stats["storage-engine.file"]; ok {
+		return v1alpha1.StorageTypeFile, nil
+	}
+	return "", fmt.Errorf("namespace has unknown storage type")
 }

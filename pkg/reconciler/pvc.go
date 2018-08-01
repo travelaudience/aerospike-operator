@@ -18,7 +18,10 @@ import (
 )
 
 var (
-	FileSystemVolumeMode = v1.PersistentVolumeFilesystem
+	volumeModeMap = map[string]v1.PersistentVolumeMode{
+		aerospikev1alpha1.StorageTypeDevice: v1.PersistentVolumeBlock,
+		aerospikev1alpha1.StorageTypeFile:   v1.PersistentVolumeFilesystem,
+	}
 )
 
 func (r *AerospikeClusterReconciler) getPersistentVolumeClaims(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) ([]*v1.PersistentVolumeClaim, error) {
@@ -30,6 +33,8 @@ func (r *AerospikeClusterReconciler) getPersistentVolumeClaims(aerospikeCluster 
 			return nil, err
 		}
 
+		// create a var so we can take its address below
+		volumeMode := volumeModeMap[namespace.Storage.Type]
 		claim := &v1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("%s-%s", namespace.Name, pod.Name),
@@ -59,7 +64,7 @@ func (r *AerospikeClusterReconciler) getPersistentVolumeClaims(aerospikeCluster 
 						v1.ResourceStorage: storageSize,
 					},
 				},
-				VolumeMode: &FileSystemVolumeMode,
+				VolumeMode: &volumeMode,
 			},
 		}
 
@@ -88,4 +93,10 @@ func (r *AerospikeClusterReconciler) getPersistentVolumeClaims(aerospikeCluster 
 		claims[i] = pvc
 	}
 	return claims, nil
+}
+
+// getIndexBasedDevicePath returns the device path for the namespace
+// with the specified index (e.g. 0 --> /dev/xvda, 1 --> /dev/xvdb, ...).
+func getIndexBasedDevicePath(index int) string {
+	return fmt.Sprintf("%s%s", defaultDevicePathPrefix, string('a'+index))
 }

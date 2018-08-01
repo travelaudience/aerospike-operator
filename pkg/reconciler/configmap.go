@@ -93,9 +93,9 @@ func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospike
 func buildConfig(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) string {
 	var namespacesConfig []string
 
-	for _, namespace := range aerospikeCluster.Spec.Namespaces {
+	for index, namespace := range aerospikeCluster.Spec.Namespaces {
 		buf := new(bytes.Buffer)
-		asNamespaceTemplate.Execute(buf, getNamespaceProps(aerospikeCluster, &namespace))
+		asNamespaceTemplate.Execute(buf, getNamespaceProps(aerospikeCluster, index, &namespace))
 		namespacesConfig = append(namespacesConfig, buf.String())
 	}
 
@@ -144,7 +144,7 @@ func getClusterProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, names
 	}
 }
 
-func getNamespaceProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, namespace *aerospikev1alpha1.AerospikeNamespaceSpec) map[string]interface{} {
+func getNamespaceProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, index int, namespace *aerospikev1alpha1.AerospikeNamespaceSpec) map[string]interface{} {
 	props := make(map[string]interface{})
 
 	props[nsNameKey] = namespace.Name
@@ -175,7 +175,7 @@ func getNamespaceProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, nam
 		props[nsStorageSizeKey] = namespace.Storage.Size
 		props[nsFilePath] = defaultFilePath
 	} else if namespace.Storage.Type == aerospikev1alpha1.StorageTypeDevice {
-		props[nsDevicePath] = defaultDevicePath
+		props[nsDevicePath] = getIndexBasedDevicePath(index)
 	}
 
 	return props

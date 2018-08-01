@@ -73,8 +73,8 @@ const (
 	clusterMeshPortKey    = "meshPort"
 	clusterNamespacesKey  = "namespaces"
 
-	defaultFilePath   = "/opt/aerospike/data/"
-	defaultDevicePath = "/dev/xvda"
+	defaultFilePath         = "/opt/aerospike/data/"
+	defaultDevicePathPrefix = "/dev/xvd"
 
 	nsNameKey              = "name"
 	nsReplicationFactorKey = "replicationFactor"

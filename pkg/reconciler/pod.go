@@ -409,13 +409,6 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		}
 	}
 
-	for _, namespace := range aerospikeCluster.Spec.Namespaces {
-		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
-			Name:      fmt.Sprintf("%s-%s", namespaceVolumePrefix, namespace.Name),
-			MountPath: fmt.Sprintf("%s%s", defaultFilePath, namespace.Name),
-		})
-	}
-
 	if claims, err := r.getPersistentVolumeClaims(aerospikeCluster, pod); err != nil {
 		return nil, err
 	} else {
@@ -428,6 +421,26 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 					},
 				},
 			})
+		}
+	}
+
+	for index, namespace := range aerospikeCluster.Spec.Namespaces {
+		switch namespace.Storage.Type {
+		case aerospikev1alpha1.StorageTypeDevice:
+			// use raw block device
+			pod.Spec.Containers[0].VolumeDevices = append(pod.Spec.Containers[0].VolumeDevices, v1.VolumeDevice{
+				Name:       fmt.Sprintf("%s-%s", namespaceVolumePrefix, namespace.Name),
+				DevicePath: getIndexBasedDevicePath(index),
+			})
+		case aerospikev1alpha1.StorageTypeFile:
+			// use regular storage
+			pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+				Name:      fmt.Sprintf("%s-%s", namespaceVolumePrefix, namespace.Name),
+				MountPath: fmt.Sprintf("%s%s", defaultFilePath, namespace.Name),
+			})
+		default:
+			// should not happen, as the type is validated as an enum
+			return nil, fmt.Errorf("unsupported storage type %s", namespace.Storage.Type)
 		}
 	}
 

@@ -51,6 +51,19 @@ func (tf *TestFramework) NewAerospikeClusterWithDefaults() aerospikev1alpha1.Aer
 	return tf.NewAerospikeCluster("4.2.0.3", 1, []aerospikev1alpha1.AerospikeNamespaceSpec{aerospikeNamespace})
 }
 
+func (tf *TestFramework) NewAerospikeNamespaceWithDeviceStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha1.AerospikeNamespaceSpec {
+	return aerospikev1alpha1.AerospikeNamespaceSpec{
+		Name:              name,
+		ReplicationFactor: &replicationFactor,
+		MemorySize:        pointers.NewString(fmt.Sprintf("%dG", memorySizeGB)),
+		DefaultTTL:        pointers.NewString(fmt.Sprintf("%ds", defaultTTLSeconds)),
+		Storage: aerospikev1alpha1.StorageSpec{
+			Type: aerospikev1alpha1.StorageTypeDevice,
+			Size: fmt.Sprintf("%dG", storageSizeGB),
+		},
+	}
+}
+
 func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha1.AerospikeNamespaceSpec {
 	return aerospikev1alpha1.AerospikeNamespaceSpec{
 		Name:              name,

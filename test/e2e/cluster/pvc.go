@@ -30,7 +30,47 @@ import (
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-func testVolumesSizeMatchesNamespaceSpec(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nsSize int) {
+func testDeviceStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nsSize int) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeCount = nodeCount
+	ns1 := tf.NewAerospikeNamespaceWithDeviceStorage("aerospike-namespace-0", 1, 1, 0, nsSize)
+	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{ns1}
+	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, nodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(len(pods.Items))).To(Equal(nodeCount))
+
+	for _, pod := range pods.Items {
+		Expect(pod.Spec.Volumes).NotTo(BeEmpty())
+		for _, volume := range pod.Spec.Volumes {
+			if volume.VolumeSource.PersistentVolumeClaim != nil {
+				claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(volume.VolumeSource.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				claimCapacity := claim.Status.Capacity[v1.ResourceStorage]
+				claimMode := claim.Spec.VolumeMode
+				capacity := strings.TrimSuffix(claimCapacity.String(), "i")
+				switch claim.Labels[selectors.LabelNamespaceKey] {
+				case ns1.Name:
+					Expect(*claimMode).To(Equal(v1.PersistentVolumeBlock))
+					Expect(capacity).To(Equal(ns1.Storage.Size))
+					c, err := framework.NewAerospikeClient(res)
+					Expect(err).NotTo(HaveOccurred())
+					t, err := c.GetNamespaceStorageEngine(ns1.Name)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(t).To(Equal(v1alpha1.StorageTypeDevice))
+				}
+			}
+		}
+	}
+}
+
+func testFileStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32, nsSize int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	ns1 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, nsSize)
@@ -53,15 +93,21 @@ func testVolumesSizeMatchesNamespaceSpec(tf *framework.TestFramework, ns *v1.Nam
 				Expect(err).NotTo(HaveOccurred())
 
 				claimCapacity := claim.Status.Capacity[v1.ResourceStorage]
+				claimMode := claim.Spec.VolumeMode
 				capacity := strings.TrimSuffix(claimCapacity.String(), "i")
 				switch claim.Labels[selectors.LabelNamespaceKey] {
 				case ns1.Name:
+					Expect(*claimMode).To(Equal(v1.PersistentVolumeFilesystem))
 					Expect(capacity).To(Equal(ns1.Storage.Size))
+					c, err := framework.NewAerospikeClient(res)
+					Expect(err).NotTo(HaveOccurred())
+					t, err := c.GetNamespaceStorageEngine(ns1.Name)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(t).To(Equal(v1alpha1.StorageTypeFile))
 				}
 			}
 		}
 	}
-
 }
 
 func testVolumeIsReused(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {

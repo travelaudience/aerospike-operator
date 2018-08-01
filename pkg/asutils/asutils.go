@@ -36,15 +36,15 @@ func GetClusterSize(host string, port int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if str, ok := parseStatistics(r["statistics"])["cluster_size"]; !ok {
+	if str, ok := ParseStatistics(r["statistics"])["cluster_size"]; !ok {
 		return 0, fmt.Errorf("cluster_size is not present")
 	} else {
 		return strconv.Atoi(str)
 	}
 }
 
-// parseStatistics parses a string in the form a=b;c=d; into a map[string]string, trimming whitespace in the process.
-func parseStatistics(stats string) map[string]string {
+// ParseStatistics parses a string in the form a=b;c=d; into a map[string]string, trimming whitespace in the process.
+func ParseStatistics(stats string) map[string]string {
 	res := make(map[string]string)
 	pairs := strings.Split(stats, ";")
 	for _, pair := range pairs {
