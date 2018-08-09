@@ -17,6 +17,7 @@ endif::[]
 * Add support for Kubernetes 1.11+.
 * Add support for the https://www.aerospike.com/docs/operations/configure/namespace/storage/#recipe-for-an-ssd-storage-engine[`device`] (raw) storage type.
 * Use Aerospike Tools 3.15.3.14.
+* Use `aerospike/aerospike-client-go` 1.34.1.
 
 == Changes since `0.6.0`
 
