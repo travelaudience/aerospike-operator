@@ -657,7 +657,7 @@
     "storage/v1beta1"
   ]
   revision = "2d6f90ab1293a1fb871cf149423ebb72aa7423aa"
-  version = "kubernetes-1.11.1"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
   name = "k8s.io/apiextensions-apiserver"
@@ -670,8 +670,8 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake"
   ]
-  revision = "06dfdaae5c2bd89e1243151ff65b9bf8ee050f28"
-  version = "kubernetes-1.11.1"
+  revision = "408db4a50408e2149acbd657bceb2480c13cb0a4"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
   name = "k8s.io/apimachinery"
@@ -726,7 +726,7 @@
     "third_party/forked/golang/reflect"
   ]
   revision = "103fd098999dc9c0c88536f5c9ad2e5da39373ae"
-  version = "kubernetes-1.11.1"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
   name = "k8s.io/apiserver"
@@ -820,10 +820,11 @@
     "plugin/pkg/authenticator/token/webhook",
     "plugin/pkg/authorizer/webhook"
   ]
-  revision = "8b122ec9e3bbab91a262d17a39325e69349dc44d"
-  version = "kubernetes-1.11.1"
+  revision = "1844acd6a03501626cd17e86248e6ebc0f3df5d9"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
+  branch = "release-8.0"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -958,8 +959,7 @@
     "util/retry",
     "util/workqueue"
   ]
-  revision = "59698c7d9724b0f95f9dc9e7f7dfdcc3dfeceb82"
-  version = "kubernetes-1.11.1"
+  revision = "1f13a808da65775f22cbf47862c4e5898d8f4ca1"
 
 [[projects]]
   branch = "master"
@@ -976,12 +976,12 @@
 [[projects]]
   name = "k8s.io/kubernetes"
   packages = ["pkg/api/v1/pod"]
-  revision = "b1b29978270dc22fecc592ac55d903350454310a"
-  version = "v1.11.1"
+  revision = "bb9ffb1654d4a729bb4cec18ff088eacc153c239"
+  version = "v1.11.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e918f72561af0976fe20380b837cd0b8266690269f0834dfce616be13fe2bf67"
+  inputs-digest = "ad560d188f85aaae7755b1f538cb516923dfa3ca43cfd172a7c9597d31699067"
   solver-name = "gps-cdcl"
   solver-version = 1
