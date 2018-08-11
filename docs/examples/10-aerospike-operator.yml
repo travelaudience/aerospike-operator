@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: aerospike-operator
-        image: quay.io/travelaudience/aerospike-operator:0.7.1-dev
+        image: quay.io/travelaudience/aerospike-operator:0.8.0-dev
         imagePullPolicy: Always
         args:
         - /usr/local/bin/aerospike-operator

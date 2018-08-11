@@ -114,8 +114,14 @@ var _ = Describe("AerospikeCluster", func() {
 		It("does not conflict with another AerospikeCluster", func() {
 			testClusterSizeAfterScalingDownClusterWhileStartingAnother(tf, ns, 1)
 		})
-		It("does not lose data in a namespace after an upgrade and makes automatic backup of namespaces before upgrade", func() {
-			testNoDataLossOnAerospikeUpgrade(tf, ns, 2, 10000, "4.2.0.3", "4.2.0.4")
+		It("makes pre-upgrade backups, re-uses persistent volumes, and does not lose data in a namespace after an upgrade from 4.0.0.4 to 4.0.0.5", func() {
+			testReusePVCsAndNoDataLossOnAerospikeUpgrade(tf, ns, 2, 10000, "4.0.0.4", "4.0.0.5")
+		})
+		It("makes pre-upgrade backups, re-uses persistent volumes, and does not lose data in a namespace after an upgrade from 4.0.0.4 to 4.1.0.1", func() {
+			testReusePVCsAndNoDataLossOnAerospikeUpgrade(tf, ns, 2, 10000, "4.0.0.4", "4.1.0.1")
+		})
+		It("makes pre-upgrade backups, re-creates persistent volumes, and does not lose data in a namespace after an upgrade from 4.1.0.1 to 4.2.0.3", func() {
+			testRecreatePVCsAndNoDataLossOnAerospikeUpgrade(tf, ns, 2, 10000, "4.1.0.1", "4.2.0.3")
 		})
 		It("node IDs are kept after restart", func() {
 			testNodeIDsAfterRestart(tf, ns, 2)

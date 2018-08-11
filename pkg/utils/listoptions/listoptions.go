@@ -17,20 +17,10 @@ limitations under the License.
 package listoptions
 
 import (
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
-
-// ObjectByField returns the options for a list/watch operation that searches for an object based on
-// the value of the given field.
-func ObjectByField(name, value string) metav1.ListOptions {
-	return metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("%s=%s", name, value),
-	}
-}
 
 // ObjectByName returns the options for a list/watch operation that searches for an object based on
 // its name.
@@ -49,10 +39,10 @@ func ObjectByNameAndVersion(name, version string) metav1.ListOptions {
 	}
 }
 
-// PodsByClusterName returns the options for a list/watch operation that searches for pods belonging
+// ResourcesByClusterName returns the options for a list/watch operation that searches for resources belonging
 // to a given AerospikeCluster.
-func PodsByClusterName(name string) metav1.ListOptions {
+func ResourcesByClusterName(name string) metav1.ListOptions {
 	return metav1.ListOptions{
-		LabelSelector: selectors.PodsByClusterName(name).String(),
+		LabelSelector: selectors.ResourcesByClusterName(name).String(),
 	}
 }

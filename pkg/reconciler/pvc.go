@@ -18,10 +18,10 @@ package reconciler
 
 import (
 	"fmt"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,75 +40,115 @@ var (
 	}
 )
 
-func (r *AerospikeClusterReconciler) getPersistentVolumeClaims(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) ([]*v1.PersistentVolumeClaim, error) {
-	claims := make([]*v1.PersistentVolumeClaim, len(aerospikeCluster.Spec.Namespaces))
+type fromMostRecent []*v1.PersistentVolumeClaim
 
-	for i, namespace := range aerospikeCluster.Spec.Namespaces {
-		storageSize, err := resource.ParseQuantity(namespace.Storage.Size)
-		if err != nil {
-			return nil, err
-		}
+func (pvcs fromMostRecent) Len() int {
+	return len(pvcs)
+}
 
-		// create a var so we can take its address below
-		volumeMode := volumeModeMap[namespace.Storage.Type]
-		claim := &v1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s", namespace.Name, pod.Name),
-				Labels: map[string]string{
-					selectors.LabelAppKey:       selectors.LabelAppVal,
-					selectors.LabelNamespaceKey: namespace.Name,
-					selectors.LabelClusterKey:   aerospikeCluster.Name,
-				},
-				Namespace: aerospikeCluster.Namespace,
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
-						Kind:               crd.AerospikeClusterKind,
-						Name:               aerospikeCluster.Name,
-						UID:                aerospikeCluster.UID,
-						Controller:         pointers.NewBool(true),
-						BlockOwnerDeletion: pointers.NewBool(true),
-					},
-				},
-			},
-			Spec: v1.PersistentVolumeClaimSpec{
-				AccessModes: []v1.PersistentVolumeAccessMode{
-					v1.ReadWriteOnce,
-				},
-				Resources: v1.ResourceRequirements{
-					Requests: v1.ResourceList{
-						v1.ResourceStorage: storageSize,
-					},
-				},
-				VolumeMode: &volumeMode,
-			},
-		}
+func (pvcs fromMostRecent) Swap(i, j int) {
+	pvcs[i], pvcs[j] = pvcs[j], pvcs[i]
+}
 
-		if namespace.Storage.StorageClassName != "" {
-			claim.Spec.StorageClassName = &namespace.Storage.StorageClassName
-		}
+func (pvcs fromMostRecent) Less(i, j int) bool {
+	return pvcs[j].CreationTimestamp.Before(&pvcs[i].CreationTimestamp)
+}
 
-		pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(claim.Namespace).Create(claim)
-		if err != nil {
-			if !errors.IsAlreadyExists(err) {
-				return nil, err
-			}
-			if pvc, err = r.pvcsLister.PersistentVolumeClaims(aerospikeCluster.Namespace).Get(claim.Name); err != nil {
-				return nil, err
-			}
-			log.WithFields(log.Fields{
-				logfields.AerospikeCluster:      meta.Key(aerospikeCluster),
-				logfields.PersistentVolumeClaim: claim.Name,
-			}).Debug("persistentvolumeclaim already exists")
-		} else {
-			log.WithFields(log.Fields{
-				logfields.AerospikeCluster:      meta.Key(aerospikeCluster),
-				logfields.PersistentVolumeClaim: claim.Name,
-			}).Debug("persistentvolumeclaim created")
-		}
-		claims[i] = pvc
+func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) (*v1.PersistentVolumeClaim, error) {
+	// get all the pvcs owned by the aerospikecluster
+	pvcs, err := r.pvcsLister.PersistentVolumeClaims(aerospikeCluster.Namespace).List(selectors.ResourcesByClusterName(aerospikeCluster.Name))
+	if err != nil {
+		return nil, err
 	}
-	return claims, nil
+	if len(pvcs) == 0 {
+		return nil, nil
+	}
+
+	// filter the ones associated with the pod
+	var podPVCs []*v1.PersistentVolumeClaim
+	for _, pvc := range pvcs {
+		if podName, ok := pvc.Annotations[podAnnotation]; ok && podName == pod.Name {
+			podPVCs = append(podPVCs, pvc)
+		}
+	}
+	if len(podPVCs) == 0 {
+		return nil, nil
+	}
+
+	// sort the PVCs from the most recent to the oldest
+	sort.Sort(fromMostRecent(podPVCs))
+
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster:      meta.Key(aerospikeCluster),
+		logfields.Pod:                   meta.Key(pod),
+		logfields.PersistentVolumeClaim: podPVCs[0].Name,
+	}).Debug("using existing persistentvolumeclaim")
+	// return the most recent pvc
+	return podPVCs[0], nil
+}
+
+func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod, namespace *aerospikev1alpha1.AerospikeNamespaceSpec) (*v1.PersistentVolumeClaim, error) {
+	storageSize, err := resource.ParseQuantity(namespace.Storage.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	volumeMode := volumeModeMap[namespace.Storage.Type]
+	claim := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: fmt.Sprintf("%s-%s-", pod.Name, namespace.Name),
+			Labels: map[string]string{
+				selectors.LabelAppKey:       selectors.LabelAppVal,
+				selectors.LabelNamespaceKey: namespace.Name,
+				selectors.LabelClusterKey:   aerospikeCluster.Name,
+			},
+			Namespace: aerospikeCluster.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
+					Kind:               crd.AerospikeClusterKind,
+					Name:               aerospikeCluster.Name,
+					UID:                aerospikeCluster.UID,
+					Controller:         pointers.NewBool(true),
+					BlockOwnerDeletion: pointers.NewBool(true),
+				},
+			},
+			Annotations: map[string]string{
+				podAnnotation: pod.Name,
+			},
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: storageSize,
+				},
+			},
+			VolumeMode: &volumeMode,
+		},
+	}
+
+	if namespace.Storage.StorageClassName != "" {
+		claim.Spec.StorageClassName = &namespace.Storage.StorageClassName
+	}
+
+	pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(claim.Namespace).Create(claim)
+	if err != nil {
+		log.WithFields(log.Fields{
+			logfields.AerospikeCluster:      meta.Key(aerospikeCluster),
+			logfields.Pod:                   meta.Key(pod),
+			logfields.PersistentVolumeClaim: claim.Name,
+		}).Errorf("error creating persistentvolumeclaim: %s", err)
+		return nil, err
+	}
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster:      meta.Key(aerospikeCluster),
+		logfields.Pod:                   meta.Key(pod),
+		logfields.PersistentVolumeClaim: claim.Name,
+	}).Debug("persistentvolumeclaim created")
+	return pvc, err
 }
 
 // getIndexBasedDevicePath returns the device path for the namespace

@@ -10,7 +10,18 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
-== Changes since `0.7.0`
+== Changes in `0.8.0`
+
+=== Breaking changes
+
+* Change the naming strategy for persistent volume claims to use `GenerateName`.
+** Persistent volume claims created in previous versions of
+`aerospike-operator` will be replaced by new ones when a restart or upgrade
+operation is performed on an `AerospikeCluster` resource. To avoid losing data
+for Aerospike namespaces whose replication factor is equal to 1, one must
+create a backup of all Aerospike namespaces whose replication factor is equal to
+1 _before_ upgrading `aerospike-operator`. Then, _after_ upgrading
+`aerospike-operator`, one must restore these backups to new Aerospike clusters.
 
 === Improvements
 
@@ -18,8 +29,16 @@ endif::[]
 * Add support for the https://www.aerospike.com/docs/operations/configure/namespace/storage/#recipe-for-an-ssd-storage-engine[`device`] (raw) storage type.
 * Use Aerospike Tools 3.15.3.14.
 * Use `aerospike/aerospike-client-go` 1.34.1.
+* Support running custom upgrade steps via the introduction of
+<<./docs/design/upgrade-strategies.adoc,upgrade strategies>>.
+* Add support for Aerospike versions 4.0.0.4, 4.0.0.5, 4.1.0.1 and 4.2.0.5.
 
-== Changes since `0.6.0`
+=== Documentation
+
+* _Design:_ Add <<./docs/design/upgrade-strategies.adoc,upgrade strategies
+design document>>.
+
+== Changes in `0.7.0`
 
 === Breaking changes
 

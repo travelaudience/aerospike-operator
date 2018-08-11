@@ -53,7 +53,7 @@ const (
 	nodeIdPrefix = "a"
 )
 
-func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, upgrade bool) error {
+func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, upgrade *versioning.VersionUpgrade) error {
 	// list existing pods for the cluster
 	pods, err := r.listClusterPods(aerospikeCluster)
 	if err != nil {
@@ -98,7 +98,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 		// check whether the pod needs to be created
 		if pod == nil {
 			// no pod with the specified index exists, so it must be created
-			if _, err := r.createPodWithIndex(aerospikeCluster, configMap, i); err != nil {
+			if _, err := r.createPodWithIndex(aerospikeCluster, configMap, i, nil); err != nil {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 					logfields.PodIndex:         i,
@@ -109,8 +109,8 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			continue
 		}
 		// check whether the pod needs to be upgraded
-		if upgrade {
-			if err := r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i); err != nil {
+		if upgrade != nil {
+			if err := r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i, upgrade); err != nil {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 					logfields.Pod:              meta.Key(pod),
@@ -122,7 +122,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 		}
 		// check whether the pod needs to be restarted
 		if configMap.Annotations[configMapHashAnnotation] != pod.Annotations[configMapHashAnnotation] {
-			if _, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, i); err != nil {
+			if _, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, i, upgrade); err != nil {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 					logfields.Pod:              meta.Key(pod),
@@ -194,7 +194,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 
 func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) ([]*v1.Pod, error) {
 	// read the list of pods from the lister
-	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(selectors.PodsByClusterName(aerospikeCluster.Name))
+	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(selectors.ResourcesByClusterName(aerospikeCluster.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospike
 	return pods, nil
 }
 
-func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
 	// initialConfigFilePath contains the path to the aerospike.conf file that
 	// will be created as a result of mounting the configmap (i.e. before
 	// templating)
@@ -409,22 +409,35 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		}
 	}
 
-	if claims, err := r.getPersistentVolumeClaims(aerospikeCluster, pod); err != nil {
-		return nil, err
-	} else {
-		for _, claim := range claims {
-			pod.Spec.Volumes = append(pod.Spec.Volumes, v1.Volume{
-				Name: fmt.Sprintf("%s-%s", namespaceVolumePrefix, claim.Labels[selectors.LabelNamespaceKey]),
-				VolumeSource: v1.VolumeSource{
-					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-						ClaimName: claim.Name,
-					},
-				},
-			})
+	// if the pod is being created during an upgrade operation
+	// get the corresponding upgradestrategy
+	var upgradeStrategy *versioning.UpgradeStrategy
+	if upgrade != nil {
+		upgradeStrategy, err = upgrade.GetStrategy()
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	for index, namespace := range aerospikeCluster.Spec.Namespaces {
+		// if recreatepersistentvolumeclaims is true, create a new PVC
+		// else get an existing one, and if it does not exist, create one
+		var pvc *v1.PersistentVolumeClaim
+		if upgradeStrategy != nil && upgradeStrategy.RecreatePersistentVolumeClaims {
+			if pvc, err = r.createPersistentVolumeClaim(aerospikeCluster, pod, &namespace); err != nil {
+				return nil, err
+			}
+		} else {
+			if pvc, err = r.getPersistentVolumeClaim(aerospikeCluster, pod); err != nil {
+				return nil, err
+			}
+			if pvc == nil {
+				if pvc, err = r.createPersistentVolumeClaim(aerospikeCluster, pod, &namespace); err != nil {
+					return nil, err
+				}
+			}
+		}
+
 		switch namespace.Storage.Type {
 		case aerospikev1alpha1.StorageTypeDevice:
 			// use raw block device
@@ -442,6 +455,15 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			// should not happen, as the type is validated as an enum
 			return nil, fmt.Errorf("unsupported storage type %s", namespace.Storage.Type)
 		}
+
+		pod.Spec.Volumes = append(pod.Spec.Volumes, v1.Volume{
+			Name: fmt.Sprintf("%s-%s", namespaceVolumePrefix, pvc.Labels[selectors.LabelNamespaceKey]),
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvc.Name,
+				},
+			},
+		})
 	}
 
 	// create the pod
@@ -628,7 +650,7 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 	return r.deletePod(aerospikeCluster, pod)
 }
 
-func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 	}).Debugf("restarting the pod with index %d", index)
@@ -636,7 +658,7 @@ func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *a
 	if err := r.safeDeletePodWithIndex(aerospikeCluster, index); err != nil {
 		return nil, err
 	}
-	return r.createPodWithIndex(aerospikeCluster, configMap, index)
+	return r.createPodWithIndex(aerospikeCluster, configMap, index, upgrade)
 }
 
 func (r *AerospikeClusterReconciler) computeMeshHash(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (string, error) {

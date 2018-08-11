@@ -31,8 +31,8 @@ const (
 	LabelNamespaceKey = "namespace"
 )
 
-// PodsByClusterName returns a selector that matches all pods belonging to a given AerospikeCluster.
-func PodsByClusterName(name string) labels.Selector {
+// ResourcesByClusterName returns a selector that matches all resources belonging to a given AerospikeCluster.
+func ResourcesByClusterName(name string) labels.Selector {
 	set := map[string]string{
 		LabelAppKey:     LabelAppVal,
 		LabelClusterKey: name,

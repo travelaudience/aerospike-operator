@@ -98,7 +98,7 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 	err = tf.WaitForClusterNodeCount(res, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(int32(len(pods.Items))).To(Equal(nodeCount))
 

@@ -25,9 +25,14 @@ introduced at any moment.
 == Supported versions
 
 `aerospike-operator` currently supports launching Aerospike clusters running
-Aerospike Server CE
-https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`] and
-https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`].
+the following Aerospike Server CE versions:
+
+ * https://www.aerospike.com/download/server/notes.html#4.0.0.4[`4.0.0.4`]
+ * https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.5`]
+ * https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.1`]
+ * https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`]
+ * https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`]
+ * https://www.aerospike.com/download/server/notes.html#4.2.0.5[`4.2.0.5`]
 
 == Documentation
 
@@ -62,5 +67,6 @@ design documentation covers the following topics:
 1. <<./docs/design/architecture.adoc#,Architecture>> describes the design of
    `aerospike-operator` and the interactions between the custom resource
    definitions it introduces, its internal components and Kubernetes.
-1. <<./docs/design/upgrades.adoc#,Upgrades>> describes how upgrade operations
-   are performed by `aerospike-operator`.
+1. <<./docs/design/upgrades.adoc#,Upgrades>> and
+   <<./docs/design/upgrade-strategies.adoc#,Upgrade Strategies>> describe how
+   upgrade operations are performed by `aerospike-operator`.

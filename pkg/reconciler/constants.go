@@ -62,6 +62,9 @@ const (
 	nodeIdAnnotation = "aerospike.travelaudience.com/node-id"
 	// the name of the annotation that holds the hash of the mesh as we know it
 	meshDigestAnnotation = "aerospike.travelaudience.com/mesh-hash"
+	// the name of the annotation that holds the name of the pod with which a
+	// PVC is associated
+	podAnnotation = "aerospike.travelaudience.com/pod-name"
 
 	// the name of the key that corresponds to the service.node-id property
 	// (used for templating)

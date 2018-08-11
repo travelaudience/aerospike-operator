@@ -77,6 +77,13 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 		return fmt.Errorf("the name of the cluster cannot exceed %d characters", aerospikeClusterMaxNameLen)
 	}
 
+	// validate the Aerospike version
+	if version, err := versioning.NewVersionFromString(aerospikeCluster.Spec.Version); err != nil {
+		return err
+	} else if !version.IsSupported() {
+		return fmt.Errorf("aerospike version %q is not supported", aerospikeCluster.Spec.Version)
+	}
+
 	// enforce the existence of a single namespace per cluster
 	if len(aerospikeCluster.Spec.Namespaces) != 1 {
 		return fmt.Errorf("the number of namespaces in the cluster must be exactly one")

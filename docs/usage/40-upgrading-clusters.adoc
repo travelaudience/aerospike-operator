@@ -89,9 +89,18 @@ Aerospike that is not whitelisted. In practice this means that before upgrading
 an Aerospike cluster to a later version one may need to upgrade
 `aerospike-operator` itself as described in the
 <<./50-upgrading-aerospike-operator.adoc#,Upgrading `aerospike-operator`>>
-document. The current version of `aerospike-operator` supports Aerospike CE
-4.2.0.3 and 4.2.0.4. Future versions of `aerospike-operator` will introduce
-support for new minor, patch and release versions as they become available.
+document. The current version of `aerospike-operator` supports the following
+Aerospike CE versions:
+
+ * https://www.aerospike.com/download/server/notes.html#4.0.0.4[`4.0.0.4`]
+ * https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.5`]
+ * https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.1`]
+ * https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`]
+ * https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`]
+ * https://www.aerospike.com/download/server/notes.html#4.2.0.5[`4.2.0.5`]
+
+Future versions of `aerospike-operator` will introduce support for new minor,
+patch and release versions as they become available.
 
 WARNING: At any given time, the availability of a given version of Aerospike is
 dependent on the existence of the respective tag in the

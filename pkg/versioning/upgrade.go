@@ -16,6 +16,8 @@ limitations under the License.
 
 package versioning
 
+import "fmt"
+
 // VersionUpgrade represents a transition between a source and a target Aerospike
 // versions.
 type VersionUpgrade struct {
@@ -60,5 +62,23 @@ func (vu VersionUpgrade) isRevisionUpgrade() bool {
 // that the source and target versions are both well-known, supported versions,
 // and that the transition is patch or revision only.
 func (vu VersionUpgrade) IsValid() bool {
-	return vu.Source.IsSupported() && vu.Target.IsSupported() && (vu.isPatchUpgrade() || vu.isRevisionUpgrade())
+	return vu.Source.IsSupported() && vu.Target.IsSupported() && (vu.isMinorUpgrade() || vu.isPatchUpgrade() || vu.isRevisionUpgrade())
+}
+
+// GetStrategy returns the UpgradeStrategy for performing the
+// current upgrade operation
+func (vu VersionUpgrade) GetStrategy() (*UpgradeStrategy, error) {
+	// return nil if the upgrade is not valid
+	if !vu.IsValid() {
+		return nil, fmt.Errorf("cannot upgrade from version %v to %v", vu.Source, vu.Target)
+	}
+
+	// when upgrading from a pre-4.2.X.Y version to 4.2.X.Y or newer existing
+	// data must be erased, so we delete and re-create existing persistent
+	// volume claims.
+	// https://www.aerospike.com/docs/operations/upgrade/storage_to_4_2
+	if vu.Target.Major == 4 && vu.Source.Minor <= 1 && vu.Target.Minor >= 2 {
+		return To42XYStrategy, nil
+	}
+	return DefaultStrategy, nil
 }

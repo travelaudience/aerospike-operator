@@ -29,9 +29,10 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
+	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
-func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int) error {
+func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) error {
 	// check whether a pod with the specified index exists
 	pod, err := r.getPodWithIndex(aerospikeCluster, index)
 	if err != nil {
@@ -60,7 +61,7 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 		meta.Key(pod), aerospikeCluster.Spec.Version)
 
 	// restart the target pod
-	newPod, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, index)
+	newPod, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, index, upgrade)
 	if err != nil {
 		return err
 	}
@@ -168,7 +169,7 @@ func (r *AerospikeClusterReconciler) signalBackupFailed(aerospikeCluster *aerosp
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha1.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
@@ -177,7 +178,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aero
 		Type:               aerospikev1alpha1.ConditionUpgradeStarted,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterUpgradeStarted,
-		Message:            fmt.Sprintf("upgrade from version %s to %s started", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version),
+		Message:            fmt.Sprintf("upgrade from version %s to %s started", upgrade.Source, upgrade.Target),
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	})
 	setAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusStartedAnnotationValue)
@@ -187,16 +188,16 @@ func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aero
 	}
 
 	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterUpgradeStarted,
-		"upgrade from version %s to %s started", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version)
+		"upgrade from version %s to %s started", upgrade.Source, upgrade.Target)
 
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-	}).Debugf("upgrade from version %s to %s started", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version)
+	}).Debugf("upgrade from version %s to %s started", upgrade.Source, upgrade.Target)
 
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha1.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
@@ -205,7 +206,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aeros
 		Type:               aerospikev1alpha1.ConditionUpgradeFailed,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterUpgradeFailed,
-		Message:            fmt.Sprintf("upgrade from version %s to %s failed", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version),
+		Message:            fmt.Sprintf("upgrade from version %s to %s failed", upgrade.Source, upgrade.Target),
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	})
 	setAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusFailedAnnotationValue)
@@ -216,16 +217,16 @@ func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aeros
 
 	r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonClusterUpgradeFailed,
 		"upgrade from version %s to %s failed",
-		aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version)
+		upgrade.Source, upgrade.Target)
 
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-	}).Debugf("upgrade from version %s to %s failed", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version)
+	}).Debugf("upgrade from version %s to %s failed", upgrade.Source, upgrade.Target)
 
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha1.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
@@ -234,7 +235,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aer
 		Type:               aerospikev1alpha1.ConditionUpgradeFinished,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterUpgradeFinished,
-		Message:            fmt.Sprintf("finished upgrade from version %s to %s", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version),
+		Message:            fmt.Sprintf("finished upgrade from version %s to %s", upgrade.Source, upgrade.Target),
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	})
 	removeAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey)
@@ -244,11 +245,11 @@ func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aer
 	}
 
 	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterUpgradeFinished,
-		"finished upgrade from version %s to %s", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version)
+		"finished upgrade from version %s to %s", upgrade.Source, upgrade.Target)
 
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-	}).Debugf("finished upgrade from version %s to %s", aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version)
+	}).Debugf("finished upgrade from version %s to %s", upgrade.Source, upgrade.Target)
 
 	return aerospikeCluster, nil
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/errors"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
+	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
 type AerospikeClusterReconciler struct {
@@ -81,10 +82,27 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 		}
 	}
 
-	// check if the current reconcile operation is an upgrade, and if it is set
-	// the appropriate annotations (for internal use) and conditions
-	upgrade := aerospikeCluster.Status.Version != "" && aerospikeCluster.Spec.Version != aerospikeCluster.Status.Version
-	if upgrade {
+	// check if the current reconcile operation is an upgrade, and if it is
+	// get the corresponding upgrade object
+	var upgrade *versioning.VersionUpgrade
+	if aerospikeCluster.Status.Version != "" && aerospikeCluster.Spec.Version != aerospikeCluster.Status.Version {
+		// parse the source version
+		source, err := versioning.NewVersionFromString(aerospikeCluster.Status.Version)
+		if err != nil {
+			return err
+		}
+		// parse the target version
+		target, err := versioning.NewVersionFromString(aerospikeCluster.Spec.Version)
+		if err != nil {
+			return err
+		}
+		// get the versionupgrade object
+		upgrade = &versioning.VersionUpgrade{source, target}
+	}
+
+	// if the current reconcile operation is an upgrade set the
+	// appropriate annotations (for internal use) and conditions
+	if upgrade != nil {
 		// start the backup if no annotation is present
 		if status, ok := aerospikeCluster.Annotations[UpgradeStatusAnnotationKey]; !ok {
 			var err error
@@ -101,7 +119,7 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 					if _, err := r.signalBackupFailed(aerospikeCluster); err != nil {
 						log.Errorf("failed to signal failed pre-upgrade backups: %v", err)
 					}
-					if _, err := r.signalUpgradeFailed(aerospikeCluster); err != nil {
+					if _, err := r.signalUpgradeFailed(aerospikeCluster, upgrade); err != nil {
 						log.Errorf("failed to signal failed upgrade: %v", err)
 					}
 				}
@@ -113,7 +131,7 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 				if aerospikeCluster, err = r.signalBackupFinished(aerospikeCluster); err != nil {
 					return err
 				}
-				if aerospikeCluster, err = r.signalUpgradeStarted(aerospikeCluster); err != nil {
+				if aerospikeCluster, err = r.signalUpgradeStarted(aerospikeCluster, upgrade); err != nil {
 					return err
 				}
 
@@ -156,7 +174,7 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 		// if a pod upgrade failed, signal with the appropriate annotations
 		// and conditions
 		if err == errors.PodUpgradeFailed {
-			if _, err := r.signalUpgradeFailed(aerospikeCluster); err != nil {
+			if _, err := r.signalUpgradeFailed(aerospikeCluster, upgrade); err != nil {
 				log.Errorf("failed to signal failed upgrade: %v", err)
 			}
 		}
@@ -174,8 +192,8 @@ func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev
 	}
 
 	// set the appropriate annotations and conditions if performing an upgrade
-	if upgrade {
-		if _, err := r.signalUpgradeFinished(aerospikeCluster); err != nil {
+	if upgrade != nil {
+		if _, err := r.signalUpgradeFinished(aerospikeCluster, upgrade); err != nil {
 			return err
 		}
 	}

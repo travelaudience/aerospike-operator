@@ -27,6 +27,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
 const (
@@ -48,7 +49,8 @@ func (tf *TestFramework) NewAerospikeCluster(version string, nodeCount int32, na
 
 func (tf *TestFramework) NewAerospikeClusterWithDefaults() aerospikev1alpha1.AerospikeCluster {
 	aerospikeNamespace := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1)
-	return tf.NewAerospikeCluster("4.2.0.3", 1, []aerospikev1alpha1.AerospikeNamespaceSpec{aerospikeNamespace})
+	latestVersion := versioning.AerospikeServerSupportedVersions[len(versioning.AerospikeServerSupportedVersions)-1]
+	return tf.NewAerospikeCluster(latestVersion, 1, []aerospikev1alpha1.AerospikeNamespaceSpec{aerospikeNamespace})
 }
 
 func (tf *TestFramework) NewAerospikeNamespaceWithDeviceStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha1.AerospikeNamespaceSpec {

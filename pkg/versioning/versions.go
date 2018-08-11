@@ -17,15 +17,23 @@ limitations under the License.
 package versioning
 
 const (
+	aerospikeServer_4_0_0_4 = "4.0.0.4"
+	aerospikeServer_4_0_0_5 = "4.0.0.5"
+	aerospikeServer_4_1_0_1 = "4.1.0.1"
 	aerospikeServer_4_2_0_3 = "4.2.0.3"
 	aerospikeServer_4_2_0_4 = "4.2.0.4"
+	aerospikeServer_4_2_0_5 = "4.2.0.5"
 )
 
 var (
 	// AerospikeServerSupportedVersions holds the list of Aerospike versions
 	// currently supported by the operator.
 	AerospikeServerSupportedVersions = []string{
+		aerospikeServer_4_0_0_4,
+		aerospikeServer_4_0_0_5,
+		aerospikeServer_4_1_0_1,
 		aerospikeServer_4_2_0_3,
 		aerospikeServer_4_2_0_4,
+		aerospikeServer_4_2_0_5,
 	}
 )

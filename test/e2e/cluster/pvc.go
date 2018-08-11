@@ -41,7 +41,7 @@ func testDeviceStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount 
 	err = tf.WaitForClusterNodeCount(res, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(int32(len(pods.Items))).To(Equal(nodeCount))
 
@@ -81,7 +81,7 @@ func testFileStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount in
 	err = tf.WaitForClusterNodeCount(res, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.PodsByClusterName(res.Name))
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(int32(len(pods.Items))).To(Equal(nodeCount))
 
@@ -125,8 +125,8 @@ func testVolumeIsReused(tf *framework.TestFramework, ns *v1.Namespace, nodeCount
 
 	var volumeName string
 	for _, volume := range pod.Spec.Volumes {
-		if volume.VolumeSource.PersistentVolumeClaim != nil {
-			claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(volume.VolumeSource.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+		if c := volume.VolumeSource.PersistentVolumeClaim; c != nil {
+			claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(c.ClaimName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			volumeName = claim.Spec.VolumeName
 		}
@@ -143,8 +143,8 @@ func testVolumeIsReused(tf *framework.TestFramework, ns *v1.Namespace, nodeCount
 	Expect(err).NotTo(HaveOccurred())
 
 	for _, volume := range pod.Spec.Volumes {
-		if volume.VolumeSource.PersistentVolumeClaim != nil {
-			claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(volume.VolumeSource.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+		if c := volume.VolumeSource.PersistentVolumeClaim; c != nil {
+			claim, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(ns.Name).Get(c.ClaimName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(claim.Spec.VolumeName).To(Equal(volumeName))
 		}
