@@ -18,6 +18,7 @@ package reconciler
 
 import (
 	"encoding/json"
+	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -34,6 +35,7 @@ import (
 func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) {
 	// update status to match the spec - the correctness of this is ensured by
 	// the reconcile loop
+	aerospikeCluster.Status.BackupSpec = aerospikeCluster.Spec.BackupSpec
 	aerospikeCluster.Status.Namespaces = aerospikeCluster.Spec.Namespaces
 	aerospikeCluster.Status.NodeCount = aerospikeCluster.Spec.NodeCount
 	aerospikeCluster.Status.Version = aerospikeCluster.Spec.Version
@@ -41,6 +43,10 @@ func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1a
 
 // patchCluster updates the status field of the aerospikeCluster
 func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha1.AerospikeCluster) error {
+	// return if there are no changes to patch
+	if reflect.DeepEqual(old, new) {
+		return nil
+	}
 	oldBytes, err := json.Marshal(old)
 	if err != nil {
 		return err
