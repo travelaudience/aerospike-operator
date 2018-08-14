@@ -12,7 +12,7 @@ by the administrator by changing the `.spec.version` field of the corresponding
 `AerospikeCluster` resource. Upon being requested, the transition between the
 source and the target versions is validated by `aerospike-operator` against a
 whitelist of supported transitions. If the transition is valid and supported,
-the upgrade process is performed as described in <<upgrades.adoc,Upgrades design document>>
+the upgrade process is performed as described in the <<upgrades.adoc#,Upgrades design document>>
 (i.e. by deleting and re-creating each pod in the Aerospike cluster using the
 target version). However, and as described in this same document, there have
 historically been both major and minor versions of Aerospike that did require

@@ -153,7 +153,7 @@ It is important to pick a unique, meaningful name for a given
 `AerospikeNamespaceBackup` resource. On the one hand, files created in the
 target bucket will be given names based on this resource's name (i.e. on the
 value of `.metadata.name`). On the other hand,
-<<./30-restoring-namespaces.adoc,restoring>> a backup requires one to know the
+<<./30-restoring-namespaces.adoc#,restoring>> a backup requires one to know the
 exact name given to the backup when creating it.
 
 ==== Topology changes

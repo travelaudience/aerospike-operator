@@ -22,13 +22,13 @@ identical to those outlined in the
 document. In addition to those, one further requires an **existing** Aerospike
 cluster managed by `aerospike-operator` and with an adequate namespace
 configuration. In particular, the target namespace must have enough free storage
-space to accomodate the restored data.
+space to accommodate the restored data.
 
 WARNING: `aerospike-operator` **DOES NOT** create the target Aerospike cluster
 or Aerospike namespace when restoring a backup. The target Aerospike cluster and
 namespace are expected to have been created prior to attempting the restore
 operation. For further instructions, one should refer to
-<<./10-managing-clusters.adoc,Managing Clusters>>.
+<<./10-managing-clusters.adoc#,Managing Clusters>>.
 
 === Restoring a namespace
 

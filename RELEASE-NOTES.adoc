@@ -15,7 +15,7 @@ endif::[]
 === Breaking changes
 
 * Change the naming strategy for persistent volume claims to use `GenerateName`.
-** Persistent volume claims created in previous versions of
+** **Action required:** Persistent volume claims created in previous versions of
 `aerospike-operator` will be replaced by new ones when a restart or upgrade
 operation is performed on an `AerospikeCluster` resource. To avoid losing data
 for Aerospike namespaces whose replication factor is equal to 1, one must
@@ -27,16 +27,17 @@ create a backup of all Aerospike namespaces whose replication factor is equal to
 
 * Add support for Kubernetes 1.11+.
 * Add support for the https://www.aerospike.com/docs/operations/configure/namespace/storage/#recipe-for-an-ssd-storage-engine[`device`] (raw) storage type.
+** Device storage requires a Kubernetes 1.11 cluster with alpha features enabled.
 * Use Aerospike Tools 3.15.3.14.
 * Use `aerospike/aerospike-client-go` 1.34.1.
 * Support running custom upgrade steps via the introduction of
-<<./docs/design/upgrade-strategies.adoc,upgrade strategies>>.
+<<./docs/design/upgrade-strategies.adoc#,upgrade strategies>>.
 * Add support for Aerospike versions 4.0.0.4, 4.0.0.5, 4.1.0.1 and 4.2.0.5.
 
 === Documentation
 
-* _Design:_ Add <<./docs/design/upgrade-strategies.adoc,upgrade strategies
-design document>>.
+* _Design:_ Add an <<./docs/design/upgrade-strategies.adoc#,Upgrade Strategies>>
+design document.
 
 == Changes in `0.7.0`
 
