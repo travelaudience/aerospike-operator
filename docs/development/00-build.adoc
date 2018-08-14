@@ -139,7 +139,7 @@ name of the pod as appropriate):
 [source,bash]
 ----
 $ kubectl -n aerospike-operator logs -f aerospike-operator-79dcd89f7d-5cznt
-time="2018-07-22T21:27:09Z" level=info msg="aerospike-operator is starting" version=0.7.0
+time="2018-07-22T21:27:09Z" level=info msg="aerospike-operator is starting" version=0.8.0
 time="2018-07-22T21:27:11Z" level=info msg="attempting to become leader"
 time="2018-07-22T21:27:11Z" level=info msg="starting admission webhook"
 time="2018-07-22T21:27:11Z" level=info msg="current leader: aerospike-operator-79dcd89f7d-glhgt"
@@ -151,7 +151,7 @@ and `aerospike-operator-79dcd89f7d-glhgt` is the _leader_:
 [source,bash]
 ----
 $ kubectl -n aerospike-operator logs -f aerospike-operator-79dcd89f7d-glhgt
-time="2018-07-22T21:27:04Z" level=info msg="aerospike-operator is starting" version=0.7.0-dev
+time="2018-07-22T21:27:04Z" level=info msg="aerospike-operator is starting" version=0.8.0
 time="2018-07-22T21:27:07Z" level=info msg="attempting to become leader"
 time="2018-07-22T21:27:07Z" level=info msg="starting admission webhook"
 time="2018-07-22T21:27:07Z" level=info msg="current leader: aerospike-operator-79dcd89f7d-glhgt"
