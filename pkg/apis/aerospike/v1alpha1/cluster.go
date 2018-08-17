@@ -86,6 +86,10 @@ type AerospikeNamespaceSpec struct {
 
 // AerospikeClusterBackupSpec specifies how Aerospike namespace backups made by aerospike-operator before a version upgrade should be stored.
 type AerospikeClusterBackupSpec struct {
+	// The retention period (days) during which to keep backup data in cloud storage, suffixed with d.
+	// Defaults to 0d, meaning the backup data will be kept forever.
+	// +optional
+	TTL *string `json:"ttl,omitempty"`
 	// Specifies how the backup should be stored.
 	Storage BackupStorageSpec `json:"storage"`
 }
@@ -97,7 +101,13 @@ type StorageSpec struct {
 	// The size (gibibytes) of the persistent volume to use for storing data in this namespace, suffixed with G.
 	Size string `json:"size"`
 	// The name of the storage class to use to create persistent volumes.
-	StorageClassName string `json:"storageClassName"`
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty"`
+	// The retention period (days) during which to keep PVCs for being
+	// re-used after unmounted. Defaults to 0d, meaning the PVCs will be
+	// kept forever.
+	// +optional
+	PersistentVolumeClaimTTL *string `json:"persistentVolumeClaimTTL,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

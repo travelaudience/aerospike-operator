@@ -130,8 +130,8 @@ func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluste
 		},
 	}
 
-	if namespace.Storage.StorageClassName != "" {
-		claim.Spec.StorageClassName = &namespace.Storage.StorageClassName
+	if namespace.Storage.StorageClassName != nil && *namespace.Storage.StorageClassName != "" {
+		claim.Spec.StorageClassName = namespace.Storage.StorageClassName
 	}
 
 	pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(claim.Namespace).Create(claim)

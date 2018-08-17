@@ -52,8 +52,8 @@ func (r *AerospikeClusterReconciler) validateReplicationFactor(aerospikeCluster 
 
 func (r *AerospikeClusterReconciler) validateStorageClass(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) bool {
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
-		if ns.Storage.StorageClassName != "" {
-			if _, err := r.scsLister.Get(ns.Storage.StorageClassName); err != nil {
+		if ns.Storage.StorageClassName != nil && *ns.Storage.StorageClassName != "" {
+			if _, err := r.scsLister.Get(*ns.Storage.StorageClassName); err != nil {
 				if errors.IsNotFound(err) {
 					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonValidationError,
 						"storage class %q does not exist",

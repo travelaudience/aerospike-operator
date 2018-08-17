@@ -39,6 +39,10 @@ const (
 	AerospikeNamespaceRestoreKind   = aerospikev1alpha1.AerospikeNamespaceRestoreKind
 	AerospikeNamespaceRestorePlural = "aerospikenamespacerestores"
 	AerospikeNamespaceRestoreShort  = "asnr"
+
+	// ttlPattern is the regex used to match a number of days (with
+	// optional fraction) suffixed with a "d"
+	ttlPattern = `^([0-9]*[.])?[0-9]+d$`
 )
 
 var (
@@ -160,6 +164,10 @@ var (
 															"storageClassName": {
 																Type: "string",
 															},
+															"persistentVolumeClaimTTL": {
+																Type:    "string",
+																Pattern: ttlPattern,
+															},
 														},
 														Required: []string{
 															"type",
@@ -177,6 +185,10 @@ var (
 									"backupSpec": {
 										Type: "object",
 										Properties: map[string]extsv1beta1.JSONSchemaProps{
+											"ttl": {
+												Type:    "string",
+												Pattern: ttlPattern,
+											},
 											"storage": backupStorageSpecProps,
 										},
 										Required: []string{
@@ -217,7 +229,7 @@ var (
 									"storage": backupStorageSpecProps,
 									"ttl": {
 										Type:    "string",
-										Pattern: `^\d+d$`,
+										Pattern: ttlPattern,
 									},
 								},
 								Required: []string{
