@@ -17,20 +17,19 @@ limitations under the License.
 package main
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
-	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"google.golang.org/api/option"
+
+	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
+	"github.com/travelaudience/aerospike-operator/pkg/backuprestore/gcs"
 )
 
 const (
@@ -112,7 +111,7 @@ func main() {
 func doBackup() error {
 	// initialize the gcs client and get handles to the meta and backup objects
 	log.Debug("initing cloud storage")
-	client, metaObject, backupObject, err := initGCSObjects()
+	client, err := gcs.NewGCSClientFromCredentials(secretPath)
 	if err != nil {
 		return err
 	}
@@ -120,7 +119,7 @@ func doBackup() error {
 
 	// dump metadata to the meta file
 	log.Debug("dumping metadata")
-	if err := dumpMetadata(metaObject); err != nil {
+	if err := dumpMetadata(client); err != nil {
 		return err
 	}
 
@@ -147,7 +146,7 @@ func doBackup() error {
 		return err
 	}
 	// transfer data from asbackup's stdout to gcs
-	if err := transferToGCS(o, backupObject); err != nil {
+	if err := client.TransferToGCS(o, bucketName, backuprestore.GetBackupObjectName(name)); err != nil {
 		return err
 	}
 	// wait for asbackup to terminate
@@ -158,7 +157,7 @@ func doBackup() error {
 func doRestore() error {
 	// initialize the gcs client and get handles to the meta and backup objects
 	log.Debug("initing cloud storage")
-	client, metaObject, backupObject, err := initGCSObjects()
+	client, err := gcs.NewGCSClientFromCredentials(secretPath)
 	if err != nil {
 		return err
 	}
@@ -166,7 +165,7 @@ func doRestore() error {
 
 	// read metadata to the meta file
 	log.Debug("reading metadata")
-	n, err := readMetadata(metaObject)
+	n, err := readMetadata(client)
 	if err != nil {
 		return err
 	}
@@ -191,7 +190,7 @@ func doRestore() error {
 		return err
 	}
 	// transfer data from gcs to asrestore's stdin
-	if err := transferFromGCS(i, backupObject); err != nil {
+	if err := client.TransferFromGCS(i, bucketName, backuprestore.GetBackupObjectName(name)); err != nil {
 		return err
 	}
 	// close stdin when we're done
@@ -202,69 +201,13 @@ func doRestore() error {
 	return cmd.Wait()
 }
 
-// initGCSObjects initializes the GCS client and returns handles to the meta and backup objects.
-func initGCSObjects() (*storage.Client, *storage.ObjectHandle, *storage.ObjectHandle, error) {
-	// create a gcs client
-	client, err := storage.NewClient(context.Background(), option.WithCredentialsFile(secretPath))
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	// get a handle to the target bucket
-	bucket := client.Bucket(bucketName)
-	// attempt to read the bucket metadata
-	if _, err = bucket.Attrs(context.Background()); err != nil {
-		return nil, nil, nil, err
-	}
-	// get a handle to the metadata object
-	metaObject := bucket.Object(fmt.Sprintf("%s.json", name))
-	// get a handle to the backup object
-	backupObject := bucket.Object(fmt.Sprintf("%s.asb.gz", name))
-	// return the gcs client and the handles to the metadata and backup files
-	return client, metaObject, backupObject, nil
-}
-
-// transferToGCS streams backup data to GCS.
-func transferToGCS(r io.Reader, obj *storage.ObjectHandle) error {
-	// create a writer that writes to the target object
-	w := obj.NewWriter(context.Background())
-	defer w.Close()
-	// create a writer that gzips the backup data
-	gz := gzip.NewWriter(w)
-	defer gz.Close()
-	// copy the gziped backup data to the bucket
-	if s, err := io.Copy(gz, r); err != nil {
-		return err
-	} else {
-		log.Infof("%d bytes written", s)
-		return nil
-	}
-}
-
-// transferFromGCS streams backup data from GCS.
-func transferFromGCS(w io.Writer, obj *storage.ObjectHandle) error {
-	// create a reader that reads from the source object
-	r, err := obj.NewReader(context.Background())
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-	// create a reader that ungzips the backup data
-	gz, err := gzip.NewReader(r)
-	if err != nil {
-		return err
-	}
-	defer gz.Close()
-	// read the gziped backup data from the bucket
-	if r, err := io.Copy(w, gz); err != nil {
-		return err
-	} else {
-		log.Infof("%d bytes read", r)
-		return nil
-	}
-}
-
 // dumpMetadata dumps backup metadata to GCS.
-func dumpMetadata(metaObject *storage.ObjectHandle) error {
+func dumpMetadata(client *gcs.GCSClient) error {
+	// get the object
+	metaObject, err := client.GetObject(bucketName, backuprestore.GetMetadataObjectName(name))
+	if err != nil {
+		return err
+	}
 	// create a writer that writes to the target object
 	w := metaObject.NewWriter(context.Background())
 	defer w.Close()
@@ -277,7 +220,12 @@ func dumpMetadata(metaObject *storage.ObjectHandle) error {
 }
 
 // readMetadata reads backup metadata from GCS.
-func readMetadata(metaObject *storage.ObjectHandle) (*backupMetadata, error) {
+func readMetadata(client *gcs.GCSClient) (*backupMetadata, error) {
+	// get the object
+	metaObject, err := client.GetObject(bucketName, backuprestore.GetMetadataObjectName(name))
+	if err != nil {
+		return nil, err
+	}
 	// create a reader that reads from the source object
 	r, err := metaObject.NewReader(context.Background())
 	if err != nil {

@@ -182,6 +182,7 @@ func run(stopCh chan struct{}, cfg *restclient.Config, kubeClient *kubernetes.Cl
 	clusterController := controller.NewAerospikeClusterController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 	restoreController := controller.NewAerospikeNamespaceRestoreController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
+	gcController := controller.NewGarbageCollectorController(kubeClient, aerospikeClient, aerospikeInformerFactory)
 
 	// start the shared informer factories
 	go kubeInformerFactory.Start(stopCh)
@@ -189,7 +190,7 @@ func run(stopCh chan struct{}, cfg *restclient.Config, kubeClient *kubernetes.Cl
 
 	// start the controllers
 	var wg sync.WaitGroup
-	controllers := []controller.Controller{clusterController, backupController, restoreController}
+	controllers := []controller.Controller{clusterController, backupController, restoreController, gcController}
 	for _, c := range controllers {
 		wg.Add(1)
 		go func(c controller.Controller) {

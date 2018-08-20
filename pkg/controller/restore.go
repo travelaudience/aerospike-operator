@@ -128,11 +128,7 @@ func (c *AerospikeNamespaceRestoreController) processQueueItem(key string) error
 	}
 
 	// deepcopy aerospikeNamespaceRestore before handle it so we don't possibly mutate the cache
-	err = c.handler.Handle(aerospikeNamespaceRestore.DeepCopy())
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.handler.Handle(aerospikeNamespaceRestore.DeepCopy())
 }
 
 // handleObject will take any resource implementing metav1.Object and attempt

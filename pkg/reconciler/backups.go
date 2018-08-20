@@ -80,6 +80,7 @@ func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aer
 				Namespace: ns,
 			},
 			Storage: &aerospikeCluster.Spec.BackupSpec.Storage,
+			TTL:     aerospikeCluster.Spec.BackupSpec.TTL,
 		},
 	}
 

@@ -143,11 +143,7 @@ func (c *AerospikeClusterController) processQueueItem(key string) error {
 	}
 
 	// deepcopy aerospikeCluster before reconciling so we don't possibly mutate the cache
-	err = c.reconciler.MaybeReconcile(aerospikeCluster.DeepCopy())
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.reconciler.MaybeReconcile(aerospikeCluster.DeepCopy())
 }
 
 // handleObject will take any resource implementing metav1.Object and attempt

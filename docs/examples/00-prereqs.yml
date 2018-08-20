@@ -113,6 +113,7 @@ rules:
   - list
   - patch
   - watch
+  - delete
 - apiGroups:
   - aerospike.travelaudience.com
   resources:
