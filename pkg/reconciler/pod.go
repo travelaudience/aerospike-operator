@@ -179,7 +179,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				log.Warnf("failed to run alumni-reset: %s", err)
 			}
 		}
-		setAnnotation(aerospikeCluster, meshDigestAnnotation, meshDigest)
+		setAerospikeClusterAnnotation(aerospikeCluster, meshDigestAnnotation, meshDigest)
 	}
 
 	// signal that we're good and return
@@ -431,7 +431,12 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			if pvc, err = r.getPersistentVolumeClaim(aerospikeCluster, pod); err != nil {
 				return nil, err
 			}
-			if pvc == nil {
+			if pvc != nil {
+				// mark the PVC as mounted
+				if err = r.signalMounted(pvc); err != nil {
+					return nil, err
+				}
+			} else {
 				if pvc, err = r.createPersistentVolumeClaim(aerospikeCluster, pod, &namespace); err != nil {
 					return nil, err
 				}
@@ -545,6 +550,19 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 }
 
 func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
+	// mark the pod PVCs as unmounted with an annotation
+	for _, volume := range pod.Spec.Volumes {
+		if claim := volume.PersistentVolumeClaim; claim != nil {
+			pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(pod.Namespace).Get(claim.ClaimName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			if err := r.signalUnmounted(pvc); err != nil {
+				return err
+			}
+		}
+	}
+
 	// delete the pod
 	err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{
 		GracePeriodSeconds: pointers.NewInt64FromFloat64(terminationGracePeriod.Seconds()),

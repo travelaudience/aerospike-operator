@@ -99,7 +99,7 @@ func (r *AerospikeClusterReconciler) signalBackupStarted(aerospikeCluster *aeros
 		Message:            "cluster backup started",
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	})
-	setAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusBackupAnnotationValue)
+	setAerospikeClusterAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusBackupAnnotationValue)
 
 	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aero
 		Message:            fmt.Sprintf("upgrade from version %s to %s started", upgrade.Source, upgrade.Target),
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	})
-	setAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusStartedAnnotationValue)
+	setAerospikeClusterAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusStartedAnnotationValue)
 
 	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aeros
 		Message:            fmt.Sprintf("upgrade from version %s to %s failed", upgrade.Source, upgrade.Target),
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	})
-	setAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusFailedAnnotationValue)
+	setAerospikeClusterAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey, UpgradeStatusFailedAnnotationValue)
 
 	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aer
 		Message:            fmt.Sprintf("finished upgrade from version %s to %s", upgrade.Source, upgrade.Target),
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	})
-	removeAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey)
+	removeAerospikeClusterAnnotation(aerospikeCluster, UpgradeStatusAnnotationKey)
 
 	if err := r.patchCluster(oldCluster, aerospikeCluster); err != nil {
 		return nil, err

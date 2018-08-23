@@ -182,7 +182,7 @@ func run(stopCh chan struct{}, cfg *restclient.Config, kubeClient *kubernetes.Cl
 	clusterController := controller.NewAerospikeClusterController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 	restoreController := controller.NewAerospikeNamespaceRestoreController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
-	gcController := controller.NewGarbageCollectorController(kubeClient, aerospikeClient, aerospikeInformerFactory)
+	gcController := controller.NewGarbageCollectorController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 
 	// start the shared informer factories
 	go kubeInformerFactory.Start(stopCh)

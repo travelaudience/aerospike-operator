@@ -64,7 +64,13 @@ const (
 	meshDigestAnnotation = "aerospike.travelaudience.com/mesh-hash"
 	// the name of the annotation that holds the name of the pod with which a
 	// PVC is associated
-	podAnnotation = "aerospike.travelaudience.com/pod-name"
+	PodAnnotation = "aerospike.travelaudience.com/pod-name"
+	// the name of the annotation that holds the persistentVolumeClaimTTL of a
+	// PVC
+	PVCTTLAnnotation = "aerospike.travelaudience.com/pvc-ttl"
+	// the name of the annotation that holds the timestamp at which a PVC
+	// was last unmounted from a pod
+	LastUnmountedOnAnnotation = "aerospike.travelaudience.com/last-unmounted-on"
 
 	// the name of the key that corresponds to the service.node-id property
 	// (used for templating)
@@ -131,6 +137,9 @@ const (
 	ReasonErrImagePull = "ErrImagePull"
 	// get http error when pulling image from registry
 	ReasonRegistryUnavailable = "RegistryUnavailable"
+
+	// default value for persistentVolumeClaimTTL
+	defaultPersistentVolumeClaimTTL = "0d"
 )
 
 var asConfigTemplate = template.Must(template.New("aerospike-config").Parse(aerospikeConfig))

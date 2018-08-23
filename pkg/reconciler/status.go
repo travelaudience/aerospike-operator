@@ -75,17 +75,17 @@ func appendCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, condi
 	aerospikeCluster.Status.Conditions = append(aerospikeCluster.Status.Conditions, condition)
 }
 
-// setAnnotation sets an annotation with the specified key and value in the
+// setAerospikeClusterAnnotation sets an annotation with the specified key and value in the
 // aerospikeCluster object
-func setAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key, value string) {
+func setAerospikeClusterAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key, value string) {
 	if aerospikeCluster.ObjectMeta.Annotations == nil {
 		aerospikeCluster.ObjectMeta.Annotations = make(map[string]string)
 	}
 	aerospikeCluster.ObjectMeta.Annotations[key] = value
 }
 
-// removeAnnotation removes the annotation with the specified key from the
+// removeAerospikeClusterAnnotation removes the annotation with the specified key from the
 // aerospikeCluster object
-func removeAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key string) {
+func removeAerospikeClusterAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key string) {
 	delete(aerospikeCluster.ObjectMeta.Annotations, key)
 }
