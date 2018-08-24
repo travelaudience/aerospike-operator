@@ -126,7 +126,8 @@ func (c *AerospikeGarbageCollectorController) processQueueItem(prefixedKey strin
 		aerospikeNamespaceBackup, err := c.aerospikeNamespaceBackupLister.AerospikeNamespaceBackups(namespace).Get(name)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				runtime.HandleError(fmt.Errorf("aerospikenamespacebackup '%s' in work queue no longer exists", prefixedKey))
+				// if for some reason the aerospikenamespacebackup has already been deleted,
+				// then there's nothing to do
 				return nil
 			}
 			return err
@@ -137,7 +138,8 @@ func (c *AerospikeGarbageCollectorController) processQueueItem(prefixedKey strin
 		pvc, err := c.pvcsLister.PersistentVolumeClaims(namespace).Get(name)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				runtime.HandleError(fmt.Errorf("persistentvolumeclaim '%s' in work queue no longer exists", prefixedKey))
+				// if for some reason the pvc has already been deleted,
+				// then there's nothing to do
 				return nil
 			}
 			return err
