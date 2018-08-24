@@ -37,7 +37,7 @@ func testNamespaceBackupRestore(tf *framework.TestFramework, ns *v1.Namespace, n
 	Expect(err).NotTo(HaveOccurred())
 	c1.Close()
 
-	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, "0d")
+	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, nil)
 	backup, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -80,7 +80,7 @@ func testNamespaceRestoreFromDifferentNamespace(tf *framework.TestFramework, ns 
 	Expect(err).NotTo(HaveOccurred())
 	c1.Close()
 
-	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, "0d")
+	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, nil)
 	backup, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
 	Expect(err).NotTo(HaveOccurred())
 

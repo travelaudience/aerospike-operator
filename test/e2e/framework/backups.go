@@ -26,7 +26,6 @@ import (
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 )
 
@@ -51,7 +50,7 @@ func (tf *TestFramework) CopySecretToNamespace(secret string, ns *corev1.Namespa
 	return err
 }
 
-func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alpha1.AerospikeCluster, namespace, ttl string) aerospikev1alpha1.AerospikeNamespaceBackup {
+func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alpha1.AerospikeCluster, namespace string, ttl *string) aerospikev1alpha1.AerospikeNamespaceBackup {
 	return aerospikev1alpha1.AerospikeNamespaceBackup{
 		ObjectMeta: v1.ObjectMeta{
 			GenerateName: backupPrefix,
@@ -66,7 +65,7 @@ func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alph
 				Bucket: GCSBucketName,
 				Secret: GCSSecretName,
 			},
-			TTL: pointers.NewString(ttl),
+			TTL: ttl,
 		},
 	}
 }

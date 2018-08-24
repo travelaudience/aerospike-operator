@@ -25,6 +25,7 @@ import (
 	backupsuite "github.com/travelaudience/aerospike-operator/test/e2e/backups"
 	clustersuite "github.com/travelaudience/aerospike-operator/test/e2e/cluster"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
+	"github.com/travelaudience/aerospike-operator/test/e2e/garbagecollector"
 )
 
 var (
@@ -38,6 +39,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	clustersuite.RegisterTestFramework(tf)
 	backupsuite.RegisterTestFramework(tf)
+	garbagecollector.RegisterTestFramework(tf)
 })
 
 func RunE2ETests(t *testing.T) {
