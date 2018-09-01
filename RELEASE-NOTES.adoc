@@ -32,6 +32,7 @@ create a backup of all Aerospike namespaces whose replication factor is equal to
 ** Support deletion of expired
 <<./docs/design/api-spec.adoc#aerospikeclusterbackupspec,AerospikeNamespaceBackups>>.
 * Add support for Aerospike 4.2.0.10.
+* Use `aerospike/aerospike-client-go` 1.35.0.
 
 === Documentation
 
