@@ -33,6 +33,7 @@ the following Aerospike Server CE versions:
  * https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`]
  * https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`]
  * https://www.aerospike.com/download/server/notes.html#4.2.0.5[`4.2.0.5`]
+ * https://www.aerospike.com/download/server/notes.html#4.2.0.10[`4.2.0.10`]
 
 == Documentation
 

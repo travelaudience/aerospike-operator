@@ -31,6 +31,7 @@ create a backup of all Aerospike namespaces whose replication factor is equal to
 ** Support deletion of expired PVCs.
 ** Support deletion of expired
 <<./docs/design/api-spec.adoc#aerospikeclusterbackupspec,AerospikeNamespaceBackups>>.
+* Add support for Aerospike 4.2.0.10.
 
 === Documentation
 
