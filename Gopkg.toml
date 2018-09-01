@@ -30,6 +30,10 @@
   branch = "release-8.0"
   name = "github.com/appscode/kutil"
 
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "gopkg.in/fsnotify/fsnotify.v1"
+
 [prune]
   go-tests = true
   unused-packages = true
