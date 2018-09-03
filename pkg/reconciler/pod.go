@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -36,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
@@ -63,6 +65,12 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 	currentSize := len(pods)
 	desiredSize := int(aerospikeCluster.Spec.NodeCount)
 
+	log.WithFields(log.Fields{
+		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+		logfields.CurrentSize:      currentSize,
+		logfields.DesiredSize:      desiredSize,
+	}).Debug("checking if pods need to be updated")
+
 	// scale down if necessary
 	for i := currentSize - 1; i >= desiredSize; i-- {
 		if err := r.safeDeletePodWithIndex(aerospikeCluster, i); err != nil {
@@ -72,15 +80,6 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			return err
 		}
 	}
-
-	// re-list existing pods for the cluster after scaling down
-	pods, err = r.listClusterPods(aerospikeCluster)
-	if err != nil {
-		return err
-	}
-	// re-grab the current and desired size of the cluster
-	currentSize = len(pods)
-	desiredSize = int(aerospikeCluster.Spec.NodeCount)
 
 	// create/upgrade/restart existing pods as required
 	for i := 0; i < desiredSize; i++ {
@@ -95,98 +94,48 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			// propagate the error
 			return err
 		}
+		switch {
 		// check whether the pod needs to be created
-		if pod == nil {
+		case pod == nil:
 			// no pod with the specified index exists, so it must be created
-			if _, err := r.createPodWithIndex(aerospikeCluster, configMap, i, nil); err != nil {
+			pod, err = r.createPodWithIndex(aerospikeCluster, configMap, i, nil)
+			if err != nil {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 					logfields.PodIndex:         i,
 				}).Errorf("failed to create pod: %v", err)
 				return err
 			}
-			// proceed to the next index
-			continue
-		}
-		// check whether the pod needs to be upgraded
-		if upgrade != nil {
-			if err := r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i, upgrade); err != nil {
+			// check whether the pod needs to be upgraded
+		case upgrade != nil:
+			pod, err = r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i, upgrade)
+			if err != nil {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-					logfields.Pod:              meta.Key(pod),
+					logfields.PodIndex:         i,
 				}).Errorf("failed to upgrade pod: %v", err)
 				return err
 			}
-			// proceed to the next index
-			continue
-		}
-		// check whether the pod needs to be restarted
-		if configMap.Annotations[configMapHashAnnotation] != pod.Annotations[configMapHashAnnotation] {
-			if _, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, i, upgrade); err != nil {
+			// check whether the pod needs to be restarted
+		case configMap.Annotations[configMapHashAnnotation] != pod.Annotations[configMapHashAnnotation]:
+			pod, err = r.safeRestartPodWithIndex(aerospikeCluster, configMap, i, upgrade)
+			if err != nil {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-					logfields.Pod:              meta.Key(pod),
+					logfields.PodIndex:         i,
 				}).Errorf("failed to restart pod: %v", err)
 				return err
 			}
-			// proceed to the next index
-			continue
 		}
-	}
-
-	// Due to the fact that the IPs of the pods in the cluster will most
-	// probably change as a result of a rolling restart/upgrade procedure,
-	// we should forcibly "reset" the list of nodes to which mesh-mode
-	// heartbeats are sent. This helps avoiding heartbeat-related warnings
-	// in Aerospike.
-	// For nodes other than the first one, there is always at least one
-	// "valid", active IP (the first node) and this is enough for Aerospike
-	// not to complain. Hence, there's no need to run tip-clear on those.
-	// The first node, however, will always see old IPs for each of the other
-	// nodes in the cluster (as their IPs changed after this node has been
-	// started). Hence, we must run tip-clear and tip against this node when
-	// we detect that IPs have changed. It should be noted that scaling up or
-	// down will also trigger this behaviour, but it doesn't have any adverse
-	// impact on the cluster.
-
-	// compute the hash of the cluster mesh as we know it
-	meshDigest, err := r.computeMeshHash(aerospikeCluster)
-	if err != nil {
-		return err
-	}
-	if currentMeshDigest, ok := aerospikeCluster.Annotations[meshDigestAnnotation]; !ok || meshDigest != currentMeshDigest {
-		if meshDigest != currentMeshDigest {
-			seedPod, err := r.getPodWithIndex(aerospikeCluster, 0)
-			if err != nil {
-				// we've failed to get the pod with the specified index
-				log.WithFields(log.Fields{
-					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-					logfields.PodIndex:         0,
-				}).Errorf("failed to get pod: %v", err)
-				// propagate the error
-				return err
-			}
-			// tip-clear node
-			if err := tipClearNode(seedPod); err != nil {
-				log.Warnf("failed to tip-clear seed node: %s", err)
-			}
-			// add tip seed to node
-			if err := addTipToNode(seedPod); err != nil {
-				log.Warnf("failed to add tip to seed node: %s", err)
-			}
-			// alumni-reset all nodes
-			if err := alumniResetAllNodes(aerospikeCluster); err != nil {
-				log.Warnf("failed to run alumni-reset: %s", err)
-			}
+		// ensure the node reports the correct clusterSize
+		if err := r.ensureClusterSize(aerospikeCluster, pod); err != nil {
+			return err
 		}
-		setAerospikeClusterAnnotation(aerospikeCluster, meshDigestAnnotation, meshDigest)
 	}
 
 	// signal that we're good and return
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-		logfields.CurrentSize:      currentSize,
-		logfields.DesiredSize:      desiredSize,
 	}).Debug("pods are up-to-date")
 
 	return nil
@@ -220,6 +169,24 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		return nil, fmt.Errorf("failed to compute node id for %s: %v", podName, err)
 	}
 
+	// list all active pods so we can use those as mesh seeds for the pod
+	pods, err := r.listClusterPods(aerospikeCluster)
+	if err != nil {
+		return nil, err
+	}
+	// build the list of mesh seeds for the pod, excluding the pod itself
+	// if it is still known to the lister (which may happen if the lister
+	// is not up-to-date)
+	peers := make([]string, len(pods))
+	for _, pod := range pods {
+		if podName != pod.Name {
+			// https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-hostname-and-subdomain-fields
+			peers = append(peers, fmt.Sprintf("%s.%s.%s", pod.Name, aerospikeCluster.Name, aerospikeCluster.Namespace))
+		}
+	}
+	// build the comma-separated list of peers which to pass to asinit
+	peerList := strings.Join(peers, ",")
+
 	// pod represents the pod that will be created
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -245,16 +212,23 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			},
 		},
 		Spec: v1.PodSpec{
-			// use a init container to set the value of service.node-id to the
-			// value of nodeId
+			// use a init container to set the values of service.node-id to the
+			// value of nodeId and of network.heartbeat.mesh-seed-adress-port[]
+			// to the list of currently active nodes
 			InitContainers: []v1.Container{
 				{
 					Name:  "init",
-					Image: "busybox:1.29.1",
+					Image: fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
 					Command: []string{
-						"sh",
-						"-c",
-						fmt.Sprintf("sed 's/%s/%s/' %s>%s", serviceNodeIdValue, nodeId, initialConfigFilePath, finalConfigFilePath),
+						"/usr/local/bin/asinit",
+						"--node-id",
+						nodeId,
+						"--peer-list",
+						peerList,
+						"--source-config",
+						initialConfigFilePath,
+						"--target-config",
+						finalConfigFilePath,
 					},
 					VolumeMounts: []v1.VolumeMount{
 						{
@@ -291,7 +265,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						},
 						{
 							Name:          heartbeatPortName,
-							ContainerPort: heartbeatPort,
+							ContainerPort: HeartbeatPort,
 						},
 						{
 							Name:          fabricPortName,
@@ -379,6 +353,10 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			},
 			// let the reconcile loop handle pod restarts
 			RestartPolicy: v1.RestartPolicyNever,
+			// use the pod's (stable) name as the hostname
+			Hostname: podName,
+			// use the cluster's name as the subdomain
+			Subdomain: aerospikeCluster.Name,
 		},
 	}
 
@@ -665,7 +643,39 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 		close(done)
 	}
 	// delete the pod now that migrations are finished
-	return r.deletePod(aerospikeCluster, pod)
+	if err := r.deletePod(aerospikeCluster, pod); err != nil {
+		return err
+	}
+
+	// get a list of the pods
+	pods, err := r.listClusterPods(aerospikeCluster)
+	if err != nil {
+		return err
+	}
+
+	// tip-clear the name of the current pod
+	// and alumni-reset on all pods
+	var wg sync.WaitGroup
+	wg.Add(len(pods))
+	for _, p := range pods {
+		go func(p *v1.Pod) {
+			defer wg.Done()
+			if err := tipClearHostname(p, fmt.Sprintf("%s.%s.%s", pod.Name, aerospikeCluster.Name, aerospikeCluster.Namespace)); err != nil {
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
+					logfields.Pod:              meta.Key(pod),
+				}).Error("failed tip-clear ip on pod %q", meta.Key(p))
+			}
+			if err := alumniReset(p); err != nil {
+				log.WithFields(log.Fields{
+					logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
+					logfields.Pod:              meta.Key(pod),
+				}).Error("failed alumni-reset on pod %q", meta.Key(p))
+			}
+		}(p)
+	}
+	wg.Wait()
+	return nil
 }
 
 func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
@@ -691,6 +701,39 @@ func (r *AerospikeClusterReconciler) computeMeshHash(aerospikeCluster *aerospike
 		addrList[i] = pod.Status.PodIP
 	}
 	return asstrings.HashSlice(addrList), nil
+}
+
+func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) error {
+	timer := time.NewTimer(waitClusterSizeTimeout)
+	defer timer.Stop()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			// get the current list of pods
+			pods, err := r.listClusterPods(aerospikeCluster)
+			if err != nil {
+				return err
+			}
+			// get the cluster size reported by the current node
+			clusterSize, err := asutils.GetClusterSize(pod.Status.PodIP, ServicePort)
+			if err != nil {
+				return err
+			}
+			// if the cluster size is the expected, return
+			if clusterSize == len(pods) {
+				return nil
+			}
+		case <-timer.C:
+			// the clusterSize is different than the expected, hence we delete
+			// the pod so it can be re-created in the next reconcile loop
+			if err := r.safeDeletePodWithIndex(aerospikeCluster, podIndex(pod)); err != nil {
+				return err
+			}
+			return fmt.Errorf("detected incorrect cluster size for pod %q", meta.Key(pod))
+		}
+	}
 }
 
 // computeCpuRequest computes the amount of cpu to be requested for the aerospike-server container and returns the

@@ -177,13 +177,13 @@ func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*v1.Secret, error) {
 	svc := fmt.Sprintf("%s.%s.svc", serviceName, s.namespace)
 	now := time.Now()
 	crt := x509.Certificate{
-		Subject:      pkix.Name{CommonName: svc},
-		NotBefore:    now,
-		NotAfter:     now.Add(365 * 24 * time.Hour),
-		SerialNumber: big.NewInt(now.Unix()),
-		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IsCA:         true,
+		Subject:               pkix.Name{CommonName: svc},
+		NotBefore:             now,
+		NotAfter:              now.Add(365 * 24 * time.Hour),
+		SerialNumber:          big.NewInt(now.Unix()),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IsCA:                  true,
 		BasicConstraintsValid: true,
 		DNSNames:              []string{svc},
 	}

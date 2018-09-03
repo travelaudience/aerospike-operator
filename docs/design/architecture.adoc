@@ -52,7 +52,7 @@ image::img/architecture.png["Architecture"]
 
 At a high level, `aerospike-operator` manages _pods_ and _jobs_. Every pod is a
 member of a single Aerospike cluster. For every cluster `aerospike-operator`
-creates a service that is used to facilitate clustering and client access.
+creates a service that is used to facilitate client access.
 Whenever a pod is created and the Aerospike process is ready to accept
 connections, the service's endpoints are updated to include the IP of the new
 pod. Similarly, when a pod is deleted the service's endpoints are updated in
@@ -109,8 +109,8 @@ briefly describe the responsibilities of each of these controllers.
 The _cluster controller_ is responsible for managing an Aerospike cluster based
 on the spec provided in an `AerospikeCluster` resource, and for managing the
 Aerospike namespace that exists in this cluster and the means of storage for its
-data. This includes creating or deleting pods, creating the service used for
-clustering and discovery, creating and updating the underlying Aerospike
+data. This includes creating or deleting pods, creating the service to be used
+by clients, creating and updating the underlying Aerospike
 configuration, creating the necessary persistent volume claims and ensuring that
 operations such as scaling up or down happen smoothly, taking into account any
 possible rebalancing operations that may be happening at a given moment. A
@@ -252,9 +252,13 @@ a given `AerospikeCluster` resource is _created_ or _updated_. When any of these
 operations is performed, the webhook enforces that the following rules are met
 on the `AerospikeCluster` resource:
 
-* The name of the `AerospikeCluster` resource is no longer than 60 characters;
+* The name of the `AerospikeCluster` resource does not exceed 61 characters;
 * There is exactly one Aerospike namespace in the cluster;
-* The name of the Aerospike namespace is no longer than 23 characters;
+* The name of the Aerospike namespace does not exceed 23 characters;
+* The names of the `AerospikeCluster` resource and of the Kubernetes namespace
+  it is being created in are such that
+  `<pod-name>.<aerospike-cluster-name>.<kubernetes-namespace-name>` does not
+  exceed 63 characters;
 * The replication factor of the Aerospike namespace is less than or equal to
   the size of the cluster;
 * The `.backupSpec` field, if specified, points to an existing and valid secret.

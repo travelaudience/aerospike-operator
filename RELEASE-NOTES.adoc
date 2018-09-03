@@ -34,6 +34,11 @@ create a backup of all Aerospike namespaces whose replication factor is equal to
 * Add support for Aerospike 4.2.0.10.
 * Use `aerospike/aerospike-client-go` 1.35.0.
 
+=== Bug Fixes
+
+* Fixed a bug which might under rare circumstances cause a node to form a
+  separate cluster after being restarted.
+
 === Documentation
 
 * _Design:_ Add the <<./docs/design/garbage-collection.adoc#,Garbage Collection>>

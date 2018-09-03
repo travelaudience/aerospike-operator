@@ -41,7 +41,7 @@ const (
 
 	ServicePort       = 3000
 	servicePortName   = "service"
-	heartbeatPort     = 3002
+	HeartbeatPort     = 3002
 	heartbeatPortName = "heartbeat"
 	fabricPort        = 3001
 	fabricPortName    = "fabric"
@@ -52,6 +52,9 @@ const (
 	watchDeletePodTimeout  = 3 * time.Minute
 	terminationGracePeriod = 2 * time.Minute
 	waitMigrationsTimeout  = 1 * time.Hour
+	// waitClusterSizeTimeout is how long we will wait for a new pod to report
+	// the correct cluster size before forcibly deleting it
+	waitClusterSizeTimeout = 1 * time.Minute
 
 	podOperationFeedbackPeriod = 2 * time.Minute
 	aerospikeClientTimeout     = 10 * time.Second
@@ -60,8 +63,6 @@ const (
 	configMapHashAnnotation = "aerospike.travelaudience.com/config-map-hash"
 	// the name of the annotation that holds the aerospike node id
 	nodeIdAnnotation = "aerospike.travelaudience.com/node-id"
-	// the name of the annotation that holds the hash of the mesh as we know it
-	meshDigestAnnotation = "aerospike.travelaudience.com/mesh-hash"
 	// the name of the annotation that holds the name of the pod with which a
 	// PVC is associated
 	PodAnnotation = "aerospike.travelaudience.com/pod-name"
@@ -77,10 +78,10 @@ const (
 	serviceNodeIdKey = "nodeId"
 	// the value of the key that corresponds to the service.node-id property
 	// (used for templating)
-	serviceNodeIdValue    = "__SERVICE__NODE_ID__"
-	clusterMeshServiceKey = "meshAddress"
-	clusterMeshPortKey    = "meshPort"
-	clusterNamespacesKey  = "namespaces"
+	ServiceNodeIdValue          = "__SERVICE__NODE_ID__"
+	clusterNamespacesKey        = "namespaces"
+	heartbeatAddressesConfigKey = "heartbeatAddresses"
+	HeartbeatAddressesValue     = "__NETWORK__HEARTBEAT__MESH_SEED_ADDRESS_PORT__"
 
 	defaultFilePath         = "/opt/aerospike/data/"
 	defaultDevicePathPrefix = "/dev/xvd"
@@ -178,7 +179,7 @@ network {
 		mode mesh
 		port 3002
 
-		mesh-seed-address-port {{.meshAddress}} {{.meshPort}}
+		{{.heartbeatAddresses}}
 
 		interval 100
 		timeout 10

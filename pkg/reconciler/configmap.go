@@ -137,10 +137,9 @@ func buildConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) *v1.Co
 
 func getClusterProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, namespacesConfig []string) map[string]interface{} {
 	return map[string]interface{}{
-		serviceNodeIdKey:      serviceNodeIdValue,
-		clusterMeshServiceKey: aerospikeCluster.Name,
-		clusterMeshPortKey:    heartbeatPort,
-		clusterNamespacesKey:  namespacesConfig,
+		serviceNodeIdKey:            ServiceNodeIdValue,
+		clusterNamespacesKey:        namespacesConfig,
+		heartbeatAddressesConfigKey: HeartbeatAddressesValue,
 	}
 }
 

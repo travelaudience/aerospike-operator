@@ -32,25 +32,25 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
-func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) error {
+func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
 	// check whether a pod with the specified index exists
 	pod, err := r.getPodWithIndex(aerospikeCluster, index)
 	if err != nil {
 		// we've failed to get the pod with the specified index
-		return err
+		return nil, err
 	}
 	if pod == nil {
 		// no pod with the specified index exists, so we return
-		return nil
+		return nil, nil
 	}
 	// get the version of aerospike server running on the pod
 	version, err := getAerospikeServerVersionFromPod(pod)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// skip the upgrade if the pod is already running the target version
 	if version == aerospikeCluster.Spec.Version {
-		return nil
+		return pod, nil
 	}
 
 	log.WithFields(log.Fields{
@@ -63,18 +63,18 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 	// restart the target pod
 	newPod, err := r.safeRestartPodWithIndex(aerospikeCluster, configMap, index, upgrade)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// ensure the pod has the target version
 	version, err = getAerospikeServerVersionFromPod(newPod)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if version != aerospikeCluster.Spec.Version {
 		r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeUpgradeFailed,
 			"failed to upgrade pod %s to version %s",
 			meta.Key(pod), aerospikeCluster.Spec.Version)
-		return fmt.Errorf("failed to upgrade pod %s to version %s", meta.Key(newPod), aerospikeCluster.Spec.Version)
+		return nil, fmt.Errorf("failed to upgrade pod %s to version %s", meta.Key(newPod), aerospikeCluster.Spec.Version)
 	}
 
 	log.WithFields(log.Fields{
@@ -84,7 +84,7 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 		"upgraded pod %s to version %s",
 		meta.Key(pod), aerospikeCluster.Spec.Version)
 
-	return nil
+	return newPod, nil
 }
 
 func (r *AerospikeClusterReconciler) signalBackupStarted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {

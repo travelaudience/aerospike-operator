@@ -64,7 +64,7 @@ func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1
 				},
 				{
 					Name:       heartbeatPortName,
-					Port:       heartbeatPort,
+					Port:       HeartbeatPort,
 					TargetPort: intstr.IntOrString{StrVal: heartbeatPortName},
 				},
 				{

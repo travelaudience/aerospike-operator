@@ -91,7 +91,7 @@ func (r *AerospikeClusterReconciler) ensureNetworkPolicy(aerospikeCluster *aeros
 						{
 							Protocol: &protocolTCP,
 							Port: &intstr.IntOrString{
-								IntVal: heartbeatPort,
+								IntVal: HeartbeatPort,
 							},
 						},
 					},
@@ -141,7 +141,7 @@ func (r *AerospikeClusterReconciler) ensureNetworkPolicy(aerospikeCluster *aeros
 						{
 							Protocol: &protocolTCP,
 							Port: &intstr.IntOrString{
-								IntVal: heartbeatPort,
+								IntVal: HeartbeatPort,
 							},
 						},
 					},
