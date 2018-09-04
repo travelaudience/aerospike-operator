@@ -51,8 +51,11 @@ var _ = Describe("AerospikeCluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("cannot be created with len(metadata.name)==61", func() {
+		It("cannot be created with len(metadata.name)==62", func() {
 			testCreateAerospikeClusterWithLengthyName(tf, ns)
+		})
+		It("cannot be created with invalid combination of len(metadata.name) and len(metadata.namespace)", func() {
+			testCreateAerospikeClusterWithLengthyNameAndNamespace(tf, ns)
 		})
 		It("cannot be created with spec.nodeCount==0", func() {
 			testCreateAerospikeClusterWithZeroNodes(tf, ns)

@@ -29,16 +29,29 @@ import (
 )
 
 const (
-	// aerospikeClusterMaxNameLen represents the maximum length of an AerospikeCluster's metadata.name.
+	// AerospikeMeshSeedAddressMaxLength represents the maximum length of a name that can be used in
+	// the "mesh-seed-address-port", as defined in
+	//
+	// https://github.com/aerospike/aerospike-server/blob/4.2.0.10/as/src/fabric/hb.c#L6734-L6741
+	//
+	// In practice, the abovementioned snippet means that the length of
+	//
+	//     <pod name> + "." + <aerospike cluster name> + "." + <kubernetes namespace name>
+	//
+	// cannot exceed AerospikeMeshSeedAddressMaxLength (64) characters. Since <pod-name> is created from
+	// <aerospike cluster name> by append "-X" (where X is an integer between 0 and 7), this means
+	// that 2 * (len(<aerospike cluster name) + 2) + <kubernetes namespace name> cannot exceed this value.
+	AerospikeMeshSeedAddressMaxLength = 63
+	// AerospikeClusterNameMaxLength represents the maximum length of an AerospikeCluster's metadata.name.
 	// the length corresponds to the maximum length of a pod name (63 characters) minus the dash and
-	// the index (two digits).
-	aerospikeClusterMaxNameLen = 60
+	// the index (a single digit).
+	AerospikeClusterNameMaxLength = 61
 	// aerospikeNamespaceMaxNameLen represents the maximum length of an AerospikeCluster's namespace name.
-	// The length corresponds to the  maximum length of a pod name (63 characters) minus 40 chars
+	// The length corresponds to the maximum length of a pod name (63 characters) minus 40 chars
 	// corresponding to the following:
 	// -XX.YY.ZZ.WW-XX.YY.ZZ.WW-upgrade-restore, where XX.YY.ZZ.WW appears twice and corresponds to the
-	// source and target versions of Aerospike, upgrade is the sufix appended by reconciler and
-	// backup/restore sufix is appended to the jobs by backups handler. (restore is used for calculation
+	// source and target versions of Aerospike, upgrade is the suffix appended by reconciler and
+	// backup/restore suffix is appended to the jobs by backups handler. (restore is used for calculation
 	// because it has a greater length)
 	aerospikeNamespaceMaxNameLen = 23
 	// the default replication factor for an aerospike namespace
@@ -72,9 +85,14 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeCluster(ar av1beta1.Admission
 }
 
 func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *v1alpha1.AerospikeCluster) error {
-	// validate that the name doesn't exceed 61 characters
-	if len(aerospikeCluster.Name) > aerospikeClusterMaxNameLen {
-		return fmt.Errorf("the name of the cluster cannot exceed %d characters", aerospikeClusterMaxNameLen)
+	// validate that the name doesn't exceed AerospikeClusterNameMaxLength
+	if len(aerospikeCluster.Name) > AerospikeClusterNameMaxLength {
+		return fmt.Errorf("the name of the cluster cannot exceed %d characters", AerospikeClusterNameMaxLength)
+	}
+
+	// validate that we can use pod dns names as "mesh-seed-address-port" entries
+	if 2*(len(aerospikeCluster.Name)+2)+len(aerospikeCluster.Namespace) > AerospikeMeshSeedAddressMaxLength {
+		return fmt.Errorf("the current combination of cluster and kubernetes namespace names cannot be used")
 	}
 
 	// validate the Aerospike version

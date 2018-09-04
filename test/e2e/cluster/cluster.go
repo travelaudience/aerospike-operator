@@ -18,12 +18,14 @@ package cluster
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/travelaudience/aerospike-operator/pkg/admission"
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
@@ -31,13 +33,35 @@ import (
 )
 
 func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *v1.Namespace) {
+	// create the name of the cluster by appending as many 'a' runes as necessary in order to exceed the limit
+	var sb strings.Builder
+	for sb.Len() <= admission.AerospikeClusterNameMaxLength {
+		sb.WriteRune('a')
+	}
+	// create the cluster and make sure we've got the expected error as a result
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Name = "one-really-lengthy-cluster-name-having-more-than-sixty-charss"
+	aerospikeCluster.Name = sb.String()
 	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	status := err.(*errors.StatusError)
 	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
-	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 60 characters"))
+	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 61 characters"))
+}
+
+func testCreateAerospikeClusterWithLengthyNameAndNamespace(tf *framework.TestFramework, ns *v1.Namespace) {
+	// create the name of the cluster by appending as many 'a' runes as necessary in order to exceed the limit
+	var sb strings.Builder
+	for 2*(sb.Len()+2)+len(ns.Name) <= admission.AerospikeMeshSeedAddressMaxLength {
+		sb.WriteRune('a')
+	}
+	// create the cluster and make sure we've got the expected error as a result
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Name = sb.String()
+	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).To(HaveOccurred())
+	status := err.(*errors.StatusError)
+	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
+	Expect(status.ErrStatus.Message).To(MatchRegexp("the current combination of cluster and kubernetes namespace names cannot be used"))
 }
 
 func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1.Namespace) {
