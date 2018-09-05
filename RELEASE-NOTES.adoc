@@ -16,33 +16,27 @@ endif::[]
 
 * Change in the API in order to support deletion of PVCs by the garbage collector.
 ** Add `persistentVolumeClaimTTL` field to <<./docs/design/api-spec.adoc#storagespec,StorageSpec>>.
-** **Action required:** Persistent volume claims created in previous versions of
-`aerospike-operator` will be replaced by new ones when a restart or upgrade
-operation is performed on an `AerospikeCluster` resource. To avoid losing data
-for Aerospike namespaces whose replication factor is equal to 1, one must
-create a backup of all Aerospike namespaces whose replication factor is equal to
-1 _before_ upgrading `aerospike-operator`. Then, _after_ upgrading
-`aerospike-operator`, one must restore these backups to new Aerospike clusters.
+** **Action required:** Persistent volume claims created in previous versions of `aerospike-operator` will be replaced by new ones when a restart or upgrade operation is performed on an `AerospikeCluster` resource. To avoid losing data for Aerospike namespaces whose replication factor is equal to 1, one must create a backup of all Aerospike namespaces whose replication factor is equal to 1 _before_ upgrading `aerospike-operator`. Then, _after_ upgrading `aerospike-operator`, one must restore these backups to new Aerospike clusters.
 
 === Improvements
 
-* Add support for deletion of expired resources via introduction of a
-<<./docs/design/garbage-collector.adoc#,garbage collector>>.
+* Add support for deletion of expired resources via introduction of a <<./docs/design/garbage-collector.adoc#,garbage collector>>.
 ** Support deletion of expired PVCs.
-** Support deletion of expired
-<<./docs/design/api-spec.adoc#aerospikeclusterbackupspec,AerospikeNamespaceBackups>>.
+** Support deletion of expired <<./docs/design/api-spec.adoc#aerospikeclusterbackupspec,AerospikeNamespaceBackups>>.
+* Introduced `asinit` as a replacement to `sed`.
+** The image for the init container has been switched from `busybox` to `quay.io/travelaudience/aerospike-operator-tools`.
+* `aerospike-operator` will now wait for a node to join the existing cluster before proceeding with restarting the next node during a rolling-restart or upgrade procedure.
 * Add support for Aerospike 4.2.0.10.
 * Use `aerospike/aerospike-client-go` 1.35.0.
 
 === Bug Fixes
 
-* Fixed a bug which might under rare circumstances cause a node to form a
-  separate cluster after being restarted.
+* Fixed a bug which might under rare circumstances cause a node to form a separate cluster after being restarted.
 
 === Documentation
 
-* _Design:_ Add the <<./docs/design/garbage-collection.adoc#,Garbage Collection>>
-design document.
+* _Design:_ Add the <<./docs/design/garbage-collection.adoc#,Garbage Collection>> design document.
+* _Design:_ Updated the <<./docs/design/architecture.adoc#,Architecture>> design document.
 
 == Changes in `0.8.0`
 
