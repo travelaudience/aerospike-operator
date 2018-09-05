@@ -41,12 +41,12 @@ can be found below:
 apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeNamespaceRestore
 metadata:
-  name: aerospike-backup-0
+  name: as-backup-0
   namespace: kubernetes-namespace-0
 spec:
   target:
-    cluster: aerospike-cluster-0
-    namespace: aerospike-namespace-0
+    cluster: as-cluster-0
+    namespace: as-namespace-0
   storage:
     type: gcs
     bucket: aerospike-backup
@@ -54,15 +54,15 @@ spec:
 ----
 
 Creating such a resource will cause `aerospike-operator` to restore a backup
-named `aerospike-backup-0` (the value of `.metadata.name`) to the Aerospike
-namespace `aerospike-namespace-0` of the `aerospike-cluster-0` Aerospike cluster
+named `as-backup-0` (the value of `.metadata.name`) to the Aerospike
+namespace `as-namespace-0` of the `as-cluster-0` Aerospike cluster
 in the `kubernetes-namespace-0` Kubernetes namespace. The named backup will be
 retrieved from the `aerospike-backup` GCS bucket using the `gcs-secret`. In
 practice, the following files will be retrieved from the bucket:
 
-* `aerospike-backup-0.asb.gz`: contains the Aerospike data itself, compressed in
+* `as-backup-0.asb.gz`: contains the Aerospike data itself, compressed in
   gzip format;
-* `aerospike-backup-0.json`: contains metadata about the backup operation.
+* `as-backup-0.json`: contains metadata about the backup operation.
 
 NOTE: The `.spec.storage` field is optional. If it is not provided, the value of
 `.spec.backupSpec` in the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>>
@@ -120,14 +120,14 @@ resource (or the associated events):
 
 [[source,bash]]
 ----
-$ kubectl -n kubernetes-namespace-0 describe aerospikenamespacerestore aerospike-backup-0
-Name:         aerospike-backup-0
+$ kubectl -n kubernetes-namespace-0 describe aerospikenamespacerestore as-backup-0
+Name:         as-backup-0
 Namespace:    kubernetes-namespace-0
 (...)
 Status:
   Conditions:
     Last Transition Time:  2018-07-02T15:52:45Z
-    Message:               restore job created as kubernetes-namespace-0/aerospike-backup-0-restore
+    Message:               restore job created as kubernetes-namespace-0/as-backup-0-restore
     Reason:
     Status:                True
     Type:                  RestoreStarted
@@ -139,40 +139,40 @@ Status:
 Events:
   Type    Reason       Age   From                       Message
   ----    ------       ----  ----                       -------
-  Normal  JobCreated   43s   aerospikenamespacerestore  restore job created as kubernetes-namespace-0/aerospike-backup-0-restore
+  Normal  JobCreated   43s   aerospikenamespacerestore  restore job created as kubernetes-namespace-0/as-backup-0-restore
   Normal  JobFinished  4s    aerospikenamespacerestore  restore job has finished
 ----
 
 In the example above, the name of the restore job is
-`aerospike-backup-0-restore`. The `RestoreFinished` condition in the status
+`as-backup-0-restore`. The `RestoreFinished` condition in the status
 field indicates that the restore was successfully performed. In the event of a
 failure with the restore operation, a `RestoreFailed` condition will be appended
 to this field. Inspecting the job resource and the associated pod (created by
-Kubernetes) will reveal additional details about the restore process itfself:
+Kubernetes) will reveal additional details about the restore process itself:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 get pods \        # Get pods in kubernetes-namespace-0.
-    --selector=job-name=aerospike-backup-0-restore \  # Filter results by job name.
-    --output=jsonpath={.items[0].metadata.name}       # Output the first matching pod's name.
-aerospike-backup-0-restore-jhwtd                      # Name of the pod created by the job.
+$ kubectl -n kubernetes-namespace-0 get pods \     # Get pods in kubernetes-namespace-0.
+    --selector=job-name=as-backup-0-restore \      # Filter results by job name.
+    --output=jsonpath={.items[0].metadata.name}    # Output the first matching pod's name.
+as-backup-0-restore-jhwtd                          # Name of the pod created by the job.
 ----
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 get pod aerospike-backup-0-restore-jhwtd
-NAME                               READY     STATUS      RESTARTS   AGE
-aerospike-backup-0-restore-jhwtd   0/1       Completed   0          5m
+$ kubectl -n kubernetes-namespace-0 get pod as-backup-0-restore-jhwtd
+NAME                        READY     STATUS      RESTARTS   AGE
+as-backup-0-restore-jhwtd   0/1       Completed   0          5m
 ----
 
-Inspecting the logs for the `aerospike-backup-0-restore-jhwtd` pod will output
+Inspecting the logs for the `as-backup-0-restore-jhwtd` pod will output
 important information about the restore process (including the logs for
 `asrestore`):
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 logs aerospike-backup-0-restore-jhwtd
+$ kubectl -n kubernetes-namespace-0 logs as-backup-0-restore-jhwtd
 time="2018-07-02T15:52:48Z" level=info msg="restore is starting"
-time="2018-07-02T15:52:49Z" level=info msg="2018-07-02 15:52:49 GMT [INF] [   16] Starting restore to aerospike-cluster-0.kubernetes-namespace-0 (bins: [all], sets: [all]) from [stdin]"
+time="2018-07-02T15:52:49Z" level=info msg="2018-07-02 15:52:49 GMT [INF] [   16] Starting restore to as-cluster-0.kubernetes-namespace-0 (bins: [all], sets: [all]) from [stdin]"
 (...)
 time="2018-07-02T15:53:23Z" level=info msg="2018-07-02 15:53:23 GMT [INF] [   34] Expired 0 : skipped 0 : inserted 1000000 : failed 0 (existed 0, fresher 0)"
 time="2018-07-02T15:53:23Z" level=info msg="restore is complete"
@@ -186,8 +186,8 @@ namespace, one may use `kubectl`:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikenamespacerestores
-NAME                                   AGE
-aerospike-namespace-0-20180702T1555Z   8m
+NAME                            AGE
+as-namespace-0-20180702T1555Z   8m
 ----
 
 One may also use the `asnr` short name instead of
@@ -196,8 +196,8 @@ One may also use the `asnr` short name instead of
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get asnr
-NAME                                   AGE
-aerospike-namespace-0-20180702T1555Z   8m
+NAME                            AGE
+as-namespace-0-20180702T1555Z   8m
 ----
 
 To list all `AerospikeNamespaceRestore` resources in the current Kubernetes
@@ -206,9 +206,9 @@ cluster, one may run
 [source,bash]
 ----
 $ kubectl get asnr --all-namespaces
-NAMESPACE                NAME                                   AGE
-kubernetes-namespace-0   aerospike-namespace-0-20180702T1555Z   8m
-kubernetes-namespace-1   aerospike-namespace-0-20180702T1557Z   2m
+NAMESPACE                NAME                            AGE
+kubernetes-namespace-0   as-namespace-0-20180702T1555Z   8m
+kubernetes-namespace-1   as-namespace-0-20180702T1557Z   2m
 ----
 
 === Deleting restores
@@ -217,7 +217,7 @@ Deleting an `AerospikeNamespaceRestore` resource can be done using `kubectl`:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 delete asnr aerospike-namespace-0-20180702T1555Z
+$ kubectl -n kubernetes-namespace-0 delete asnr as-namespace-0-20180702T1555Z
 ----
 
 NOTE: Deleting an `AerospikeNamespaceRestore` does not affect the source backup
@@ -236,11 +236,11 @@ Aerospike cluster:
 [source,bash]
 ----
 $ asrestore --no-config-file \
-    -h aerospike-cluster-0.kubernetes-namespace-0 \
-    -n aerospike-namespace-0 \
-    -i /tmp/aerospike-namespace-0.asb \
+    -h as-cluster-0.kubernetes-namespace-0 \
+    -n as-namespace-0 \
+    -i /tmp/as-namespace-0.asb \
     -v
-2018-07-02 15:58:49 GMT [INF] [   16] Starting restore to aerospike-cluster-0.kubernetes-namespace-0 (bins: [all], sets: [all]) from [/tmp/aerospike-namespace-0.asb]
+2018-07-02 15:58:49 GMT [INF] [   16] Starting restore to as-cluster-0.kubernetes-namespace-0 (bins: [all], sets: [all]) from [/tmp/as-namespace-0.asb]
 (...)
 2018-07-02 15:58:23 GMT [INF] [   34] Expired 0 : skipped 0 : inserted 1000000 : failed 0 (existed 0, fresher 0)
 ----

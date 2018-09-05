@@ -109,8 +109,8 @@ https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-con
 [source,bash]
 ----
 kubectl -n aerospike-operator get secrets
-NAME                     TYPE                DATA      AGE
-aerospike-operator-tls   kubernetes.io/tls   2         2m
+NAME                     TYPE                DATA    AGE
+aerospike-operator-tls   kubernetes.io/tls   2       2m
 (...)
 ----
 [source,bash]
@@ -143,10 +143,10 @@ The behaviour of `aerospike-operator` can be tweaked using command-line flags.
 The following flags are supported:
 
 |===
-| Flag                       | Default | Description
-| `--admission-enabled`      | `true` | Whether to enable the validating admission webhook.
-| `--debug`                  | `false` | Whether to enable debug mode.
-| `--kubeconfig`             | `""`    | Path to a kubeconfig. Only required if out-of-cluster.
+| Flag                  | Default | Description
+| `--admission-enabled` | `true`  | Whether to enable the validating admission webhook.
+| `--debug`             | `false` | Whether to enable debug mode.
+| `--kubeconfig`        | `""`    | Path to a kubeconfig. Only required if out-of-cluster.
 |===
 
 To set values for these flags, one should edit the deployment created in

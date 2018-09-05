@@ -82,19 +82,19 @@ same Kubernetes cluster.
 
 An example of an `AerospikeCluster` custom resource can be found below:
 
-[[aerospike-cluster-0-example]]
+[[as-cluster-0-example]]
 [source,yaml]
 ----
 apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeCluster
 metadata:
-  name: aerospike-cluster-0
+  name: as-cluster-0
   namespace: kubernetes-namespace-0
 spec:
   version: "4.2.0.3"
   nodeCount: 2
   namespaces:
-  - name: aerospike-namespace-0
+  - name: as-namespace-0
     replicationFactor: 2
     memorySize: 4G
     storage:
@@ -104,7 +104,7 @@ spec:
 ----
 
 Creating such a resource will make `aerospike-operator` create an Aerospike
-cluster named `aerospike-cluster-0` inside the `kubernetes-namespace-0`
+cluster named `as-cluster-0` inside the `kubernetes-namespace-0`
 Kubernetes
 namespace footnote:[The Kubernetes namespace, if different from `default`, must
 be created _before_ creating the `AerospikeCluster` resource.].
@@ -112,14 +112,14 @@ The resulting cluster will:
 
 * Have two nodes (pods) running Aerospike 4.2.0.3
   footnote:[Pods created by `aerospike-operator` are based on the official `aerospike/aerospike-server:<tag>` image].
-* Manage an Aerospike namespace called `aerospike-namespace-0`.
+* Manage an Aerospike namespace called `as-namespace-0`.
 
 WARNING: As described in the <<../design/api-spec.adoc#toc,API spec>> document,
 and even though `.spec.namespaces` is an array, `aerospike-operator` enforces
 the existence of a _single_ Aerospike namespace per Aerospike cluster. To create
 multiple Aerospike namespaces one should create multiple Aerospike clusters.
 
-In its turn, the `aerospike-namespace-0` Aerospike namespace managed by this
+In its turn, the `as-namespace-0` Aerospike namespace managed by this
 Aerospike cluster will:
 
 * Be configured to have a replication factor of two.
@@ -136,13 +136,13 @@ $ kubectl create -f - <<EOF
 apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeCluster
 metadata:
-  name: aerospike-cluster-0
+  name: as-cluster-0
   namespace: kubernetes-namespace-0
 spec:
   version: "4.2.0.3"
   nodeCount: 2
   namespaces:
-  - name: aerospike-namespace-0
+  - name: as-namespace-0
     replicationFactor: 2
     memorySize: 4G
     storage:
@@ -150,7 +150,7 @@ spec:
       size: 16G
       storageClassName: ssd
 EOF
-aerospikecluster.aerospike.travelaudience.com "aerospike-cluster-0" created
+aerospikecluster.aerospike.travelaudience.com "as-cluster-0" created
 ----
 
 After a few seconds, listing pods in the `kubernetes-namespace-0` Kubernetes
@@ -159,27 +159,27 @@ namespace will reveal two pods:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get pod
-NAME                    READY     STATUS    RESTARTS   AGE
-aerospike-cluster-0-0   2/2       Running   0          2m
-aerospike-cluster-0-1   2/2       Running   0          2m
+NAME             READY     STATUS    RESTARTS   AGE
+as-cluster-0-0   2/2       Running   0          2m
+as-cluster-0-1   2/2       Running   0          2m
 ----
 
-Each of these pods corresponds to an Aerospike node of the `aerospike-cluster-0`
+Each of these pods corresponds to an Aerospike node of the `as-cluster-0`
 Aerospike cluster, and features two containers: `aerospike-server` (the
 Aerospike server itself) and `asprom` (an exporter of Aerospike metrics in
 Prometheus format
 footnote:[https://github.com/alicebob/asprom.]). Inspecting the logs for the
 `aerospike-server` container of any of these pods will reveal a working Aerospike
-cluster with size two and a namespace named `aerospike-namespace-0`:
+cluster with size two and a namespace named `as-namespace-0`:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 logs -f aerospike-cluster-0-0 aerospike-server
+$ kubectl -n kubernetes-namespace-0 logs -f as-cluster-0-0 aerospike-server
 Jul 02 2018 14:01:23 GMT: INFO (as): (as.c:319) <><><><><><><><><><>  Aerospike Community Edition build 4.2.0.3  <><><><><><><><><><>
 (...)
 Jul 02 2018 14:02:03 GMT: INFO (info): (ticker.c:171) NODE-ID bb90a023c0a580a CLUSTER-SIZE 2
 (...)
-Jul 02 2018 14:02:03 GMT: INFO (info): (ticker.c:408) {aerospike-namespace-0} objects: all 0 master 0 prole 0 non-replica 0
+Jul 02 2018 14:02:03 GMT: INFO (info): (ticker.c:408) {as-namespace-0} objects: all 0 master 0 prole 0 non-replica 0
 (...)
 ---- 
 
@@ -191,12 +191,12 @@ discover Aerospike nodes and connect to the Aerospike cluster:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get svc
-NAME                  TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                      AGE
-aerospike-cluster-0   ClusterIP   None         <none>        3000/TCP,3002/TCP,9145/TCP   2m
+NAME           TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                      AGE
+as-cluster-0   ClusterIP   None         <none>        3000/TCP,3002/TCP,9145/TCP   2m
 ----
 
 At this point, pointing an Aerospike client at
-`aerospike-cluster-0.kubernetes-namespace-0.svc.cluster.local` will yield an
+`as-cluster-0.kubernetes-namespace-0.svc.cluster.local` will yield an
 output similar to the following, indicating a successful connection:
 
 [source,bash]
@@ -205,7 +205,7 @@ $ kubectl run --rm -i -t --restart Never \
     --image aerospike/aerospike-tools:3.15.3.10 \
     aerospike-tools \
     -- \
-    asinfo -h aerospike-cluster-0.kubernetes-namespace-0.svc.cluster.local
+    asinfo -h as-cluster-0.kubernetes-namespace-0.svc.cluster.local
 1 :  node
      BB907003C0A580A
 2 :  statistics
@@ -226,15 +226,15 @@ shown below:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 describe aerospikecluster aerospike-cluster-0
-Name:         aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 describe aerospikecluster as-cluster-0
+Name:         as-cluster-0
 Namespace:    kubernetes-namespace-0
 (...)
 Events:
   Type    Reason       Age   From              Message
   ----    ------       ----  ----              -------
-  Normal  NodeStarted  2m    aerospikecluster  aerospike started on pod kubernetes-namespace-0/aerospike-cluster-0-0
-  Normal  NodeStarted  2m    aerospikecluster  aerospike started on pod kubernetes-namespace-0/aerospike-cluster-0-1
+  Normal  NodeStarted  2m    aerospikecluster  aerospike started on pod kubernetes-namespace-0/as-cluster-0-0
+  Normal  NodeStarted  2m    aerospikecluster  aerospike started on pod kubernetes-namespace-0/as-cluster-0-1
 ----
 
 == Listing Aerospike clusters
@@ -245,8 +245,8 @@ To list all Aerospike clusters in a given Kubernetes namespace, one may use
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikeclusters
-NAME                  AGE
-aerospike-cluster-0   8m
+NAME           AGE
+as-cluster-0   8m
 ----
 
 One may also use the `asc` shorthand instead of `aerospikeclusters`, for
@@ -255,8 +255,8 @@ brevity:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get asc
-NAME                  AGE
-aerospike-cluster-0   8m
+NAME           AGE
+as-cluster-0   8m
 ----
 
 To list all Aerospike clusters in the current Kubernetes cluster (i.e. across
@@ -265,9 +265,9 @@ all Kubernetes namespaces), one may run
 [source,bash]
 ----
 $ kubectl get asc --all-namespaces
-NAMESPACE                NAME                  AGE
-kubernetes-namespace-0   aerospike-cluster-0   8m
-kubernetes-namespace-1   aerospike-cluster-1   4m
+NAMESPACE                NAME           AGE
+kubernetes-namespace-0   as-cluster-0   8m
+kubernetes-namespace-1   as-cluster-1   4m
 ----
 
 == Creating and deleting Aerospike namespaces
@@ -329,19 +329,19 @@ As load increases or decreases, one may want to scale a given Aerospike cluster
 up or down. Scaling an Aerospike cluster is done by editing the associated
 `AerospikeCluster` resource in order to update the value of the
 `.spec.nodeCount` field. For instance, setting `.spec.nodeCount` to three in the
-example <<aerospike-cluster-0-example,above>> will cause `aerospike-operator` to
+example <<as-cluster-0-example,above>> will cause `aerospike-operator` to
 create a new Aerospike node:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 edit asc aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 edit asc as-cluster-0
 (...)
-aerospikecluster.aerospike.travelaudience.com "aerospike-cluster-0" edited
+aerospikecluster.aerospike.travelaudience.com "as-cluster-0" edited
 $ kubectl -n kubernetes-namespace-0 get pod
-NAME                    READY     STATUS    RESTARTS   AGE
-aerospike-cluster-0-0   2/2       Running   0          8m
-aerospike-cluster-0-1   2/2       Running   0          8m
-aerospike-cluster-0-2   2/2       Running   0          2m
+NAME             READY     STATUS    RESTARTS   AGE
+as-cluster-0-0   2/2       Running   0          8m
+as-cluster-0-1   2/2       Running   0          8m
+as-cluster-0-2   2/2       Running   0          2m
 ----
 
 IMPORTANT: Update operations against a given `AerospikeCluster` resource
@@ -352,7 +352,7 @@ done using `kubectl edit` or `kubectl patch` and double-checked for changes to
 be updated inadvertently, and may leave the target `AerospikeCluster` resource
 in an inconsistent or inoperable state.
 
-At this point, inspecting the logs for the new `aerospike-cluster-0-2` pod will
+At this point, inspecting the logs for the new `as-cluster-0-2` pod will
 reveal that it has successfully joined the existing cluster:
 
 [source,bash]
@@ -369,18 +369,18 @@ Jul 02 2018 14:18:40 GMT: INFO (info): (ticker.c:353)    fabric-bytes-per-second
 ----
 
 In a similar way, setting `.spec.nodeCount` back to two will cause
-`aerospike-operator` to delete the `aerospike-cluster-0-2` pod:
+`aerospike-operator` to delete the `as-cluster-0-2` pod:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 edit asc aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 edit asc as-cluster-0
 (...)
-aerospikecluster.aerospike.travelaudience.com "aerospike-cluster-0" edited
+aerospikecluster.aerospike.travelaudience.com "as-cluster-0" edited
 $ kubectl -n kubernetes-namespace-0 get pod
-NAME                    READY     STATUS        RESTARTS   AGE
-aerospike-cluster-0-0   2/2       Running       0          10m
-aerospike-cluster-0-1   2/2       Running       0          10m
-aerospike-cluster-0-2   0/2       Terminating   0          4m
+NAME             READY     STATUS        RESTARTS   AGE
+as-cluster-0-0   2/2       Running       0          10m
+as-cluster-0-1   2/2       Running       0          10m
+as-cluster-0-2   0/2       Terminating   0          4m
 ----
 
 WARNING: It is not possible to set `.spec.nodeCount` to a value that is smaller
@@ -397,7 +397,7 @@ Deleting an Aerospike cluster is done by deleting the associated
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 delete asc aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 delete asc as-cluster-0
 ----
 
 IMPORTANT: Deleting an `AerospikeCluster` custom resource will cause all nodes

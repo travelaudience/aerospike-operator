@@ -14,13 +14,13 @@ pod:
 
 [source,bash]
 ----
-$ kubectl port-forward pod/aerospike-cluster-0-0 9145:9145
+$ kubectl port-forward pod/as-cluster-0-0 9145:9145
 Forwarding from 127.0.0.1:9145 -> 9145
 Forwarding from [::1]:9145 -> 9145
 ----
 
 At this point, a request to `http://127.0.0.1:9145/metrics` will output the
-metrics for the `aerospike-cluster-0-0` pod:
+metrics for the `as-cluster-0-0` pod:
 
 [source,bash]
 ----

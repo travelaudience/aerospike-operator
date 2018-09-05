@@ -70,9 +70,9 @@ footnote:[Assuming that the validating admission webhook has not been disabled.]
 
 [source,bash]
 ----
-$ kubectl edit asc aerospike-cluster-0
+$ kubectl edit asc as-cluster-0
 (...)
-error: aerospikeclusters "aerospike-cluster-0" could not be patched: admission webhook "aerospikeclusters.aerospike.travelaudience.com" denied the request: no value for .spec.backupSpec has been specified
+error: aerospikeclusters "as-cluster-0" could not be patched: admission webhook "aerospikeclusters.aerospike.travelaudience.com" denied the request: no value for .spec.backupSpec has been specified
 ----
 
 NOTE: The `.spec.backupSpec` field is only required if one intends to perform
@@ -149,7 +149,7 @@ previously been created:
 apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeCluster
 metadata:
-  name: aerospike-cluster-0
+  name: as-cluster-0
   namespace: kubernetes-namespace-0
 spec:
   backupSpec:
@@ -160,7 +160,7 @@ spec:
   version: "4.2.0.3"
   nodeCount: 2
   namespaces:
-  - name: aerospike-namespace-0
+  - name: as-namespace-0
     replicationFactor: 2
     memorySize: 1G
     defaultTTL: 0s
@@ -169,14 +169,14 @@ spec:
       size: 1G
 ----
 
-At this point, setting `.spec.version` to `4.2.0.4` in the `aerospike-cluster-0`
+At this point, setting `.spec.version` to `4.2.0.4` in the `as-cluster-0`
 resource will cause `aerospike-operator` to start the upgrade procedure:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 edit asc aerospike-cluster-0  # .spec.version was set to 4.2.0.4
+$ kubectl -n kubernetes-namespace-0 edit asc as-cluster-0  # .spec.version was set to 4.2.0.4
 (...)
-aerospikecluster.aerospike.travelaudience.com "aerospike-cluster-0" edited
+aerospikecluster.aerospike.travelaudience.com "as-cluster-0" edited
 ----
 
 After a few moments, an `AerospikeNamespaceBackup` resource will have been
@@ -186,12 +186,12 @@ the `AerospikeCluster` resource:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikenamespacebackups
-NAME                                      AGE
-aerospike-namespace-0-4203-4204-upgrade   2m
+NAME                                 AGE
+as-namespace-0-4203-4203-upgrade    2m
 ----
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 describe asc aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 describe asc as-cluster-0
 (...)
 Status:
   Conditions:
@@ -205,7 +205,7 @@ Events:
   Type    Reason                     Age   From              Message
   ----    ------                     ----  ----              -------
 (...)
-  Normal  ClusterUpgradeStarted      2m               aerospikecluster  cluster backup started
+  Normal  ClusterUpgradeStarted      2m    aerospikecluster  cluster backup started
 ----
 
 Depending on the size of the managed Aerospike namespace, it can take from a few
@@ -215,7 +215,7 @@ the `AerospikeCluster` resource:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 describe asc aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 describe asc as-cluster-0
 (...)
 Status:
   Conditions:
@@ -234,8 +234,8 @@ Events:
   Type    Reason                     Age   From              Message
   ----    ------                     ----  ----              -------
 (...)
-  Normal  ClusterUpgradeStarted      1h               aerospikecluster  cluster backup started
-  Normal  ClusterUpgradeStarted      2m               aerospikecluster  cluster backup finished
+  Normal  ClusterUpgradeStarted      1h    aerospikecluster  cluster backup started
+  Normal  ClusterUpgradeStarted      2m    aerospikecluster  cluster backup finished
 ----
 
 At this point, `aerospike-operator` will start working on the upgrade itself,
@@ -244,7 +244,7 @@ and a `ClusterUpgradeStarted` condition will be appended to the
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 describe asc aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 describe asc as-cluster-0
 (...)
 Status:
   Conditions:
@@ -268,9 +268,9 @@ Events:
   Type    Reason                     Age   From              Message
   ----    ------                     ----  ----              -------
 (...)
-  Normal  ClusterUpgradeStarted      1h               aerospikecluster  cluster backup started
-  Normal  ClusterUpgradeStarted      2m               aerospikecluster  cluster backup finished
-  Normal  ClusterUpgradeStarted      2m               aerospikecluster  upgrade from version 4.2.0.3 to 4.2.0.4 started
+  Normal  ClusterUpgradeStarted      1h    aerospikecluster  cluster backup started
+  Normal  ClusterUpgradeStarted      2m    aerospikecluster  cluster backup finished
+  Normal  ClusterUpgradeStarted      2m    aerospikecluster  upgrade from version 4.2.0.3 to 4.2.0.4 started
 ----
 
 As `aerospike-operator` progresses through each of the pods, it will report the
@@ -280,7 +280,7 @@ appended to the `AerospikeCluster` resource:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 describe asc aerospike-cluster-0
+$ kubectl -n kubernetes-namespace-0 describe asc as-cluster-0
 (...)
 Status:
   Conditions:
@@ -309,11 +309,11 @@ Events:
   Type    Reason                     Age   From              Message
   ----    ------                     ----  ----              -------
 (...)
-  Normal  ClusterUpgradeStarted      2h               aerospikecluster  cluster backup started
-  Normal  ClusterUpgradeStarted      1h               aerospikecluster  cluster backup finished
-  Normal  ClusterUpgradeStarted      1h               aerospikecluster  upgrade from version 4.2.0.3 to 4.2.0.4 started
+  Normal  ClusterUpgradeStarted      2h    aerospikecluster  cluster backup started
+  Normal  ClusterUpgradeStarted      1h    aerospikecluster  cluster backup finished
+  Normal  ClusterUpgradeStarted      1h    aerospikecluster  upgrade from version 4.2.0.3 to 4.2.0.4 started
 (...)
-  Normal  ClusterUpgradeFinished     2m               aerospikecluster  finished upgrade from version 4.2.0.3 to 4.2.0.4
+  Normal  ClusterUpgradeFinished     2m    aerospikecluster  finished upgrade from version 4.2.0.3 to 4.2.0.4
 ----
 
 At this point, all the pods that make up the Aerospike cluster will be running
@@ -321,7 +321,7 @@ the `4.2.0.4` version of Aerospike:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 logs aerospike-cluster-0-0
+$ kubectl -n kubernetes-namespace-0 logs as-cluster-0-0
 Jul 02 2018 16:10:03 GMT: INFO (as): (as.c:319) <><><><><><><><><><>  Aerospike Community Edition build 4.2.0.4  <><><><><><><><><><>
 (...)
 ----

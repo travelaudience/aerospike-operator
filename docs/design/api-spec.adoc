@@ -101,7 +101,7 @@ footnote:[Even though the `.spec.namespaces` field must have exactly one element
 
 ==== Validations
 
-* `version` must be a supported version. Currently only `4.2.0.3` and `4.2.0.4` are supported.
+* `version` must be a supported version. Check <<../../README.adoc#,README>> for a list of supported versions.
 * `nodeCount` must be an integer between 1 and 8. It must also be greater than or equal to the replication factor defined for the Aerospike namespace managed by a given Aerospike cluster.
 * `namespaces` must have **exactly one** `AerospikeNamespaceSpec` object.
 
@@ -123,7 +123,7 @@ spec:
         bucket: test-bucket
         secret: bucket-secret
   namespaces:
-  - name: aerospike-namespace-0
+  - name: as-namespace-0
     replicationFactor: 2
     memorySize: 4G
     defaultTTL: 0s
@@ -371,7 +371,7 @@ spec:
   version: "4.2.0.3"
   nodeCount: 5
   namespaces:
-  - name: aerospike-namespace-0
+  - name: as-namespace-0
     replicationFactor: 2
     memorySize: 4G
     defaultTTL: 0s
@@ -382,7 +382,7 @@ status:
   version: "4.2.0.3"
   nodeCount: 3
   namespaces:
-  - name: aerospike-namespace-0
+  - name: as-namespace-0
     replicationFactor: 2
     memorySize: 4G
     defaultTTL: 0s

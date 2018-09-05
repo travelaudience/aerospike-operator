@@ -101,7 +101,7 @@ persistent volume claims associated with the `AerospikeCluster` resource:
 ----
 (...)
   namespaces:
-  - name: aerospike-namespace-0
+  - name: as-namespace-0
     replicationFactor: 2
     memorySize: 4G
     defaultTTL: 0s

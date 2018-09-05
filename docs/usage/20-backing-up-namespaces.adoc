@@ -93,12 +93,12 @@ namespace. An example of such a resource can be found below:
 apiVersion: aerospike.travelaudience.com/v1alpha1
 kind: AerospikeNamespaceBackup
 metadata:
-  name: aerospike-backup-0
+  name: as-backup-0
   namespace: kubernetes-namespace-0
 spec:
   target:
-    cluster: aerospike-cluster-0
-    namespace: aerospike-namespace-0
+    cluster: as-cluster-0
+    namespace: as-namespace-0
   storage:
     type: gcs
     bucket: aerospike-backup
@@ -106,16 +106,16 @@ spec:
 ----
 
 Creating such a resource will cause `aerospike-operator` to create a backup for
-the `aerospike-namespace-0` namespace of the `aerospike-cluster-0` cluster, and
+the `as-namespace-0` namespace of the `as-cluster-0` cluster, and
 to upload it to the `aerospike-backup` GCS bucket using the credentials
 contained in the `gcs-secret` secret (as created
 <<aerospike-namespace-backup-secret,above>>). The resulting backup will be named
-`aerospike-backup-0`, and will result in two files being created in the
+`as-backup-0`, and will result in two files being created in the
 `aerospike-backup` bucket:
 
-* `aerospike-backup-0.asb.gz`: contains the Aerospike data itself, compressed in
+* `as-backup-0.asb.gz`: contains the Aerospike data itself, compressed in
   gzip format;
-* `aerospike-backup-0.json`: contains metadata about the backup operation.
+* `as-backup-0.json`: contains metadata about the backup operation.
 
 NOTE: The `.spec.storage` field is optional. If it is not provided, the value of
 `.spec.backupSpec` in the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>>
@@ -176,14 +176,14 @@ field of the `AerospikeNamespaceBackup` resource (or the associated events):
 
 [[source,bash]]
 ----
-$ kubectl -n kubernetes-namespace-0 describe aerospikenamespacebackup aerospike-backup-0
-Name:         aerospike-backup-0
+$ kubectl -n kubernetes-namespace-0 describe aerospikenamespacebackup as-backup-0
+Name:         as-backup-0
 Namespace:    kubernetes-namespace-0
 (...)
 Status:
   Conditions:
     Last Transition Time:  2018-07-02T14:48:21Z
-    Message:               backup job created as kubernetes-namespace-0/aerospike-backup-0-backup
+    Message:               backup job created as kubernetes-namespace-0/as-backup-0-backup
     Reason:
     Status:                True
     Type:                  BackupStarted
@@ -196,41 +196,41 @@ Status:
 Events:
   Type    Reason       Age   From                      Message
   ----    ------       ----  ----                      -------
-  Normal  JobCreated   5m    aerospikenamespacebackup  backup job created as kubernetes-namespace-0/aerospike-backup-0-backup
+  Normal  JobCreated   5m    aerospikenamespacebackup  backup job created as kubernetes-namespace-0/as-backup-0-backup
   Normal  JobFinished  4m    aerospikenamespacebackup  backup job has finished
 ----
 
-In the example above, the name of the backup job is `aerospike-backup-0-backup`.
+In the example above, the name of the backup job is `as-backup-0-backup`.
 The `BackupFinished` condition in the status field indicates that the backup was
 successfully performed and uploaded to cloud storage. In the event of a failure
 with either the creation or the upload of the backup, a `BackupFailed` condition
 will be appended to this field. Inspecting the job resource and the associated
 pod (created by Kubernetes) will reveal additional details about the backup
-process itfself:
+process itself:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 get pods \       # Get pods in kubernetes-namespace-0.
-    --selector=job-name=aerospike-backup-0-backup \  # Filter results by job name.
-    --output=jsonpath={.items[0].metadata.name}      # Output the first matching pod's name.
-aerospike-backup-0-backup-n6r9v                      # Name of the pod created by the job.
+$ kubectl -n kubernetes-namespace-0 get pods \    # Get pods in kubernetes-namespace-0.
+    --selector=job-name=as-backup-0-backup \      # Filter results by job name.
+    --output=jsonpath={.items[0].metadata.name}   # Output the first matching pod's name.
+as-backup-0-backup-n6r9v                          # Name of the pod created by the job.
 ----
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 get pod aerospike-backup-0-backup-n6r9v
+$ kubectl -n kubernetes-namespace-0 get pod as-backup-0-backup-n6r9v
 NAME                              READY     STATUS      RESTARTS   AGE
-aerospike-backup-0-backup-n6r9v   0/1       Completed   0          5m
+as-backup-0-backup-n6r9v          0/1       Completed   0          5m
 ----
 
-Inspecting the logs for the `aerospike-backup-0-backup-n6r9v` pod will output
+Inspecting the logs for the `as-backup-0-backup-n6r9v` pod will output
 important information about the backup process (including the logs for
 `asbackup`):
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 logs aerospike-backup-0-backup-n6r9v
+$ kubectl -n kubernetes-namespace-0 logs as-backup-0-backup-n6r9v
 time="2018-07-02T14:48:23Z" level=info msg="backup is starting"
-time="2018-07-02T14:48:24Z" level=info msg="2018-07-02 14:48:24 GMT [INF] [   18] Starting 100% backup of aerospike-cluster-0.kubernetes-namespace-0 (namespace: aerospike-namespace-0, set: [all], bins: [all], after: [none], before: [none]) to [stdout]"
+time="2018-07-02T14:48:24Z" level=info msg="2018-07-02 14:48:24 GMT [INF] [   18] Starting 100% backup of as-cluster-0.kubernetes-namespace-0 (namespace: as-namespace-0, set: [all], bins: [all], after: [none], before: [none]) to [stdout]"
 (...)
 time="2018-07-02T14:48:30Z" level=info msg="2018-07-02 14:48:30 GMT [INF] [   36] Backed up 1000000 record(s), 0 secondary index(es), 0 UDF file(s) from 2 node(s), 234000059 byte(s) in total (~234 B/rec)"
 time="2018-07-02T14:48:30Z" level=info msg="234000059 bytes written"
@@ -246,7 +246,7 @@ namespace, one may use `kubectl`:
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikenamespacebackups
 NAME                                   AGE
-aerospike-namespace-0-20180702T1451Z   8m
+as-namespace-0-20180702T1451Z          8m
 ----
 
 One may also use the `asnb` short name instead of
@@ -256,7 +256,7 @@ One may also use the `asnb` short name instead of
 ----
 $ kubectl -n kubernetes-namespace-0 get asnb
 NAME                                   AGE
-aerospike-namespace-0-20180702T1451Z   8m
+as-namespace-0-20180702T1451Z          8m
 ----
 
 To list all `AerospikeNamespaceBackup` resources in the current Kubernetes
@@ -266,8 +266,8 @@ cluster, one may run
 ----
 $ kubectl get asnb --all-namespaces
 NAMESPACE                NAME                                   AGE
-kubernetes-namespace-0   aerospike-namespace-0-20180702T1451Z   8m
-kubernetes-namespace-1   aerospike-namespace-0-20180702T1556Z   2m
+kubernetes-namespace-0   as-namespace-0-20180702T1451Z          8m
+kubernetes-namespace-1   as-namespace-0-20180702T1556Z          2m
 ----
 
 === Deleting backups
@@ -276,7 +276,7 @@ Deleting an `AerospikeNamespaceBackup` resource can be done using `kubectl`:
 
 [source,bash]
 ----
-$ kubectl -n kubernetes-namespace-0 delete asnb aerospike-namespace-0-20180702T1451Z
+$ kubectl -n kubernetes-namespace-0 delete asnb as-namespace-0-20180702T1451Z
 ----
 
 IMPORTANT: In order to prevent accidental deletion of important backup data,
@@ -295,11 +295,11 @@ the service created by `aerospike-operator` for the target Aerospike cluster:
 [source,bash]
 ----
 $ asbackup --no-config-file --no-cluster-change \
-    -h aerospike-cluster-0.kubernetes-namespace-0 \
-    -n aerospike-namespace-0 \
-    -o /tmp/aerospike-namespace-0.asb \
+    -h as-cluster-0.kubernetes-namespace-0 \
+    -n as-namespace-0 \
+    -o /tmp/as-namespace-0.asb \
     -v
-2018-07-02 14:54:52 GMT [INF] [    9] Starting 100% backup of aerospike-cluster-0.kubernetes-namespace-0 (namespace: aerospike-namespace-0, set: [all], bins: [all], after: [none], before: [none]) to /tmp/aerospike-namespace-0.asb
+2018-07-02 14:54:52 GMT [INF] [    9] Starting 100% backup of as-cluster-0.kubernetes-namespace-0 (namespace: as-namespace-0, set: [all], bins: [all], after: [none], before: [none]) to /tmp/as-namespace-0.asb
 (...)
 2018-07-02 14:54:56 GMT [INF] [   27] Backed up 1000000 record(s), 0 secondary index(es), 0 UDF file(s) from 2 node(s), 234000059 byte(s) in total (~234 B/rec)
 ----
