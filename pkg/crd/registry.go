@@ -19,8 +19,6 @@ package crd
 import (
 	"fmt"
 	"reflect"
-	"strconv"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -39,8 +37,6 @@ import (
 const (
 	// how long to wait for every crd to become ESTABLISHED before timing out
 	watchTimeout = 15 * time.Second
-	// how long to wait for endpoints for a given crd to be installed
-	waitCRDEndpointsTimeout = 30 * time.Second
 )
 
 // CRDRegistry registers our CRDs, waiting for them to be established.
@@ -67,20 +63,6 @@ func (r *CRDRegistry) RegisterCRDs() error {
 		// wait for the CustomResourceDefinition to be established
 		if err := r.awaitCRD(crd, watchTimeout); err != nil {
 			return err
-		}
-
-		// wait for CRD endpoints to be installed
-		// only needed for k8s versions prior to 1.11
-		// check https://github.com/kubernetes/kubernetes/issues/62725
-		if k8sVersion, err := r.extsClient.Discovery().ServerVersion(); err == nil {
-			if major, err := strconv.Atoi(k8sVersion.Major); err == nil && major == 1 {
-				if minor, err := strconv.Atoi(strings.TrimSuffix(k8sVersion.Minor, "+")); err == nil && minor < 11 {
-					// wait for the CRD endpoints to be ready
-					if err := r.waitCRDEndpointsReady(crd, waitCRDEndpointsTimeout); err != nil {
-						return err
-					}
-				}
-			}
 		}
 	}
 	return nil
@@ -175,33 +157,4 @@ func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition, timeou
 
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Info("crd established")
 	return nil
-}
-
-func (r *CRDRegistry) waitCRDEndpointsReady(crd *extsv1beta1.CustomResourceDefinition, timeout time.Duration) error {
-	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("waiting for crd endpoints to be ready")
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			if err := r.tryListCustomResources(crd); err == nil {
-				log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd endpoints ready")
-				return nil
-			}
-		case <-time.After(timeout):
-			return fmt.Errorf("timed out waiting for CRD endpoints to be ready")
-		}
-	}
-}
-
-func (r *CRDRegistry) tryListCustomResources(crd *extsv1beta1.CustomResourceDefinition) (err error) {
-	switch crd.Spec.Names.Kind {
-	case AerospikeClusterKind:
-		_, err = r.aerospikeClient.AerospikeV1alpha1().AerospikeClusters("").List(v1.ListOptions{})
-	case AerospikeNamespaceBackupKind:
-		_, err = r.aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceBackups("").List(v1.ListOptions{})
-	case AerospikeNamespaceRestoreKind:
-		_, err = r.aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores("").List(v1.ListOptions{})
-	}
-	return
 }

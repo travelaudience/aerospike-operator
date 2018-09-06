@@ -20,8 +20,6 @@ WARNING: `aerospike-operator` is currently _alpha_, and is under active developm
 
 * Kubernetes 1.11+
 
-WARNING: Running in Kubernetes 1.10 is still possible. However, not all features are supported or stable. Kubernetes 1.10 support will be dropped in the `0.10.0` release.
-
 == Supported versions
 
 `aerospike-operator` currently supports launching Aerospike clusters running the following Aerospike Server CE versions:

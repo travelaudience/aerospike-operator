@@ -10,9 +10,14 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
-== Changes in `0.9.0`
+== Changes in `0.10.0`
 
-WARNING: Running in Kubernetes 1.10 is still possible. However, not all features are supported or stable. Kubernetes 1.10 support will be dropped in the `0.10.0` release.
+=== Breaking changes
+
+* Dropped support for Kubernetes 1.10.
+
+
+== Changes in `0.9.0`
 
 === Breaking changes
 
