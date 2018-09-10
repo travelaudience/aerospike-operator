@@ -20,15 +20,19 @@ import (
 	"flag"
 	"testing"
 
+	"k8s.io/api/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
 func init() {
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file to be used")
-	flag.StringVar(&framework.GCSBucketName, "gcs-bucket-name", "", "the name of the GCS bucket to be used to store backups")
-	flag.StringVar(&framework.GCSSecretName, "gcs-secret-name", "", "the name of the secret containing the credentials to access the GCS bucket")
+	flag.StringVar(&framework.GCSBucketName, "gcs-bucket-name", "aerospike-operator", "the name of the GCS bucket to be used to store backups")
+	flag.StringVar(&framework.GCSSecretName, "gcs-secret-name", "aerospike-operator", "the name of the secret containing the credentials to access the GCS bucket")
+	flag.StringVar(&framework.GCSSecretNamespace, "gcs-secret-namespace", v1.NamespaceDefault, "the name of the namespace where the secret has been created")
+	flag.StringVar(&framework.GCSSecretKey, "gcs-secret-key", common.DefaultSecretFilename, "the name of the field in the secret containing the credentials to access the GCS bucket")
 	flag.Parse()
 }
 

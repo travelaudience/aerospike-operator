@@ -22,5 +22,7 @@
     -ginkgo.v \
 	-gcs-bucket-name="${GCS_BUCKET_NAME}" \
 	-gcs-secret-name="${GCS_SECRET_NAME}" \
+	-gcs-secret-namespace="${GCS_SECRET_NAMESPACE}" \
+	-gcs-secret-key="${GCS_SECRET_KEY}" \
 	-test.timeout="${TIMEOUT}" \
     -test.v

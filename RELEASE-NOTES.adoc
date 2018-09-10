@@ -22,6 +22,10 @@ endif::[]
 ** One is strongly adivsed to update their manifests to reflect this change (i.e. replacing `v1alpha1` with `v1alpha2`).
 * Added the `secretNamespace` and `secretKey` fiels to <<./docs/design/api-spec.adoc#backupstoragespec,BackupStorageSpec>>. This allows the secrets used to backup/restore to/from cloud storage to exist in a Kubernetes namespace different from the one holding the AerospikeCluster resource.
 
+=== Other
+
+* _Tests_: Introduced the `GCS_SECRET_NAMESPACE` and `GCS_SECRET_KEY` environment variables.
+
 == Changes in `0.9.0`
 
 === Breaking changes

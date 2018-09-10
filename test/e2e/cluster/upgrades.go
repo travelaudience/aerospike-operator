@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
@@ -36,11 +37,13 @@ func testReusePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework, n
 	// create an Aerospike cluster with required parameters
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Version = sourceVersion
-	aerospikeCluster.Spec.BackupSpec = &v1alpha1.AerospikeClusterBackupSpec{
-		Storage: v1alpha1.BackupStorageSpec{
-			Type:   v1alpha1.StorageTypeGCS,
-			Bucket: framework.GCSBucketName,
-			Secret: framework.GCSSecretName,
+	aerospikeCluster.Spec.BackupSpec = &aerospikev1alpha2.AerospikeClusterBackupSpec{
+		Storage: aerospikev1alpha2.BackupStorageSpec{
+			Type:            common.StorageTypeGCS,
+			Bucket:          framework.GCSBucketName,
+			Secret:          framework.GCSSecretName,
+			SecretNamespace: &framework.GCSSecretNamespace,
+			SecretKey:       &framework.GCSSecretKey,
 		},
 	}
 	aerospikeCluster.Spec.NodeCount = nodeCount
@@ -122,11 +125,13 @@ func testRecreatePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework
 	// create an Aerospike cluster with required parameters
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Version = sourceVersion
-	aerospikeCluster.Spec.BackupSpec = &v1alpha1.AerospikeClusterBackupSpec{
-		Storage: v1alpha1.BackupStorageSpec{
-			Type:   v1alpha1.StorageTypeGCS,
-			Bucket: framework.GCSBucketName,
-			Secret: framework.GCSSecretName,
+	aerospikeCluster.Spec.BackupSpec = &aerospikev1alpha2.AerospikeClusterBackupSpec{
+		Storage: aerospikev1alpha2.BackupStorageSpec{
+			Type:            common.StorageTypeGCS,
+			Bucket:          framework.GCSBucketName,
+			Secret:          framework.GCSSecretName,
+			SecretNamespace: &framework.GCSSecretNamespace,
+			SecretKey:       &framework.GCSSecretKey,
 		},
 	}
 	aerospikeCluster.Spec.NodeCount = nodeCount

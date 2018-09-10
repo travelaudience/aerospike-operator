@@ -215,7 +215,11 @@ running:
 
 [source,bash]
 ----
-$ GCS_BUCKET_NAME=<bucket-name> GCS_SECRET_NAME=aerospike-operator PROFILE=gke \
+$ GCS_BUCKET_NAME=<bucket-name> \
+  GCS_SECRET_NAME=aerospike-operator \
+  GCS_SECRET_NAMESPACE=<namespace> \
+  GCS_SECRET_KEY=<credentials-filename> \
+  PROFILE=gke \
   make test.e2e
 ----
 

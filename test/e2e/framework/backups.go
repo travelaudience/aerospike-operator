@@ -34,8 +34,10 @@ const (
 )
 
 var (
-	GCSBucketName string
-	GCSSecretName string
+	GCSBucketName      string
+	GCSSecretName      string
+	GCSSecretNamespace string
+	GCSSecretKey       string
 )
 
 func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, ttl *string) aerospikev1alpha2.AerospikeNamespaceBackup {
@@ -48,10 +50,12 @@ func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alph
 				Cluster:   cluster.Name,
 				Namespace: namespace,
 			},
-			Storage: &aerospikev1alpha1.BackupStorageSpec{
-				Type:   aerospikev1alpha1.StorageTypeGCS,
-				Bucket: GCSBucketName,
-				Secret: GCSSecretName,
+			Storage: &aerospikev1alpha2.BackupStorageSpec{
+				Type:            common.StorageTypeGCS,
+				Bucket:          GCSBucketName,
+				Secret:          GCSSecretName,
+				SecretNamespace: &GCSSecretNamespace,
+				SecretKey:       &GCSSecretKey,
 			},
 			TTL: ttl,
 		},
@@ -68,10 +72,12 @@ func (tf *TestFramework) NewAerospikeNamespaceRestoreGCS(cluster *aerospikev1alp
 				Cluster:   cluster.Name,
 				Namespace: namespace,
 			},
-			Storage: &aerospikev1alpha1.BackupStorageSpec{
-				Type:   aerospikev1alpha1.StorageTypeGCS,
-				Bucket: GCSBucketName,
-				Secret: GCSSecretName,
+			Storage: &aerospikev1alpha2.BackupStorageSpec{
+				Type:            common.StorageTypeGCS,
+				Bucket:          GCSBucketName,
+				Secret:          GCSSecretName,
+				SecretNamespace: &GCSSecretNamespace,
+				SecretKey:       &GCSSecretKey,
 			},
 		},
 	}
