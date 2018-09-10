@@ -24,7 +24,8 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
@@ -34,8 +35,8 @@ func testDeviceStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount 
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	ns1 := tf.NewAerospikeNamespaceWithDeviceStorage("aerospike-namespace-0", 1, 1, 0, nsSize)
-	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{ns1}
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{ns1}
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(res, nodeCount)
@@ -63,7 +64,7 @@ func testDeviceStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount 
 					Expect(err).NotTo(HaveOccurred())
 					t, err := c.GetNamespaceStorageEngine(ns1.Name)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(t).To(Equal(v1alpha1.StorageTypeDevice))
+					Expect(t).To(Equal(common.StorageTypeDevice))
 				}
 			}
 		}
@@ -74,8 +75,8 @@ func testFileStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount in
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	ns1 := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, nsSize)
-	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{ns1}
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{ns1}
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(res, nodeCount)
@@ -103,7 +104,7 @@ func testFileStorage(tf *framework.TestFramework, ns *v1.Namespace, nodeCount in
 					Expect(err).NotTo(HaveOccurred())
 					t, err := c.GetNamespaceStorageEngine(ns1.Name)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(t).To(Equal(v1alpha1.StorageTypeFile))
+					Expect(t).To(Equal(common.StorageTypeFile))
 				}
 			}
 		}
@@ -114,7 +115,7 @@ func testVolumeIsReused(tf *framework.TestFramework, ns *v1.Namespace, nodeCount
 	Expect(nodeCount).To(BeNumerically(">", 1))
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(res, nodeCount)

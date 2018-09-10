@@ -29,9 +29,9 @@ import (
 	batchlistersv1 "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/record"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
-	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
@@ -60,7 +60,7 @@ func New(kubeclientset kubernetes.Interface,
 }
 
 // Handle manages the lifecycle of the obj resource.
-func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha1.BackupRestoreObject) error {
+func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha2.BackupRestoreObject) error {
 	log.WithFields(log.Fields{
 		logfields.Kind: obj.GetKind(),
 		logfields.Key:  meta.Key(obj),
@@ -73,13 +73,13 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha1.BackupResto
 			logfields.Kind: obj.GetKind(),
 			logfields.Key:  meta.Key(obj),
 		}).Debug("no action is needed")
-		return nil
+		return h.clearSecrets(obj)
 	}
 
 	log.WithFields(log.Fields{
 		logfields.Kind: obj.GetKind(),
 		logfields.Key:  meta.Key(obj),
-	}).Infof("processing %s", obj.GetAction())
+	}).Infof("processing %s", obj.GetOperationType())
 
 	// get backupstoragespec from the "parent" aerospikecluster resource in case
 	// this field is not specified in the current resource
@@ -95,8 +95,13 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha1.BackupResto
 	j, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).Get(h.getJobName(obj))
 	if err != nil {
 		if errors.IsNotFound(err) {
+			// get the secret containing the credentials to access cloud storage
+			secret, err := h.getSecret(obj)
+			if err != nil {
+				return err
+			}
 			// the job doesn't exist yet, so create it
-			return h.launchJob(obj)
+			return h.launchJob(obj, secret)
 		}
 		return err
 	}
@@ -108,9 +113,9 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha1.BackupResto
 
 // launchJob performs a number of checks and launches the job associated with
 // obj.
-func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha1.BackupRestoreObject) error {
+func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha2.BackupRestoreObject, secret *v1.Secret) error {
 	// create the backup/restore job
-	job, err := h.createJob(obj)
+	job, err := h.createJob(obj, secret)
 	if err != nil {
 		return err
 	}
@@ -119,23 +124,23 @@ func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha1.BackupRe
 	log.WithFields(log.Fields{
 		logfields.Kind: obj.GetKind(),
 		logfields.Key:  meta.Key(obj),
-	}).Debugf("%s job created as %s", obj.GetAction(), meta.Key(job))
+	}).Debugf("%s job created as %s", obj.GetOperationType(), meta.Key(job))
 	// record an event indicating the current status
 	h.recorder.Eventf(obj.(runtime.Object),
 		v1.EventTypeNormal, events.ReasonJobCreated,
-		"%s job created as %s", obj.GetAction(), meta.Key(job))
+		"%s job created as %s", obj.GetOperationType(), meta.Key(job))
 	// append a condition to the resource indicating the current status
 	condition := apiextensions.CustomResourceDefinitionCondition{
 		Type:    obj.GetStartedConditionType(),
 		Status:  apiextensions.ConditionTrue,
-		Message: fmt.Sprintf("%s job created as %s", obj.GetAction(), meta.Key(job)),
+		Message: fmt.Sprintf("%s job created as %s", obj.GetOperationType(), meta.Key(job)),
 	}
 	return h.appendCondition(obj, condition)
 }
 
 // updateStatus checks the status of the job associated with obj and updates the
 // resource's status.
-func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha1.BackupRestoreObject, job *batch.Job) error {
+func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha2.BackupRestoreObject, job *batch.Job) error {
 	var condition batch.JobConditionType
 
 	// look for the complete of failed condition in the associated job
@@ -157,15 +162,15 @@ func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha1.Backu
 		log.WithFields(log.Fields{
 			logfields.Kind: obj.GetKind(),
 			logfields.Key:  meta.Key(obj),
-		}).Debugf("%s job has finished", obj.GetAction())
+		}).Debugf("%s job has finished", obj.GetOperationType())
 		// record an event indicating success
 		h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobFinished,
-			"%s job has finished", obj.GetAction())
+			"%s job has finished", obj.GetOperationType())
 		// append a condition to the resource's status indicating success
 		condition := apiextensions.CustomResourceDefinitionCondition{
 			Type:    obj.GetFinishedConditionType(),
 			Status:  apiextensions.ConditionTrue,
-			Message: fmt.Sprintf("%s job has finished", obj.GetAction()),
+			Message: fmt.Sprintf("%s job has finished", obj.GetOperationType()),
 		}
 		return h.appendCondition(obj, condition)
 	case batch.JobFailed:
@@ -173,15 +178,15 @@ func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha1.Backu
 		log.WithFields(log.Fields{
 			logfields.Kind: obj.GetKind(),
 			logfields.Key:  meta.Key(obj),
-		}).Debugf("%s job failed %d times", obj.GetAction(), job.Status.Failed)
+		}).Debugf("%s job failed %d times", obj.GetOperationType(), job.Status.Failed)
 		// record an event indicating failure
 		h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonJobFailed,
-			"%s job failed %d times", obj.GetAction(), job.Status.Failed)
+			"%s job failed %d times", obj.GetOperationType(), job.Status.Failed)
 		// append a condition to the resource's status indicating failure
 		condition := apiextensions.CustomResourceDefinitionCondition{
 			Type:    obj.GetFailedConditionType(),
 			Status:  apiextensions.ConditionTrue,
-			Message: fmt.Sprintf("%s job failed %d times", obj.GetAction(), job.Status.Failed),
+			Message: fmt.Sprintf("%s job failed %d times", obj.GetOperationType(), job.Status.Failed),
 		}
 		return h.appendCondition(obj, condition)
 	default:

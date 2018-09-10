@@ -44,7 +44,8 @@ import (
 	"k8s.io/client-go/util/cert"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike"
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
@@ -250,9 +251,15 @@ func (s *ValidatingAdmissionWebhook) ensureWebhookConfig(caBundle []byte) error 
 							admissionregistrationv1beta1.Update,
 						},
 						Rule: admissionregistrationv1beta1.Rule{
-							APIGroups:   []string{v1alpha1.SchemeGroupVersion.Group},
-							APIVersions: []string{v1alpha1.SchemeGroupVersion.Version},
-							Resources:   []string{crd.AerospikeClusterPlural},
+							APIGroups: []string{
+								aerospikev1alpha2.SchemeGroupVersion.Group,
+								aerospikev1alpha1.SchemeGroupVersion.Group,
+							},
+							APIVersions: []string{
+								aerospikev1alpha2.SchemeGroupVersion.Version,
+								aerospikev1alpha1.SchemeGroupVersion.Version,
+							},
+							Resources: []string{crd.AerospikeClusterPlural},
 						},
 					},
 				},
@@ -275,9 +282,15 @@ func (s *ValidatingAdmissionWebhook) ensureWebhookConfig(caBundle []byte) error 
 							admissionregistrationv1beta1.Update,
 						},
 						Rule: admissionregistrationv1beta1.Rule{
-							APIGroups:   []string{v1alpha1.SchemeGroupVersion.Group},
-							APIVersions: []string{v1alpha1.SchemeGroupVersion.Version},
-							Resources:   []string{crd.AerospikeNamespaceBackupPlural},
+							APIGroups: []string{
+								aerospikev1alpha2.SchemeGroupVersion.Group,
+								aerospikev1alpha1.SchemeGroupVersion.Group,
+							},
+							APIVersions: []string{
+								aerospikev1alpha2.SchemeGroupVersion.Version,
+								aerospikev1alpha1.SchemeGroupVersion.Version,
+							},
+							Resources: []string{crd.AerospikeNamespaceBackupPlural},
 						},
 					},
 				},
@@ -300,9 +313,15 @@ func (s *ValidatingAdmissionWebhook) ensureWebhookConfig(caBundle []byte) error 
 							admissionregistrationv1beta1.Update,
 						},
 						Rule: admissionregistrationv1beta1.Rule{
-							APIGroups:   []string{v1alpha1.SchemeGroupVersion.Group},
-							APIVersions: []string{v1alpha1.SchemeGroupVersion.Version},
-							Resources:   []string{crd.AerospikeNamespaceRestorePlural},
+							APIGroups: []string{
+								aerospikev1alpha2.SchemeGroupVersion.Group,
+								aerospikev1alpha1.SchemeGroupVersion.Group,
+							},
+							APIVersions: []string{
+								aerospikev1alpha2.SchemeGroupVersion.Version,
+								aerospikev1alpha1.SchemeGroupVersion.Version,
+							},
+							Resources: []string{crd.AerospikeNamespaceRestorePlural},
 						},
 					},
 				},

@@ -22,7 +22,8 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 )
@@ -32,7 +33,7 @@ type AerospikeClient struct {
 	host   string
 }
 
-func NewAerospikeClient(aerospikeCluster *v1alpha1.AerospikeCluster) (*AerospikeClient, error) {
+func NewAerospikeClient(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*AerospikeClient, error) {
 	svc := fmt.Sprintf("%s.%s", aerospikeCluster.Name, aerospikeCluster.Namespace)
 	c, err := as.NewClientWithPolicy(as.NewClientPolicy(), svc, 3000)
 	if err != nil {
@@ -114,10 +115,10 @@ func (ac *AerospikeClient) GetNamespaceStorageEngine(namespace string) (string, 
 	}
 	stats := asutils.ParseStatistics(r[infoCmd])
 	if _, ok := stats["storage-engine.device"]; ok {
-		return v1alpha1.StorageTypeDevice, nil
+		return common.StorageTypeDevice, nil
 	}
 	if _, ok := stats["storage-engine.file"]; ok {
-		return v1alpha1.StorageTypeFile, nil
+		return common.StorageTypeFile, nil
 	}
 	return "", fmt.Errorf("namespace has unknown storage type")
 }

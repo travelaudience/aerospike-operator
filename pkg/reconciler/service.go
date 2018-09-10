@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
@@ -31,7 +31,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
-func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) error {
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeCluster.Name,
@@ -42,7 +42,7 @@ func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
+					APIVersion:         aerospikev1alpha2.SchemeGroupVersion.String(),
 					Kind:               crd.AerospikeClusterKind,
 					Name:               aerospikeCluster.Name,
 					UID:                aerospikeCluster.UID,

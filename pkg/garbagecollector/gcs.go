@@ -19,20 +19,20 @@ package garbagecollector
 import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
 	"github.com/travelaudience/aerospike-operator/pkg/backuprestore/gcs"
 )
 
-func (h *AerospikeNamespaceBackupHandler) deleteBackupDataGCS(asBackup *aerospikev1alpha1.AerospikeNamespaceBackup) error {
+func (h *AerospikeNamespaceBackupHandler) deleteBackupDataGCS(asBackup *aerospikev1alpha2.AerospikeNamespaceBackup) error {
 	// get the secret containing the credentials to access the gcs bucket
-	secret, err := h.kubeclientset.CoreV1().Secrets(asBackup.Namespace).Get(asBackup.Spec.Storage.Secret, v1.GetOptions{})
+	namespace := asBackup.Spec.Storage.GetSecretNamespace(asBackup.Namespace)
+	secret, err := h.kubeclientset.CoreV1().Secrets(namespace).Get(asBackup.Spec.Storage.GetSecret(), v1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
 	// get gcs client
-	client, err := gcs.NewGCSClientFromJSON(secret.Data[backuprestore.SecretFilename])
+	client, err := gcs.NewGCSClientFromJSON(secret.Data[asBackup.Spec.Storage.GetSecretKey()])
 	if err != nil {
 		return err
 	}

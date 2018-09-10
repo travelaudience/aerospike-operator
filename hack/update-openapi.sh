@@ -24,8 +24,8 @@ SCRIPT_ROOT="$(dirname $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd))"
 # run openapi-gen
 ${GOPATH}/bin/openapi-gen \
   --go-header-file "${SCRIPT_ROOT}/hack/custom-boilerplate.go.txt" \
-  --input-dirs github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/runtime \
-  --output-package github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1
+  --input-dirs github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/runtime \
+  --output-package github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2
 
 # run hack/openapi.go
 go run ${SCRIPT_ROOT}/hack/update-openapi.go > ${SCRIPT_ROOT}/docs/design/swagger.json

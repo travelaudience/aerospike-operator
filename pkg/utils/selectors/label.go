@@ -18,6 +18,8 @@ package selectors
 
 import (
 	"k8s.io/apimachinery/pkg/labels"
+
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 )
 
 const (
@@ -36,6 +38,15 @@ func ResourcesByClusterName(name string) labels.Selector {
 	set := map[string]string{
 		LabelAppKey:     LabelAppVal,
 		LabelClusterKey: name,
+	}
+	return labels.SelectorFromSet(set)
+}
+
+// ResourcesByBackupRestoreObject returns a selector that matches all resources belonging to a given BackupRestoreObject.
+func ResourcesByBackupRestoreObject(obj aerospikev1alpha2.BackupRestoreObject) labels.Selector {
+	set := map[string]string{
+		LabelAppKey:                    LabelAppVal,
+		string(obj.GetOperationType()): obj.GetName(),
 	}
 	return labels.SelectorFromSet(set)
 }

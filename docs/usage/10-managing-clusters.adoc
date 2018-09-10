@@ -85,7 +85,7 @@ An example of an `AerospikeCluster` custom resource can be found below:
 [[as-cluster-0-example]]
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeCluster
 metadata:
   name: as-cluster-0
@@ -133,7 +133,7 @@ below:
 [source,bash]
 ----
 $ kubectl create -f - <<EOF
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeCluster
 metadata:
   name: as-cluster-0

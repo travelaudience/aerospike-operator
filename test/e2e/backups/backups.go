@@ -25,7 +25,7 @@ import (
 
 func testNamespaceBackupRestore(tf *framework.TestFramework, ns *v1.Namespace, nRecords int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
@@ -38,21 +38,21 @@ func testNamespaceBackupRestore(tf *framework.TestFramework, ns *v1.Namespace, n
 	c1.Close()
 
 	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, nil)
-	backup, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
+	backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForBackupRestoreCompleted(backup)
 	Expect(err).NotTo(HaveOccurred())
 
 	// NewAerospikeClusterWithDefault uses generated names. Hence, the restore is always made to a different cluster.
-	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	asRestore := tf.NewAerospikeNamespaceRestoreGCS(asc, asc.Spec.Namespaces[0].Name, backup)
-	restore, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(ns.Name).Create(&asRestore)
+	restore, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(ns.Name).Create(&asRestore)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForBackupRestoreCompleted(restore)
@@ -68,7 +68,7 @@ func testNamespaceBackupRestore(tf *framework.TestFramework, ns *v1.Namespace, n
 func testNamespaceRestoreFromDifferentNamespace(tf *framework.TestFramework, ns *v1.Namespace, nRecords int) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Namespaces[0] = tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1)
-	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
@@ -81,7 +81,7 @@ func testNamespaceRestoreFromDifferentNamespace(tf *framework.TestFramework, ns 
 	c1.Close()
 
 	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, nil)
-	backup, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
+	backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForBackupRestoreCompleted(backup)
@@ -91,14 +91,14 @@ func testNamespaceRestoreFromDifferentNamespace(tf *framework.TestFramework, ns 
 	aerospikeCluster.Spec.Namespaces[0] = tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 1)
 
 	// NewAerospikeClusterWithDefault uses generated names. Hence, the restore is always made to a different cluster.
-	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	asRestore := tf.NewAerospikeNamespaceRestoreGCS(asc, asc.Spec.Namespaces[0].Name, backup)
-	restore, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(ns.Name).Create(&asRestore)
+	restore, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(ns.Name).Create(&asRestore)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForBackupRestoreCompleted(restore)

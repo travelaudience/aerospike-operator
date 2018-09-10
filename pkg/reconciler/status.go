@@ -25,14 +25,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 )
 
 // updateStatus updates the status of aerospikeCluster to match the spec.
 // IMPORTANT this method MUST only be called after a successful reconcile
-func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) {
+func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) {
 	// update status to match the spec - the correctness of this is ensured by
 	// the reconcile loop
 	aerospikeCluster.Status.BackupSpec = aerospikeCluster.Spec.BackupSpec
@@ -42,7 +42,7 @@ func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1a
 }
 
 // patchCluster updates the status field of the aerospikeCluster
-func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha2.AerospikeCluster) error {
 	// return if there are no changes to patch
 	if reflect.DeepEqual(old, new) {
 		return nil
@@ -55,11 +55,11 @@ func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha1.Ae
 	if err != nil {
 		return err
 	}
-	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha1.AerospikeCluster{})
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha2.AerospikeCluster{})
 	if err != nil {
 		return err
 	}
-	_, err = r.aerospikeclientset.AerospikeV1alpha1().AerospikeClusters(old.Namespace).Patch(old.Name, types.MergePatchType, patchBytes)
+	_, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(old.Namespace).Patch(old.Name, types.MergePatchType, patchBytes)
 	if err != nil {
 		return err
 	}
@@ -71,13 +71,13 @@ func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha1.Ae
 
 // appendCondition appends the specified condition to the aerospikeCluster
 // object
-func appendCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, condition apiextensions.CustomResourceDefinitionCondition) {
+func appendCondition(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, condition apiextensions.CustomResourceDefinitionCondition) {
 	aerospikeCluster.Status.Conditions = append(aerospikeCluster.Status.Conditions, condition)
 }
 
 // setAerospikeClusterAnnotation sets an annotation with the specified key and value in the
-// aerospikeCluster object
-func setAerospikeClusterAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key, value string) {
+// aerospikecluster object
+func setAerospikeClusterAnnotation(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, key, value string) {
 	if aerospikeCluster.ObjectMeta.Annotations == nil {
 		aerospikeCluster.ObjectMeta.Annotations = make(map[string]string)
 	}
@@ -85,7 +85,7 @@ func setAerospikeClusterAnnotation(aerospikeCluster *aerospikev1alpha1.Aerospike
 }
 
 // removeAerospikeClusterAnnotation removes the annotation with the specified key from the
-// aerospikeCluster object
-func removeAerospikeClusterAnnotation(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, key string) {
+// aerospikecluster object
+func removeAerospikeClusterAnnotation(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, key string) {
 	delete(aerospikeCluster.ObjectMeta.Annotations, key)
 }

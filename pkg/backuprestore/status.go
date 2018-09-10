@@ -25,10 +25,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 )
 
-func (h *AerospikeBackupRestoreHandler) appendCondition(obj aerospikev1alpha1.BackupRestoreObject, condition apiextensions.CustomResourceDefinitionCondition) error {
+func (h *AerospikeBackupRestoreHandler) appendCondition(obj aerospikev1alpha2.BackupRestoreObject, condition apiextensions.CustomResourceDefinitionCondition) error {
 	oldBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -42,28 +43,28 @@ func (h *AerospikeBackupRestoreHandler) appendCondition(obj aerospikev1alpha1.Ba
 		return err
 	}
 
-	switch obj.GetAction() {
-	case aerospikev1alpha1.ActionTypeBackup:
-		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha1.AerospikeNamespaceBackup{})
+	switch obj.GetOperationType() {
+	case common.OperationTypeBackup:
+		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha2.AerospikeNamespaceBackup{})
 		if err != nil {
 			return err
 		}
-		if _, err = h.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceBackups(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
+		if _, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
 			return err
 		}
-	case aerospikev1alpha1.ActionTypeRestore:
-		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha1.AerospikeNamespaceRestore{})
+	case common.OperationTypeRestore:
+		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha2.AerospikeNamespaceRestore{})
 		if err != nil {
 			return err
 		}
-		if _, err = h.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceRestores(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
+		if _, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (h *AerospikeBackupRestoreHandler) isFailedOrFinished(obj aerospikev1alpha1.BackupRestoreObject) bool {
+func (h *AerospikeBackupRestoreHandler) isFailedOrFinished(obj aerospikev1alpha2.BackupRestoreObject) bool {
 	for _, c := range obj.GetConditions() {
 		if (c.Type == obj.GetFinishedConditionType() || c.Type == obj.GetFailedConditionType()) && c.Status == apiextensions.ConditionTrue {
 			return true

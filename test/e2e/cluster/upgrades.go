@@ -24,7 +24,7 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
@@ -45,10 +45,10 @@ func testReusePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework, n
 	}
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = pointers.NewInt32(2)
-	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
-	// wait until the Aerospiek cluster is ready
+	// wait until the Aerospike cluster is ready
 	err = tf.WaitForClusterNodeCount(asc, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -64,7 +64,7 @@ func testReusePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework, n
 	c1.Close()
 
 	// get the latest version of the aerospikecluster resource
-	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
+	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	// upgrade Aerospike cluster to targetVersion
@@ -105,11 +105,11 @@ func testReusePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework, n
 
 	// check if an AerospikeNamespaceBackup exists for each of the namespaces of the Aerospike cluster
 	for _, namespace := range asc.Spec.Namespaces {
-		backup, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceBackups(ns.Name).Get(reconciler.GetBackupName(namespace.Name, sourceVersion, targetVersion), metav1.GetOptions{})
+		backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Get(reconciler.GetBackupName(namespace.Name, sourceVersion, targetVersion), metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		completed := false
 		for _, condition := range backup.Status.Conditions {
-			if condition.Type == v1alpha1.ConditionBackupFinished &&
+			if condition.Type == common.ConditionBackupFinished &&
 				condition.Status == apiextensions.ConditionTrue {
 				completed = true
 			}
@@ -131,10 +131,10 @@ func testRecreatePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework
 	}
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	aerospikeCluster.Spec.Namespaces[0].ReplicationFactor = pointers.NewInt32(2)
-	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
-	// wait until the Aerospiek cluster is ready
+	// wait until the Aerospike cluster is ready
 	err = tf.WaitForClusterNodeCount(asc, nodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -150,7 +150,7 @@ func testRecreatePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework
 	c1.Close()
 
 	// get the latest version of the aerospikecluster resource
-	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
+	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	// upgrade Aerospike cluster to targetVersion
@@ -191,11 +191,11 @@ func testRecreatePVCsAndNoDataLossOnAerospikeUpgrade(tf *framework.TestFramework
 
 	// check if an AerospikeNamespaceBackup exists for each of the namespaces of the Aerospike cluster
 	for _, namespace := range asc.Spec.Namespaces {
-		backup, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeNamespaceBackups(ns.Name).Get(reconciler.GetBackupName(namespace.Name, sourceVersion, targetVersion), metav1.GetOptions{})
+		backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Get(reconciler.GetBackupName(namespace.Name, sourceVersion, targetVersion), metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		completed := false
 		for _, condition := range backup.Status.Conditions {
-			if condition.Type == v1alpha1.ConditionBackupFinished &&
+			if condition.Type == common.ConditionBackupFinished &&
 				condition.Status == apiextensions.ConditionTrue {
 				completed = true
 			}

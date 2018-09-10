@@ -24,14 +24,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/errors"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
-func (r *AerospikeClusterReconciler) backupCluster(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) backupCluster(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) error {
 	// create a backup of each namespace specified in .spec.namespaces
 	for _, namespace := range aerospikeCluster.Spec.Namespaces {
 		if err := r.createNamespaceBackup(aerospikeCluster, namespace.Name); err != nil {
@@ -41,7 +42,7 @@ func (r *AerospikeClusterReconciler) backupCluster(aerospikeCluster *aerospikev1
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) isClusterBackupFinished(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (bool, error) {
+func (r *AerospikeClusterReconciler) isClusterBackupFinished(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (bool, error) {
 	// if the backup of one of the namespaces have not finished, return false
 	for _, namespace := range aerospikeCluster.Spec.Namespaces {
 		if finished, err := r.isBackupCompleted(aerospikeCluster, namespace.Name); err != nil {
@@ -53,8 +54,8 @@ func (r *AerospikeClusterReconciler) isClusterBackupFinished(aerospikeCluster *a
 	return true, nil
 }
 
-func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ns string) error {
-	backup := aerospikev1alpha1.AerospikeNamespaceBackup{
+func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, ns string) error {
+	backup := aerospikev1alpha2.AerospikeNamespaceBackup{
 		ObjectMeta: v1.ObjectMeta{
 			Name: GetBackupName(ns, aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version),
 			Labels: map[string]string{
@@ -65,7 +66,7 @@ func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aer
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
+					APIVersion:         aerospikev1alpha2.SchemeGroupVersion.String(),
 					Kind:               crd.AerospikeClusterKind,
 					Name:               aerospikeCluster.Name,
 					UID:                aerospikeCluster.UID,
@@ -74,24 +75,30 @@ func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aer
 				},
 			},
 		},
-		Spec: aerospikev1alpha1.AerospikeNamespaceBackupSpec{
-			Target: aerospikev1alpha1.TargetNamespace{
+		Spec: aerospikev1alpha2.AerospikeNamespaceBackupSpec{
+			Target: aerospikev1alpha2.TargetNamespace{
 				Cluster:   aerospikeCluster.Name,
 				Namespace: ns,
 			},
-			Storage: &aerospikeCluster.Spec.BackupSpec.Storage,
-			TTL:     aerospikeCluster.Spec.BackupSpec.TTL,
+			Storage: &aerospikev1alpha2.BackupStorageSpec{
+				Type:            aerospikeCluster.Spec.BackupSpec.Storage.Type,
+				Bucket:          aerospikeCluster.Spec.BackupSpec.Storage.Bucket,
+				Secret:          aerospikeCluster.Spec.BackupSpec.Storage.GetSecret(),
+				SecretNamespace: aerospikeCluster.Spec.BackupSpec.Storage.SecretNamespace,
+				SecretKey:       aerospikeCluster.Spec.BackupSpec.Storage.SecretKey,
+			},
+			TTL: aerospikeCluster.Spec.BackupSpec.TTL,
 		},
 	}
 
-	_, err := r.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceBackups(aerospikeCluster.Namespace).Create(&backup)
+	_, err := r.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(aerospikeCluster.Namespace).Create(&backup)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) isBackupCompleted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ns string) (bool, error) {
+func (r *AerospikeClusterReconciler) isBackupCompleted(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, ns string) (bool, error) {
 	// get the AerospikeNamespaceBackup resource
 	backup, err := r.aerospikeBackupsLister.AerospikeNamespaceBackups(aerospikeCluster.Namespace).Get(GetBackupName(ns, aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version))
 	if err != nil {
@@ -100,10 +107,10 @@ func (r *AerospikeClusterReconciler) isBackupCompleted(aerospikeCluster *aerospi
 
 	// look for ConditionBackupFinished
 	for _, condition := range backup.Status.Conditions {
-		if condition.Type == aerospikev1alpha1.ConditionBackupFinished &&
+		if condition.Type == common.ConditionBackupFinished &&
 			condition.Status == apiextensions.ConditionTrue {
 			return true, nil
-		} else if condition.Type == aerospikev1alpha1.ConditionBackupFailed &&
+		} else if condition.Type == common.ConditionBackupFailed &&
 			condition.Status == apiextensions.ConditionTrue {
 			return false, errors.ClusterBackupFailed
 		}

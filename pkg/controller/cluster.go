@@ -29,7 +29,7 @@ import (
 
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
-	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
 )
 
@@ -61,8 +61,8 @@ func NewAerospikeClusterController(
 	serviceInformer := kubeInformerFactory.Core().V1().Services()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	scInformer := kubeInformerFactory.Storage().V1().StorageClasses()
-	aerospikeClusterInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeClusters()
-	aerospikeNamespaceBackupInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeNamespaceBackups()
+	aerospikeClusterInformer := aerospikeInformerFactory.Aerospike().V1alpha2().AerospikeClusters()
+	aerospikeNamespaceBackupInformer := aerospikeInformerFactory.Aerospike().V1alpha2().AerospikeNamespaceBackups()
 
 	// obtain references to listers for the required types
 	podsLister := podInformer.Lister()

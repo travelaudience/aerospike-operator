@@ -50,7 +50,7 @@ is similar in structure and semantics to the `.spec.storage` field of an
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeCluster
 (...)
 spec:
@@ -59,8 +59,18 @@ spec:
       type: gcs
       bucket: aerospike-backup
       secret: gcs-secret
+      secretNamespace: kubernetes-namespace-0
+      secretKey: key.json
   (...)
 ----
+
+NOTE: `secretNamespace` must be set to the name of the Kubernetes namespace
+where the secret to be used exists. It is an optional field that defaults
+to the name of the Kubernetes namespace the `AerospikeCluster` resource belongs to.
+
+NOTE: `secretKey` must be set to the name of the field inside the secret that
+contains the credentials to be used. It is also an optional field and defaults
+to `key.json`.
 
 The `.spec.backupSpec` field can be specified either when first creating the
 `AerospikeCluster` resource or at a later time by updating it (e.g. using
@@ -146,7 +156,7 @@ previously been created:
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeCluster
 metadata:
   name: as-cluster-0

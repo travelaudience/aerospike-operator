@@ -30,7 +30,7 @@ import (
 
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
-	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/garbagecollector"
 )
 
@@ -61,7 +61,7 @@ func NewGarbageCollectorController(
 	aerospikeInformerFactory aerospikeinformers.SharedInformerFactory) *AerospikeGarbageCollectorController {
 
 	// obtain references to shared informers for the required types
-	aerospikeNamespaceBackupInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeNamespaceBackups()
+	aerospikeNamespaceBackupInformer := aerospikeInformerFactory.Aerospike().V1alpha2().AerospikeNamespaceBackups()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	// obtain references to listers for the required types

@@ -77,6 +77,8 @@ rules:
   verbs:
   - create
   - get
+  - list
+  - delete
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -129,6 +131,7 @@ rules:
   resources:
   - aerospikenamespacerestores
   verbs:
+  - get
   - list
   - patch
   - watch

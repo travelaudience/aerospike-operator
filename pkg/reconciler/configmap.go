@@ -26,7 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
@@ -35,7 +36,7 @@ import (
 	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
-func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*v1.ConfigMap, error) {
+func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*v1.ConfigMap, error) {
 	// grab the desired configmap object
 	desiredConfigMap := buildConfigMap(aerospikeCluster)
 	// try to actually create the configmap resource
@@ -56,7 +57,7 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 	}
 }
 
-func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, desiredConfigMap *v1.ConfigMap) (*v1.ConfigMap, error) {
+func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, desiredConfigMap *v1.ConfigMap) (*v1.ConfigMap, error) {
 	// get the current configmap resource
 	currentConfigMap, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(desiredConfigMap.Name)
 	if err != nil {
@@ -90,7 +91,7 @@ func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospike
 	}
 }
 
-func buildConfig(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) string {
+func buildConfig(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) string {
 	var namespacesConfig []string
 
 	for index, namespace := range aerospikeCluster.Spec.Namespaces {
@@ -105,7 +106,7 @@ func buildConfig(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) string {
 	return configMapBuffer.String()
 }
 
-func buildConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) *v1.ConfigMap {
+func buildConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) *v1.ConfigMap {
 	// build the aerospike config file based on the current spec
 	aerospikeConfig := buildConfig(aerospikeCluster)
 	// return a configmap object containing aerospikeConfig
@@ -119,7 +120,7 @@ func buildConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) *v1.Co
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
+					APIVersion:         aerospikev1alpha2.SchemeGroupVersion.String(),
 					Kind:               crd.AerospikeClusterKind,
 					Name:               aerospikeCluster.Name,
 					UID:                aerospikeCluster.UID,
@@ -135,7 +136,7 @@ func buildConfigMap(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) *v1.Co
 	}
 }
 
-func getClusterProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, namespacesConfig []string) map[string]interface{} {
+func getClusterProps(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, namespacesConfig []string) map[string]interface{} {
 	return map[string]interface{}{
 		serviceNodeIdKey:            ServiceNodeIdValue,
 		clusterNamespacesKey:        namespacesConfig,
@@ -143,7 +144,7 @@ func getClusterProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, names
 	}
 }
 
-func getNamespaceProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, index int, namespace *aerospikev1alpha1.AerospikeNamespaceSpec) map[string]interface{} {
+func getNamespaceProps(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, index int, namespace *aerospikev1alpha2.AerospikeNamespaceSpec) map[string]interface{} {
 	props := make(map[string]interface{})
 
 	props[nsNameKey] = namespace.Name
@@ -170,10 +171,10 @@ func getNamespaceProps(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, ind
 
 	props[nsStorageTypeKey] = namespace.Storage.Type
 
-	if namespace.Storage.Type == aerospikev1alpha1.StorageTypeFile {
+	if namespace.Storage.Type == common.StorageTypeFile {
 		props[nsStorageSizeKey] = namespace.Storage.Size
 		props[nsFilePath] = defaultFilePath
-	} else if namespace.Storage.Type == aerospikev1alpha1.StorageTypeDevice {
+	} else if namespace.Storage.Type == common.StorageTypeDevice {
 		props[nsDevicePath] = getIndexBasedDevicePath(index)
 	}
 

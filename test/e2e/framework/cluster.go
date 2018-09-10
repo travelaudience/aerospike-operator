@@ -23,7 +23,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
@@ -34,12 +36,12 @@ const (
 	clusterPrefix = "as-cluster-e2e-"
 )
 
-func (tf *TestFramework) NewAerospikeCluster(version string, nodeCount int32, namespaces []aerospikev1alpha1.AerospikeNamespaceSpec) aerospikev1alpha1.AerospikeCluster {
-	return aerospikev1alpha1.AerospikeCluster{
+func (tf *TestFramework) NewAerospikeCluster(version string, nodeCount int32, namespaces []aerospikev1alpha2.AerospikeNamespaceSpec) aerospikev1alpha2.AerospikeCluster {
+	return aerospikev1alpha2.AerospikeCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: clusterPrefix,
 		},
-		Spec: aerospikev1alpha1.AerospikeClusterSpec{
+		Spec: aerospikev1alpha2.AerospikeClusterSpec{
 			Version:    version,
 			NodeCount:  nodeCount,
 			Namespaces: namespaces,
@@ -47,40 +49,40 @@ func (tf *TestFramework) NewAerospikeCluster(version string, nodeCount int32, na
 	}
 }
 
-func (tf *TestFramework) NewAerospikeClusterWithDefaults() aerospikev1alpha1.AerospikeCluster {
+func (tf *TestFramework) NewAerospikeClusterWithDefaults() aerospikev1alpha2.AerospikeCluster {
 	aerospikeNamespace := tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1)
 	latestVersion := versioning.AerospikeServerSupportedVersions[len(versioning.AerospikeServerSupportedVersions)-1]
-	return tf.NewAerospikeCluster(latestVersion, 1, []aerospikev1alpha1.AerospikeNamespaceSpec{aerospikeNamespace})
+	return tf.NewAerospikeCluster(latestVersion, 1, []aerospikev1alpha2.AerospikeNamespaceSpec{aerospikeNamespace})
 }
 
-func (tf *TestFramework) NewAerospikeNamespaceWithDeviceStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha1.AerospikeNamespaceSpec {
-	return aerospikev1alpha1.AerospikeNamespaceSpec{
+func (tf *TestFramework) NewAerospikeNamespaceWithDeviceStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha2.AerospikeNamespaceSpec {
+	return aerospikev1alpha2.AerospikeNamespaceSpec{
 		Name:              name,
 		ReplicationFactor: &replicationFactor,
 		MemorySize:        pointers.NewString(fmt.Sprintf("%dG", memorySizeGB)),
 		DefaultTTL:        pointers.NewString(fmt.Sprintf("%ds", defaultTTLSeconds)),
-		Storage: aerospikev1alpha1.StorageSpec{
-			Type: aerospikev1alpha1.StorageTypeDevice,
+		Storage: aerospikev1alpha2.StorageSpec{
+			Type: common.StorageTypeDevice,
 			Size: fmt.Sprintf("%dG", storageSizeGB),
 		},
 	}
 }
 
-func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha1.AerospikeNamespaceSpec {
-	return aerospikev1alpha1.AerospikeNamespaceSpec{
+func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha2.AerospikeNamespaceSpec {
+	return aerospikev1alpha2.AerospikeNamespaceSpec{
 		Name:              name,
 		ReplicationFactor: &replicationFactor,
 		MemorySize:        pointers.NewString(fmt.Sprintf("%dG", memorySizeGB)),
 		DefaultTTL:        pointers.NewString(fmt.Sprintf("%ds", defaultTTLSeconds)),
-		Storage: aerospikev1alpha1.StorageSpec{
-			Type: aerospikev1alpha1.StorageTypeFile,
+		Storage: aerospikev1alpha2.StorageSpec{
+			Type: common.StorageTypeFile,
 			Size: fmt.Sprintf("%dG", storageSizeGB),
 		},
 	}
 }
 
-func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, fn watch.ConditionFunc, timeout time.Duration) error {
-	w, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Watch(listoptions.ObjectByName(aerospikeCluster.Name))
+func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, fn watch.ConditionFunc, timeout time.Duration) error {
+	w, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Watch(listoptions.ObjectByName(aerospikeCluster.Name))
 	if err != nil {
 		return err
 	}
@@ -100,37 +102,69 @@ func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1al
 	return nil
 }
 
-func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, nodeCount int32) error {
+func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32) error {
 	return tf.WaitForClusterCondition(aerospikeCluster, func(event watch.Event) (bool, error) {
 		// grab the current cluster object from the event
-		obj := event.Object.(*aerospikev1alpha1.AerospikeCluster)
+		obj := event.Object.(*aerospikev1alpha2.AerospikeCluster)
 		// search for the current node count
 		return obj.Status.NodeCount == nodeCount, nil
 	}, watchTimeout)
 }
 
-func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, nodeCount int32) error {
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
+func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32) error {
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	res.Spec.NodeCount = nodeCount
-	res, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(res.Namespace).Update(res)
+	res, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(res.Namespace).Update(res)
 	if err != nil {
 		return err
 	}
 	return tf.WaitForClusterNodeCount(res, nodeCount)
 }
 
-func (tf *TestFramework) ChangeNamespaceMemorySizeAndScaleClusterAndWait(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, newMemorySizeGB int, nodeCount int32) error {
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
+func (tf *TestFramework) ChangeNamespaceMemorySizeAndScaleClusterAndWait(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, newMemorySizeGB int, nodeCount int32) error {
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	res.Spec.Namespaces[0].MemorySize = pointers.NewString(fmt.Sprintf("%dG", newMemorySizeGB))
 	res.Spec.NodeCount = nodeCount
-	if _, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(res.Namespace).Update(res); err != nil {
+	if _, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(res.Namespace).Update(res); err != nil {
 		return err
 	}
 	return tf.WaitForClusterNodeCount(res, nodeCount)
+}
+
+func (tf *TestFramework) NewAerospikeClusterV1alpha1(version string, nodeCount int32, namespaces []aerospikev1alpha1.AerospikeNamespaceSpec) aerospikev1alpha1.AerospikeCluster {
+	return aerospikev1alpha1.AerospikeCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: clusterPrefix,
+		},
+		Spec: aerospikev1alpha1.AerospikeClusterSpec{
+			Version:    version,
+			NodeCount:  nodeCount,
+			Namespaces: namespaces,
+		},
+	}
+}
+
+func (tf *TestFramework) NewV1alpha1AerospikeClusterWithDefaults() aerospikev1alpha1.AerospikeCluster {
+	aerospikeNamespace := tf.NewAerospikeNamespaceWithFileStorageV1alpha1("aerospike-namespace-0", 1, 1, 0, 1)
+	latestVersion := versioning.AerospikeServerSupportedVersions[len(versioning.AerospikeServerSupportedVersions)-1]
+	return tf.NewAerospikeClusterV1alpha1(latestVersion, 1, []aerospikev1alpha1.AerospikeNamespaceSpec{aerospikeNamespace})
+}
+
+func (tf *TestFramework) NewAerospikeNamespaceWithFileStorageV1alpha1(name string, replicationFactor int32, memorySizeGB int, defaultTTLSeconds int, storageSizeGB int) aerospikev1alpha1.AerospikeNamespaceSpec {
+	return aerospikev1alpha1.AerospikeNamespaceSpec{
+		Name:              name,
+		ReplicationFactor: &replicationFactor,
+		MemorySize:        pointers.NewString(fmt.Sprintf("%dG", memorySizeGB)),
+		DefaultTTL:        pointers.NewString(fmt.Sprintf("%ds", defaultTTLSeconds)),
+		Storage: aerospikev1alpha1.StorageSpec{
+			Type: common.StorageTypeFile,
+			Size: fmt.Sprintf("%dG", storageSizeGB),
+		},
+	}
 }

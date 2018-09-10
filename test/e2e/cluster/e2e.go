@@ -42,8 +42,6 @@ var _ = Describe("AerospikeCluster", func() {
 			var err error
 			ns, err = tf.CreateRandomNamespace()
 			Expect(err).NotTo(HaveOccurred())
-			err = tf.CopySecretToNamespace(framework.GCSSecretName, ns)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
@@ -128,6 +126,9 @@ var _ = Describe("AerospikeCluster", func() {
 		})
 		It("node IDs are kept after restart", func() {
 			testNodeIDsAfterRestart(tf, ns, 2)
+		})
+		It("can still be created using aerospike.travelaudience.com/v1alpha1", func() {
+			testCreateAerospikeClusterWithV1alpha1(tf, ns)
 		})
 	})
 })

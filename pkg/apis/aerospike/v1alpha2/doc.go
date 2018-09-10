@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package backuprestore
+// +k8s:deepcopy-gen=package
+// +k8s:openapi-gen=true
 
-const (
-	secretVolumeName      = "secret"
-	secretVolumeMountPath = "/secret"
-)
+// Package v1alpha2 is the v1alpha2 version of the API.
+// +groupName=aerospike.travelaudience.com
+package v1alpha2

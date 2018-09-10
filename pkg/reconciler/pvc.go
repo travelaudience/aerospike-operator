@@ -26,11 +26,11 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
@@ -41,8 +41,8 @@ import (
 
 var (
 	volumeModeMap = map[string]v1.PersistentVolumeMode{
-		aerospikev1alpha1.StorageTypeDevice: v1.PersistentVolumeBlock,
-		aerospikev1alpha1.StorageTypeFile:   v1.PersistentVolumeFilesystem,
+		common.StorageTypeDevice: v1.PersistentVolumeBlock,
+		common.StorageTypeFile:   v1.PersistentVolumeFilesystem,
 	}
 )
 
@@ -60,7 +60,7 @@ func (pvcs fromMostRecent) Less(i, j int) bool {
 	return pvcs[j].CreationTimestamp.Before(&pvcs[i].CreationTimestamp)
 }
 
-func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod) (*v1.PersistentVolumeClaim, error) {
+func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *v1.Pod) (*v1.PersistentVolumeClaim, error) {
 	// get all the pvcs owned by the aerospikecluster
 	pvcs, err := r.pvcsLister.PersistentVolumeClaims(aerospikeCluster.Namespace).List(selectors.ResourcesByClusterName(aerospikeCluster.Name))
 	if err != nil {
@@ -118,7 +118,7 @@ func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *
 	return podPVCs[0], nil
 }
 
-func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, pod *v1.Pod, namespace *aerospikev1alpha1.AerospikeNamespaceSpec) (*v1.PersistentVolumeClaim, error) {
+func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *v1.Pod, namespace *aerospikev1alpha2.AerospikeNamespaceSpec) (*v1.PersistentVolumeClaim, error) {
 	storageSize, err := resource.ParseQuantity(namespace.Storage.Size)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluste
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
+					APIVersion:         aerospikev1alpha2.SchemeGroupVersion.String(),
 					Kind:               crd.AerospikeClusterKind,
 					Name:               aerospikeCluster.Name,
 					UID:                aerospikeCluster.UID,

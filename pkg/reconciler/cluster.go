@@ -23,9 +23,9 @@ import (
 	storagelistersv1 "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/record"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
-	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/errors"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
@@ -67,7 +67,7 @@ func New(kubeclientset kubernetes.Interface,
 }
 
 // MaybeReconcile checks if reconciliation is needed.
-func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) MaybeReconcile(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) error {
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 	}).Info("processing cluster")

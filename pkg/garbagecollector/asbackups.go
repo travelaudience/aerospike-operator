@@ -25,9 +25,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
-	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	astime "github.com/travelaudience/aerospike-operator/pkg/utils/time"
@@ -52,13 +53,13 @@ func NewAerospikeNamespaceBackupHandler(kubeclientset kubernetes.Interface,
 	}
 }
 
-func (h *AerospikeNamespaceBackupHandler) Handle(asBackup *aerospikev1alpha1.AerospikeNamespaceBackup) error {
+func (h *AerospikeNamespaceBackupHandler) Handle(asBackup *aerospikev1alpha2.AerospikeNamespaceBackup) error {
 	log.WithFields(log.Fields{
 		logfields.Key: meta.Key(asBackup),
 	}).Debug("checking whether aerospikenamespacebackup has expired")
 
 	// get the corresponding aerospikecluster object
-	aerospikeCluster, err := h.aerospikeclientset.AerospikeV1alpha1().AerospikeClusters(asBackup.Namespace).Get(asBackup.Spec.Target.Cluster, v1.GetOptions{})
+	aerospikeCluster, err := h.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(asBackup.Namespace).Get(asBackup.Spec.Target.Cluster, v1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func (h *AerospikeNamespaceBackupHandler) Handle(asBackup *aerospikev1alpha1.Aer
 
 		// delete backup data from cloud storage
 		switch asBackup.Spec.Storage.Type {
-		case aerospikev1alpha1.StorageTypeGCS:
+		case common.StorageTypeGCS:
 			if err := h.deleteBackupDataGCS(asBackup); err != nil {
 				log.WithFields(log.Fields{
 					logfields.Key: meta.Key(asBackup),
@@ -116,7 +117,7 @@ func (h *AerospikeNamespaceBackupHandler) Handle(asBackup *aerospikev1alpha1.Aer
 		}
 
 		// delete AerospikeNamespaceBackup resource
-		if err := h.aerospikeclientset.AerospikeV1alpha1().AerospikeNamespaceBackups(asBackup.Namespace).Delete(asBackup.Name, &v1.DeleteOptions{}); err != nil {
+		if err := h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(asBackup.Namespace).Delete(asBackup.Name, &v1.DeleteOptions{}); err != nil {
 			return err
 		}
 		log.WithFields(log.Fields{

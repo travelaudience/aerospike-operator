@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/admission"
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/asutils"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
@@ -41,7 +41,7 @@ func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *
 	// create the cluster and make sure we've got the expected error as a result
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Name = sb.String()
-	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	status := err.(*errors.StatusError)
 	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
@@ -57,7 +57,7 @@ func testCreateAerospikeClusterWithLengthyNameAndNamespace(tf *framework.TestFra
 	// create the cluster and make sure we've got the expected error as a result
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Name = sb.String()
-	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	status := err.(*errors.StatusError)
 	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
@@ -67,7 +67,7 @@ func testCreateAerospikeClusterWithLengthyNameAndNamespace(tf *framework.TestFra
 func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = 0
-	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsInvalid(err)).To(BeTrue())
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("spec.nodeCount.*should be greater than or equal to 1")))
@@ -76,37 +76,37 @@ func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1
 func testCreateAerospikeClusterWithNineNodes(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = 9
-	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(errors.IsInvalid(err)).To(BeTrue())
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("spec.nodeCount.*should be less than or equal to 8")))
 }
 
 func testCreateAerospikeClusterWithZeroNamespaces(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{}
-	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{}
+	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("the number of namespaces in the cluster must be exactly one")))
 }
 
 func testCreateAerospikeClusterWithTwoNamespaces(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{
+	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1),
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 1),
 	}
-	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("the number of namespaces in the cluster must be exactly one")))
 }
 
 func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Spec.Namespaces = []v1alpha1.AerospikeNamespaceSpec{
+	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", aerospikeCluster.Spec.NodeCount+1, 1, 0, 1),
 	}
 
-	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).To(HaveOccurred())
 	status := err.(*errors.StatusError)
 	Expect(status.ErrStatus.Status).To(Equal(metav1.StatusFailure))
@@ -116,7 +116,7 @@ func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFr
 func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(res, nodeCount)
@@ -133,7 +133,7 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 
 func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	res, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(res, res.Spec.NodeCount)
@@ -142,4 +142,10 @@ func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace
 	asc, err := framework.NewAerospikeClient(res)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(asc.IsConnected()).To(BeTrue())
+}
+
+func testCreateAerospikeClusterWithV1alpha1(tf *framework.TestFramework, ns *v1.Namespace) {
+	aerospikeCluster := tf.NewV1alpha1AerospikeClusterWithDefaults()
+	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
 }

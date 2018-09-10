@@ -25,14 +25,15 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/events"
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
-func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
 	// check whether a pod with the specified index exists
 	pod, err := r.getPodWithIndex(aerospikeCluster, index)
 	if err != nil {
@@ -87,13 +88,13 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 	return newPod, nil
 }
 
-func (r *AerospikeClusterReconciler) signalBackupStarted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalBackupStarted(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*aerospikev1alpha2.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
 
 	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
-		Type:               aerospikev1alpha1.ConditionAutoBackupStarted,
+		Type:               common.ConditionAutoBackupStarted,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterAutoBackupStarted,
 		Message:            "cluster backup started",
@@ -115,13 +116,13 @@ func (r *AerospikeClusterReconciler) signalBackupStarted(aerospikeCluster *aeros
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalBackupFinished(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalBackupFinished(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*aerospikev1alpha2.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
 
 	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
-		Type:               aerospikev1alpha1.ConditionAutoBackupFinished,
+		Type:               common.ConditionAutoBackupFinished,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterAutoBackupFinished,
 		Message:            "cluster backup finished",
@@ -142,13 +143,13 @@ func (r *AerospikeClusterReconciler) signalBackupFinished(aerospikeCluster *aero
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalBackupFailed(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalBackupFailed(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*aerospikev1alpha2.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
 
 	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
-		Type:               aerospikev1alpha1.ConditionAutoBackupFailed,
+		Type:               common.ConditionAutoBackupFailed,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterAutoBackupFailed,
 		Message:            "cluster backup failed",
@@ -169,13 +170,13 @@ func (r *AerospikeClusterReconciler) signalBackupFailed(aerospikeCluster *aerosp
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha2.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
 
 	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
-		Type:               aerospikev1alpha1.ConditionUpgradeStarted,
+		Type:               common.ConditionUpgradeStarted,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterUpgradeStarted,
 		Message:            fmt.Sprintf("upgrade from version %s to %s started", upgrade.Source, upgrade.Target),
@@ -197,13 +198,13 @@ func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aero
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha2.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
 
 	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
-		Type:               aerospikev1alpha1.ConditionUpgradeFailed,
+		Type:               common.ConditionUpgradeFailed,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterUpgradeFailed,
 		Message:            fmt.Sprintf("upgrade from version %s to %s failed", upgrade.Source, upgrade.Target),
@@ -226,13 +227,13 @@ func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aeros
 	return aerospikeCluster, nil
 }
 
-func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aerospikev1alpha1.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha1.AerospikeCluster, error) {
+func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, upgrade *versioning.VersionUpgrade) (*aerospikev1alpha2.AerospikeCluster, error) {
 	// grab a copy of aerospikeCluster in its current state so we can later
 	// create a patch
 	oldCluster := aerospikeCluster.DeepCopy()
 
 	appendCondition(aerospikeCluster, apiextensions.CustomResourceDefinitionCondition{
-		Type:               aerospikev1alpha1.ConditionUpgradeFinished,
+		Type:               common.ConditionUpgradeFinished,
 		Status:             apiextensions.ConditionTrue,
 		Reason:             events.ReasonClusterUpgradeFinished,
 		Message:            fmt.Sprintf("finished upgrade from version %s to %s", upgrade.Source, upgrade.Target),

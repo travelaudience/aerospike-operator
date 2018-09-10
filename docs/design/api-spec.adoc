@@ -109,7 +109,7 @@ footnote:[Even though the `.spec.namespaces` field must have exactly one element
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeCluster
 metadata:
   name: example-aerospike-cluster
@@ -214,6 +214,8 @@ More info:
 * `type` must be one of `file` or `device`.
 * `size` must represent a positive quantity and cannot exceed 2000G (i.e., two
   terabytes).
+* `storageClassName` must be a non-empty string (if present).
+* `persistentVolumeClaimTTL` must represent a non-negative quantity (if present).
 
 <<toc,Back>>
 
@@ -243,7 +245,7 @@ More info:
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeNamespaceBackup
 metadata:
   name: example-aerospike-backup
@@ -285,7 +287,7 @@ More info:
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeNamespaceRestore
 metadata:
   name: example-aerospike-restore
@@ -332,6 +334,8 @@ backup.
 | type | The type of cloud storage to use for the backup (e.g., `gcs`) | string | true
 | bucket | The name of the bucket where the backup is stored. | string | true
 | secret | The name of the secret containing credentials to access the bucket. | string | true
+| secretNamespace | The Kubernetes namespace containing the secret with the credentials to access the bucket. Defaults to the namespace where the AerospikeCluster resource exists. | string | false
+| secretKey | The name of the file containing the credentials. Defaults to `key.json`. | string | false
 |===
 
 ==== Validations
@@ -339,6 +343,8 @@ backup.
 * `type` must be a supported type. Currently only `gcs` is supported.
 * `bucket` must be a non-empty string.
 * `secret` must be a non-empty string.
+* `secretNamespace` must be a non-empty string (if present).
+* `secretKey` must be a non-empty string (if present).
 
 <<toc,Back>>
 
@@ -362,7 +368,7 @@ show the following:
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeCluster
 metadata:
   name: example-aerospike-cluster
@@ -398,7 +404,7 @@ AerospikeCluster resource will report the following:
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeCluster
 metadata:
   name: example-aerospike-cluster

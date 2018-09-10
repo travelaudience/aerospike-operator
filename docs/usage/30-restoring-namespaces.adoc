@@ -38,7 +38,7 @@ can be found below:
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeNamespaceRestore
 metadata:
   name: as-backup-0

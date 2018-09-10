@@ -21,10 +21,10 @@ import (
 	"reflect"
 
 	av1beta1 "k8s.io/api/admission/v1beta1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 )
 
 func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceBackup(ar av1beta1.AdmissionReview) *av1beta1.AdmissionResponse {
@@ -41,7 +41,7 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceBackup(ar av1beta1.A
 			return admissionResponseFromError(err)
 		}
 		// reject the update if the .status field was deleted
-		emptyStatus := v1alpha1.AerospikeNamespaceBackupStatus{}
+		emptyStatus := aerospikev1alpha2.AerospikeNamespaceBackupStatus{}
 		if !reflect.DeepEqual(old.Status, emptyStatus) && reflect.DeepEqual(obj.Status, emptyStatus) {
 			return admissionResponseFromError(fmt.Errorf("the .status field cannot be deleted"))
 		}
@@ -74,7 +74,7 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceRestore(ar av1beta1.
 			return admissionResponseFromError(err)
 		}
 		// reject the update if the .status field was deleted
-		emptyStatus := v1alpha1.AerospikeNamespaceRestoreStatus{}
+		emptyStatus := aerospikev1alpha2.AerospikeNamespaceRestoreStatus{}
 		if !reflect.DeepEqual(old.Status, emptyStatus) && reflect.DeepEqual(obj.Status, emptyStatus) {
 			return admissionResponseFromError(fmt.Errorf("the .status field cannot be deleted"))
 		}
@@ -93,9 +93,9 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceRestore(ar av1beta1.
 	return &av1beta1.AdmissionResponse{Allowed: true}
 }
 
-func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj v1alpha1.BackupRestoreObject) error {
+func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj aerospikev1alpha2.BackupRestoreObject) error {
 	// make sure that the target cluster exists
-	aerospikeCluster, err := s.aerospikeClient.AerospikeV1alpha1().AerospikeClusters(obj.GetNamespace()).Get(obj.GetTarget().Cluster, v1.GetOptions{})
+	aerospikeCluster, err := s.aerospikeClient.AerospikeV1alpha2().AerospikeClusters(obj.GetNamespace()).Get(obj.GetTarget().Cluster, v1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj v1alpha1.Backu
 	// check if object contains BackupStorageSpec and use it. if not
 	// try to get it from the cluster. If the later does not contain
 	// it, return an error
-	var storageSpec *v1alpha1.BackupStorageSpec
+	var storageSpec *aerospikev1alpha2.BackupStorageSpec
 	switch {
 	case obj.GetStorage() != nil:
 		storageSpec = obj.GetStorage()
@@ -120,18 +120,22 @@ func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj v1alpha1.Backu
 
 	// make sure that the secret containing cloud storage credentials exists and
 	// matches the expected format
-	secret, err := s.kubeClient.CoreV1().Secrets(obj.GetNamespace()).Get(storageSpec.Secret, v1.GetOptions{})
+	secretNamespace := obj.GetStorage().GetSecretNamespace(obj.GetNamespace())
+	secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(storageSpec.GetSecret(), v1.GetOptions{})
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return fmt.Errorf("secret %q not found in namespace %q", storageSpec.GetSecret(), secretNamespace)
+		}
 		return err
 	}
-	if _, ok := secret.Data[backuprestore.SecretFilename]; !ok {
-		return fmt.Errorf("secret does not contain expected field %q", backuprestore.SecretFilename)
+	secretKey := obj.GetStorage().GetSecretKey()
+	if _, ok := secret.Data[secretKey]; !ok {
+		return fmt.Errorf("secret %q does not contain expected field %q", secret.Name, secretKey)
 	}
-
 	return nil
 }
 
-func namespaceExists(aerospikeCluster *v1alpha1.AerospikeCluster, obj v1alpha1.BackupRestoreObject) bool {
+func namespaceExists(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, obj aerospikev1alpha2.BackupRestoreObject) bool {
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
 		if ns.Name == obj.GetTarget().Namespace {
 			return true
@@ -140,8 +144,8 @@ func namespaceExists(aerospikeCluster *v1alpha1.AerospikeCluster, obj v1alpha1.B
 	return false
 }
 
-func decodeAerospikeNamespaceBackup(raw []byte) (*v1alpha1.AerospikeNamespaceBackup, error) {
-	obj := &v1alpha1.AerospikeNamespaceBackup{}
+func decodeAerospikeNamespaceBackup(raw []byte) (*aerospikev1alpha2.AerospikeNamespaceBackup, error) {
+	obj := &aerospikev1alpha2.AerospikeNamespaceBackup{}
 	if len(raw) == 0 {
 		return obj, nil
 	}
@@ -152,8 +156,8 @@ func decodeAerospikeNamespaceBackup(raw []byte) (*v1alpha1.AerospikeNamespaceBac
 	return obj, nil
 }
 
-func decodeAerospikeNamespaceRestore(raw []byte) (*v1alpha1.AerospikeNamespaceRestore, error) {
-	obj := &v1alpha1.AerospikeNamespaceRestore{}
+func decodeAerospikeNamespaceRestore(raw []byte) (*aerospikev1alpha2.AerospikeNamespaceRestore, error) {
+	obj := &aerospikev1alpha2.AerospikeNamespaceRestore{}
 	if len(raw) == 0 {
 		return obj, nil
 	}

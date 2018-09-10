@@ -39,8 +39,7 @@ service account credential in JSON format. This credential will be required late
 on.
 
 NOTE: For the remainder of this document it is assumed that one is in
-possession of the service account credential in JSON format. It is also assumed
-that this file is named `key.json`.
+possession of the service account credential in JSON format.
 
 Finally, the abovementioned service account must be given the
 `roles/storage.admin` IAM role. One should refer to
@@ -48,7 +47,7 @@ https://cloud.google.com/iam/docs/granting-roles-to-service-accounts[Granting Ro
 for instructions on how to grant roles to a service account.
 
 [[aerospike-namespace-backup-secret]]
-`aerospike-operator` will use the credential contained in `key.json` to access
+`aerospike-operator` will use the abovementioned credential to access
 Google Cloud Storage. In order for this credential to be used, a
 https://kubernetes.io/docs/concepts/configuration/secret/[Kubernetes secret]
 containing the credential must be created. The secret must have the following
@@ -67,7 +66,7 @@ type: Opaque
 ----
 
 In the example above, `ewo(...)Qo=` represents the base64-encoded content of the
-`key.json` file. This secret can be created using the following command:
+service account credentials file. This secret can be created using the following command:
 
 [source,bash]
 ----
@@ -75,12 +74,6 @@ $ kubectl --namespace kubernetes-namespace-0 create secret generic \
     gcs-secret \
     --from-file /path/to/key.json
 ----
-
-IMPORTANT: The name of the key containing the base64-encoded content of the
-credential **MUST** be called `key.json`.
-
-WARNING: Since secrets in Kubernetes are namespace-scoped, this operation must be
-repeated for every Kubernetes namespace where an Aerospike cluster exists.
 
 === Backing-up a namespace
 
@@ -90,7 +83,7 @@ namespace. An example of such a resource can be found below:
 
 [source,yaml]
 ----
-apiVersion: aerospike.travelaudience.com/v1alpha1
+apiVersion: aerospike.travelaudience.com/v1alpha2
 kind: AerospikeNamespaceBackup
 metadata:
   name: as-backup-0
@@ -103,7 +96,17 @@ spec:
     type: gcs
     bucket: aerospike-backup
     secret: gcs-secret
+    secretNamespace: kubernetes-namespace-0
+    secretKey: key.json
 ----
+
+NOTE: `secretNamespace` must be set to the name of the Kubernetes namespace
+where the secret to be used exists. It is an optional field that defaults
+to the name of the Kubernetes namespace the `AerospikeCluster` resource belongs to.
+
+NOTE: `secretKey` must be set to the name of the field inside the secret that
+contains the credentials to be used. It is also an optional field and defaults
+to `key.json`.
 
 Creating such a resource will cause `aerospike-operator` to create a backup for
 the `as-namespace-0` namespace of the `as-cluster-0` cluster, and

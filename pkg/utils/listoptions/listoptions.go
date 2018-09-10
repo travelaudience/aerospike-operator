@@ -19,6 +19,7 @@ package listoptions
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
@@ -44,5 +45,13 @@ func ObjectByNameAndVersion(name, version string) metav1.ListOptions {
 func ResourcesByClusterName(name string) metav1.ListOptions {
 	return metav1.ListOptions{
 		LabelSelector: selectors.ResourcesByClusterName(name).String(),
+	}
+}
+
+// ResourcesByBackupRestoreObject returns the options for a list/watch operation that searches for resources belonging
+// to a given BackupRestoreObject.
+func ResourcesByBackupRestoreObject(obj aerospikev1alpha2.BackupRestoreObject) metav1.ListOptions {
+	return metav1.ListOptions{
+		LabelSelector: selectors.ResourcesByBackupRestoreObject(obj).String(),
 	}
 }

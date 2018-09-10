@@ -103,6 +103,8 @@ pkg
 │   └── aerospike
 │       └── v1alpha1
 │           └── zz_generated.deepcopy.go (GENERATED)
+│       └── v1alpha2
+│           └── zz_generated.deepcopy.go (GENERATED)
 └── client (GENERATED)
 ----
 
@@ -198,11 +200,13 @@ IMPORTANT: Before proceeding one must edit the `skaffold.e2e.yaml` and
 created.
 
 Before being able to run the end-to-end test suite, one must create a Kubernetes
-secrect containing the service account credentials in JSON format:
+secret containing the service account credentials in JSON format:
 
 [source,bash]
 ----
-$ kubectl create secret generic aerospike-operator --from-file=key.json=<path-to-credentials>
+$ kubectl --namespace <namespace> \
+    create secret generic aerospike-operator \
+    --from-file=<credentials-filename>
 ----
 
 Once this secret has been created, and after deploying `aerospike-operator`

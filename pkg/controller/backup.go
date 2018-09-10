@@ -30,7 +30,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
-	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha1"
+	aerospikelisters "github.com/travelaudience/aerospike-operator/pkg/client/listers/aerospike/v1alpha2"
 )
 
 const (
@@ -55,8 +55,8 @@ func NewAerospikeNamespaceBackupController(
 
 	// obtain references to shared informers for the required types
 	jobInformer := kubeInformerFactory.Batch().V1().Jobs()
-	aerospikeClusterInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeClusters()
-	aerospikeNamespaceBackupInformer := aerospikeInformerFactory.Aerospike().V1alpha1().AerospikeNamespaceBackups()
+	aerospikeClusterInformer := aerospikeInformerFactory.Aerospike().V1alpha2().AerospikeClusters()
+	aerospikeNamespaceBackupInformer := aerospikeInformerFactory.Aerospike().V1alpha2().AerospikeNamespaceBackups()
 
 	// obtain references to listers for the required types
 	jobsLister := jobInformer.Lister()

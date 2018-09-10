@@ -34,7 +34,7 @@ func testDeleteExpiredPVC(tf *framework.TestFramework, ns *v1.Namespace, finalNo
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = finalNodecount + 1
 	aerospikeCluster.Spec.Namespaces[0].Storage.PersistentVolumeClaimTTL = &ttl
-	asc, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
@@ -56,7 +56,7 @@ func testDeleteExpiredPVC(tf *framework.TestFramework, ns *v1.Namespace, finalNo
 	err = tf.ScaleCluster(asc, finalNodecount)
 	Expect(err).NotTo(HaveOccurred())
 
-	asc, err = tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
+	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(asc.Status.NodeCount).To(Equal(finalNodecount))
 

@@ -24,8 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
@@ -41,7 +40,11 @@ const (
 )
 
 // createJob creates the job associated with obj.
-func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRestoreObject) (*batchv1.Job, error) {
+func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha2.BackupRestoreObject, secret *corev1.Secret) (*batchv1.Job, error) {
+	secretKey := obj.GetStorage().GetSecretKey()
+	if _, ok := secret.Data[secretKey]; !ok {
+		return nil, fmt.Errorf("secret does not contain expected field %q", secretKey)
+	}
 	job := batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.getJobName(obj),
@@ -53,7 +56,7 @@ func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRe
 			Namespace: obj.GetObjectMeta().Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion:         v1alpha1.SchemeGroupVersion.String(),
+					APIVersion:         aerospikev1alpha2.SchemeGroupVersion.String(),
 					Kind:               obj.GetKind(),
 					Name:               obj.GetObjectMeta().Name,
 					UID:                obj.GetObjectMeta().UID,
@@ -65,7 +68,7 @@ func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRe
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      string(obj.GetAction()),
+					Name:      string(obj.GetOperationType()),
 					Namespace: obj.GetObjectMeta().Namespace,
 				},
 				Spec: corev1.PodSpec{
@@ -76,11 +79,11 @@ func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRe
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
 								"backup",
-								string(obj.GetAction()),
+								string(obj.GetOperationType()),
 								fmt.Sprintf("-debug=%t", debug.DebugEnabled),
 								fmt.Sprintf("-bucket-name=%s", obj.GetStorage().Bucket),
 								fmt.Sprintf("-name=%s", obj.GetObjectMeta().Name),
-								fmt.Sprintf("-secret-path=%s/%s", secretVolumeMountPath, SecretFilename),
+								fmt.Sprintf("-secret-path=%s/%s", secretVolumeMountPath, secretKey),
 								fmt.Sprintf("-host=%s.%s", obj.GetTarget().Cluster, obj.GetNamespace()),
 								fmt.Sprintf("-namespace=%s", obj.GetTarget().Namespace),
 							},
@@ -99,7 +102,7 @@ func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRe
 							Name: secretVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: obj.GetStorage().Secret,
+									SecretName: secret.Name,
 								},
 							},
 						},
@@ -117,11 +120,11 @@ func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha1.BackupRe
 
 	log.WithFields(log.Fields{
 		logfields.Job: meta.Key(res),
-	}).Debugf("%s job created", obj.GetAction())
+	}).Debugf("%s job created", obj.GetOperationType())
 	return res, nil
 }
 
 // getJobName returns the name of the job associated with obj.
-func (h *AerospikeBackupRestoreHandler) getJobName(obj aerospikev1alpha1.BackupRestoreObject) string {
-	return fmt.Sprintf("%s-%s", obj.GetName(), obj.GetAction())
+func (h *AerospikeBackupRestoreHandler) getJobName(obj aerospikev1alpha2.BackupRestoreObject) string {
+	return fmt.Sprintf("%s-%s", obj.GetName(), obj.GetOperationType())
 }

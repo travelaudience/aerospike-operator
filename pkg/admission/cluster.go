@@ -23,8 +23,9 @@ import (
 	av1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
-	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
@@ -84,7 +85,7 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeCluster(ar av1beta1.Admission
 	return &av1beta1.AdmissionResponse{Allowed: true}
 }
 
-func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *v1alpha1.AerospikeCluster) error {
+func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) error {
 	// validate that the name doesn't exceed AerospikeClusterNameMaxLength
 	if len(aerospikeCluster.Name) > AerospikeClusterNameMaxLength {
 		return fmt.Errorf("the name of the cluster cannot exceed %d characters", AerospikeClusterNameMaxLength)
@@ -127,20 +128,26 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 	// if backupSpec is specified, make sure that the secret containing
 	// cloud storage credentials exists and matches the expected format
 	if aerospikeCluster.Spec.BackupSpec != nil {
-		secret, err := s.kubeClient.CoreV1().Secrets(aerospikeCluster.Namespace).Get(aerospikeCluster.Spec.BackupSpec.Storage.Secret, v1.GetOptions{})
+		secretNamespace := aerospikeCluster.Spec.BackupSpec.Storage.GetSecretNamespace(aerospikeCluster.Namespace)
+		secretName := aerospikeCluster.Spec.BackupSpec.Storage.GetSecret()
+		secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(secretName, v1.GetOptions{})
 		if err != nil {
+			if errors.IsNotFound(err) {
+				return fmt.Errorf("secret %q not found in namespace %q", secretName, secretNamespace)
+			}
 			return err
 		}
-		if _, ok := secret.Data[backuprestore.SecretFilename]; !ok {
-			return fmt.Errorf("secret does not contain expected field %q", backuprestore.SecretFilename)
+		secretKey := aerospikeCluster.Spec.BackupSpec.Storage.GetSecretKey()
+		if _, ok := secret.Data[secretKey]; !ok {
+			return fmt.Errorf("secret %q does not contain expected field %q", secretName, secretKey)
 		}
 	}
 	return nil
 }
 
-func (s *ValidatingAdmissionWebhook) validateAerospikeClusterUpdate(old, new *v1alpha1.AerospikeCluster) error {
+func (s *ValidatingAdmissionWebhook) validateAerospikeClusterUpdate(old, new *aerospikev1alpha2.AerospikeCluster) error {
 	// reject the update if the .status field was deleted
-	emptyStatus := v1alpha1.AerospikeClusterStatus{}
+	emptyStatus := aerospikev1alpha2.AerospikeClusterStatus{}
 	if !reflect.DeepEqual(old.Status, emptyStatus) && reflect.DeepEqual(new.Status, emptyStatus) {
 		return fmt.Errorf("the .status field cannot be deleted")
 	}
@@ -176,7 +183,7 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeClusterUpdate(old, new *v1
 	return nil
 }
 
-func validateVersion(old, new *v1alpha1.AerospikeCluster) error {
+func validateVersion(old, new *aerospikev1alpha2.AerospikeCluster) error {
 	// if the version was not changed, we're good
 	if old.Spec.Version == new.Spec.Version {
 		return nil
@@ -198,7 +205,7 @@ func validateVersion(old, new *v1alpha1.AerospikeCluster) error {
 	return nil
 }
 
-func validateNamespaces(old, new *v1alpha1.AerospikeCluster) error {
+func validateNamespaces(old, new *aerospikev1alpha2.AerospikeCluster) error {
 	// grab a name => spec map for the namespaces in the old object
 	oldnss := namespaceMap(old)
 	// grab a name => spec map for the namespaces in the new object
@@ -231,16 +238,16 @@ func validateNamespaces(old, new *v1alpha1.AerospikeCluster) error {
 	return nil
 }
 
-func namespaceMap(aerospikeCluster *v1alpha1.AerospikeCluster) map[string]v1alpha1.AerospikeNamespaceSpec {
-	res := make(map[string]v1alpha1.AerospikeNamespaceSpec, len(aerospikeCluster.Spec.Namespaces))
+func namespaceMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) map[string]aerospikev1alpha2.AerospikeNamespaceSpec {
+	res := make(map[string]aerospikev1alpha2.AerospikeNamespaceSpec, len(aerospikeCluster.Spec.Namespaces))
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
 		res[ns.Name] = ns
 	}
 	return res
 }
 
-func decodeAerospikeCluster(raw []byte) (*v1alpha1.AerospikeCluster, error) {
-	obj := &v1alpha1.AerospikeCluster{}
+func decodeAerospikeCluster(raw []byte) (*aerospikev1alpha2.AerospikeCluster, error) {
+	obj := &aerospikev1alpha2.AerospikeCluster{}
 	if len(raw) == 0 {
 		return obj, nil
 	}

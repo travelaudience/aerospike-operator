@@ -7,7 +7,7 @@
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     },
-    "version": "v1alpha1"
+    "version": "v1alpha2"
   },
   "paths": {
     "/apis/": {
@@ -70,7 +70,7 @@
         }
       }
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/": {
       "get": {
         "description": "get available resources",
         "consumes": [
@@ -87,9 +87,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "getAerospikeTravelaudienceComV1alpha1APIResources",
+        "operationId": "getAerospikeTravelaudienceComV1alpha2APIResources",
         "responses": {
           "200": {
             "description": "OK",
@@ -100,7 +100,7 @@
         }
       }
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/aerospikeclusters": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/aerospikeclusters": {
       "get": {
         "description": "list or watch objects of kind AerospikeCluster",
         "consumes": [
@@ -117,21 +117,21 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "listAerospikeTravelaudienceComV1alpha1AerospikeClusterForAllNamespaces",
+        "operationId": "listAerospikeTravelaudienceComV1alpha2AerospikeClusterForAllNamespaces",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterList"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterList"
             }
           }
         },
         "x-kubernetes-action": "list",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -201,7 +201,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/aerospikenamespacebackups": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/aerospikenamespacebackups": {
       "get": {
         "description": "list or watch objects of kind AerospikeNamespaceBackup",
         "consumes": [
@@ -218,21 +218,21 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "listAerospikeTravelaudienceComV1alpha1AerospikeNamespaceBackupForAllNamespaces",
+        "operationId": "listAerospikeTravelaudienceComV1alpha2AerospikeNamespaceBackupForAllNamespaces",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupList"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupList"
             }
           }
         },
         "x-kubernetes-action": "list",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -302,7 +302,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/aerospikenamespacerestores": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/aerospikenamespacerestores": {
       "get": {
         "description": "list or watch objects of kind AerospikeNamespaceRestore",
         "consumes": [
@@ -319,21 +319,21 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "listAerospikeTravelaudienceComV1alpha1AerospikeNamespaceRestoreForAllNamespaces",
+        "operationId": "listAerospikeTravelaudienceComV1alpha2AerospikeNamespaceRestoreForAllNamespaces",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreList"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreList"
             }
           }
         },
         "x-kubernetes-action": "list",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -403,7 +403,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/namespaces/{namespace}/aerospikeclusters": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/namespaces/{namespace}/aerospikeclusters": {
       "get": {
         "description": "list or watch objects of kind AerospikeCluster",
         "consumes": [
@@ -420,9 +420,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "listAerospikeTravelaudienceComV1alpha1NamespacedAerospikeCluster",
+        "operationId": "listAerospikeTravelaudienceComV1alpha2NamespacedAerospikeCluster",
         "parameters": [
           {
             "uniqueItems": true,
@@ -485,14 +485,14 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterList"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterList"
             }
           }
         },
         "x-kubernetes-action": "list",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -510,16 +510,16 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "createAerospikeTravelaudienceComV1alpha1NamespacedAerospikeCluster",
+        "operationId": "createAerospikeTravelaudienceComV1alpha2NamespacedAerospikeCluster",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           }
         ],
@@ -527,26 +527,26 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           },
           "202": {
             "description": "Accepted",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           }
         },
         "x-kubernetes-action": "post",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -564,9 +564,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "deleteAerospikeTravelaudienceComV1alpha1CollectionNamespacedAerospikeCluster",
+        "operationId": "deleteAerospikeTravelaudienceComV1alpha2CollectionNamespacedAerospikeCluster",
         "parameters": [
           {
             "uniqueItems": true,
@@ -636,7 +636,7 @@
         "x-kubernetes-action": "deletecollection",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -658,7 +658,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/namespaces/{namespace}/aerospikeclusters/{name}": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/namespaces/{namespace}/aerospikeclusters/{name}": {
       "get": {
         "description": "read the specified AerospikeCluster",
         "consumes": [
@@ -673,21 +673,21 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "readAerospikeTravelaudienceComV1alpha1NamespacedAerospikeCluster",
+        "operationId": "readAerospikeTravelaudienceComV1alpha2NamespacedAerospikeCluster",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           }
         },
         "x-kubernetes-action": "get",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -705,16 +705,16 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "replaceAerospikeTravelaudienceComV1alpha1NamespacedAerospikeCluster",
+        "operationId": "replaceAerospikeTravelaudienceComV1alpha2NamespacedAerospikeCluster",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           }
         ],
@@ -722,20 +722,20 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           }
         },
         "x-kubernetes-action": "put",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -753,9 +753,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "deleteAerospikeTravelaudienceComV1alpha1NamespacedAerospikeCluster",
+        "operationId": "deleteAerospikeTravelaudienceComV1alpha2NamespacedAerospikeCluster",
         "parameters": [
           {
             "name": "body",
@@ -798,7 +798,7 @@
         "x-kubernetes-action": "delete",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -818,9 +818,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "patchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeCluster",
+        "operationId": "patchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeCluster",
         "parameters": [
           {
             "name": "body",
@@ -835,14 +835,14 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
             }
           }
         },
         "x-kubernetes-action": "patch",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -872,7 +872,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/namespaces/{namespace}/aerospikenamespacebackups": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/namespaces/{namespace}/aerospikenamespacebackups": {
       "get": {
         "description": "list or watch objects of kind AerospikeNamespaceBackup",
         "consumes": [
@@ -889,9 +889,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "listAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackup",
+        "operationId": "listAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackup",
         "parameters": [
           {
             "uniqueItems": true,
@@ -954,14 +954,14 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupList"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupList"
             }
           }
         },
         "x-kubernetes-action": "list",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -979,16 +979,16 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "createAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackup",
+        "operationId": "createAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackup",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           }
         ],
@@ -996,26 +996,26 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           },
           "202": {
             "description": "Accepted",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           }
         },
         "x-kubernetes-action": "post",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -1033,9 +1033,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "deleteAerospikeTravelaudienceComV1alpha1CollectionNamespacedAerospikeNamespaceBackup",
+        "operationId": "deleteAerospikeTravelaudienceComV1alpha2CollectionNamespacedAerospikeNamespaceBackup",
         "parameters": [
           {
             "uniqueItems": true,
@@ -1105,7 +1105,7 @@
         "x-kubernetes-action": "deletecollection",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -1127,7 +1127,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/namespaces/{namespace}/aerospikenamespacebackups/{name}": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/namespaces/{namespace}/aerospikenamespacebackups/{name}": {
       "get": {
         "description": "read the specified AerospikeNamespaceBackup",
         "consumes": [
@@ -1142,21 +1142,21 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "readAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackup",
+        "operationId": "readAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackup",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           }
         },
         "x-kubernetes-action": "get",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -1174,16 +1174,16 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "replaceAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackup",
+        "operationId": "replaceAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackup",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           }
         ],
@@ -1191,20 +1191,20 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           }
         },
         "x-kubernetes-action": "put",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -1222,9 +1222,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "deleteAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackup",
+        "operationId": "deleteAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackup",
         "parameters": [
           {
             "name": "body",
@@ -1267,7 +1267,7 @@
         "x-kubernetes-action": "delete",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -1287,9 +1287,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "patchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackup",
+        "operationId": "patchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackup",
         "parameters": [
           {
             "name": "body",
@@ -1304,14 +1304,14 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
             }
           }
         },
         "x-kubernetes-action": "patch",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -1341,7 +1341,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/namespaces/{namespace}/aerospikenamespacerestores": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/namespaces/{namespace}/aerospikenamespacerestores": {
       "get": {
         "description": "list or watch objects of kind AerospikeNamespaceRestore",
         "consumes": [
@@ -1358,9 +1358,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "listAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestore",
+        "operationId": "listAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestore",
         "parameters": [
           {
             "uniqueItems": true,
@@ -1423,14 +1423,14 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreList"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreList"
             }
           }
         },
         "x-kubernetes-action": "list",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -1448,16 +1448,16 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "createAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestore",
+        "operationId": "createAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestore",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           }
         ],
@@ -1465,26 +1465,26 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           },
           "202": {
             "description": "Accepted",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           }
         },
         "x-kubernetes-action": "post",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -1502,9 +1502,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "deleteAerospikeTravelaudienceComV1alpha1CollectionNamespacedAerospikeNamespaceRestore",
+        "operationId": "deleteAerospikeTravelaudienceComV1alpha2CollectionNamespacedAerospikeNamespaceRestore",
         "parameters": [
           {
             "uniqueItems": true,
@@ -1574,7 +1574,7 @@
         "x-kubernetes-action": "deletecollection",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -1596,7 +1596,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/namespaces/{namespace}/aerospikenamespacerestores/{name}": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/namespaces/{namespace}/aerospikenamespacerestores/{name}": {
       "get": {
         "description": "read the specified AerospikeNamespaceRestore",
         "consumes": [
@@ -1611,21 +1611,21 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "readAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestore",
+        "operationId": "readAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestore",
         "responses": {
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           }
         },
         "x-kubernetes-action": "get",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -1643,16 +1643,16 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "replaceAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestore",
+        "operationId": "replaceAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestore",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           }
         ],
@@ -1660,20 +1660,20 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           }
         },
         "x-kubernetes-action": "put",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -1691,9 +1691,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "deleteAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestore",
+        "operationId": "deleteAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestore",
         "parameters": [
           {
             "name": "body",
@@ -1736,7 +1736,7 @@
         "x-kubernetes-action": "delete",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -1756,9 +1756,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "patchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestore",
+        "operationId": "patchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestore",
         "parameters": [
           {
             "name": "body",
@@ -1773,14 +1773,14 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+              "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
             }
           }
         },
         "x-kubernetes-action": "patch",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -1810,7 +1810,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/aerospikeclusters": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/aerospikeclusters": {
       "get": {
         "description": "watch individual changes to a list of AerospikeCluster",
         "consumes": [
@@ -1827,9 +1827,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1AerospikeClusterListForAllNamespaces",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2AerospikeClusterListForAllNamespaces",
         "responses": {
           "200": {
             "description": "OK",
@@ -1841,7 +1841,7 @@
         "x-kubernetes-action": "watchlist",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -1911,7 +1911,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/aerospikenamespacebackups": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/aerospikenamespacebackups": {
       "get": {
         "description": "watch individual changes to a list of AerospikeNamespaceBackup",
         "consumes": [
@@ -1928,9 +1928,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1AerospikeNamespaceBackupListForAllNamespaces",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2AerospikeNamespaceBackupListForAllNamespaces",
         "responses": {
           "200": {
             "description": "OK",
@@ -1942,7 +1942,7 @@
         "x-kubernetes-action": "watchlist",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -2012,7 +2012,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/aerospikenamespacerestores": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/aerospikenamespacerestores": {
       "get": {
         "description": "watch individual changes to a list of AerospikeNamespaceRestore",
         "consumes": [
@@ -2029,9 +2029,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1AerospikeNamespaceRestoreListForAllNamespaces",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2AerospikeNamespaceRestoreListForAllNamespaces",
         "responses": {
           "200": {
             "description": "OK",
@@ -2043,7 +2043,7 @@
         "x-kubernetes-action": "watchlist",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -2113,7 +2113,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/namespaces/{namespace}/aerospikeclusters": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/namespaces/{namespace}/aerospikeclusters": {
       "get": {
         "description": "watch individual changes to a list of AerospikeCluster",
         "consumes": [
@@ -2130,9 +2130,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeClusterList",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeClusterList",
         "responses": {
           "200": {
             "description": "OK",
@@ -2144,7 +2144,7 @@
         "x-kubernetes-action": "watchlist",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -2222,7 +2222,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/namespaces/{namespace}/aerospikeclusters/{name}": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/namespaces/{namespace}/aerospikeclusters/{name}": {
       "get": {
         "description": "watch changes to an object of kind AerospikeCluster",
         "consumes": [
@@ -2239,9 +2239,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeCluster",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeCluster",
         "responses": {
           "200": {
             "description": "OK",
@@ -2253,7 +2253,7 @@
         "x-kubernetes-action": "watch",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       },
@@ -2339,7 +2339,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/namespaces/{namespace}/aerospikenamespacebackups": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/namespaces/{namespace}/aerospikenamespacebackups": {
       "get": {
         "description": "watch individual changes to a list of AerospikeNamespaceBackup",
         "consumes": [
@@ -2356,9 +2356,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackupList",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackupList",
         "responses": {
           "200": {
             "description": "OK",
@@ -2370,7 +2370,7 @@
         "x-kubernetes-action": "watchlist",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -2448,7 +2448,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/namespaces/{namespace}/aerospikenamespacebackups/{name}": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/namespaces/{namespace}/aerospikenamespacebackups/{name}": {
       "get": {
         "description": "watch changes to an object of kind AerospikeNamespaceBackup",
         "consumes": [
@@ -2465,9 +2465,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceBackup",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceBackup",
         "responses": {
           "200": {
             "description": "OK",
@@ -2479,7 +2479,7 @@
         "x-kubernetes-action": "watch",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       },
@@ -2565,7 +2565,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/namespaces/{namespace}/aerospikenamespacerestores": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/namespaces/{namespace}/aerospikenamespacerestores": {
       "get": {
         "description": "watch individual changes to a list of AerospikeNamespaceRestore",
         "consumes": [
@@ -2582,9 +2582,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestoreList",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestoreList",
         "responses": {
           "200": {
             "description": "OK",
@@ -2596,7 +2596,7 @@
         "x-kubernetes-action": "watchlist",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -2674,7 +2674,7 @@
         }
       ]
     },
-    "/apis/aerospike.travelaudience.com/v1alpha1/watch/namespaces/{namespace}/aerospikenamespacerestores/{name}": {
+    "/apis/aerospike.travelaudience.com/v1alpha2/watch/namespaces/{namespace}/aerospikenamespacerestores/{name}": {
       "get": {
         "description": "watch changes to an object of kind AerospikeNamespaceRestore",
         "consumes": [
@@ -2691,9 +2691,9 @@
           "https"
         ],
         "tags": [
-          "aerospikeTravelaudienceCom_v1alpha1"
+          "aerospikeTravelaudienceCom_v1alpha2"
         ],
-        "operationId": "watchAerospikeTravelaudienceComV1alpha1NamespacedAerospikeNamespaceRestore",
+        "operationId": "watchAerospikeTravelaudienceComV1alpha2NamespacedAerospikeNamespaceRestore",
         "responses": {
           "200": {
             "description": "OK",
@@ -2705,7 +2705,7 @@
         "x-kubernetes-action": "watch",
         "x-kubernetes-group-version-kind": {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       },
@@ -2793,7 +2793,7 @@
     }
   },
   "definitions": {
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster": {
       "description": "AerospikeCluster represents an Aerospike cluster.",
       "required": [
         "spec",
@@ -2814,22 +2814,22 @@
         },
         "spec": {
           "description": "The specification of the Aerospike cluster.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterSpec"
         },
         "status": {
           "description": "The status of the Aerospike cluster.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterStatus"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterStatus"
         }
       },
       "x-kubernetes-group-version-kind": [
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeCluster"
         }
       ]
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterBackupSpec": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterBackupSpec": {
       "description": "AerospikeClusterBackupSpec specifies how Aerospike namespace backups made by aerospike-operator before a version upgrade should be stored.",
       "required": [
         "storage"
@@ -2837,7 +2837,7 @@
       "properties": {
         "storage": {
           "description": "Specifies how the backup should be stored.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.BackupStorageSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.BackupStorageSpec"
         },
         "ttl": {
           "description": "The retention period (days) during which to keep backup data in cloud storage, suffixed with d. Defaults to 0d, meaning the backup data will be kept forever.",
@@ -2845,7 +2845,7 @@
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterList": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterList": {
       "description": "AerospikeClusterList represents a list of Aerospike clusters.",
       "required": [
         "metadata",
@@ -2860,7 +2860,7 @@
           "description": "The list of AerospikeCluster resources.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeCluster"
+            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeCluster"
           }
         },
         "kind": {
@@ -2875,12 +2875,12 @@
       "x-kubernetes-group-version-kind": [
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeClusterList"
         }
       ]
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterSpec": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterSpec": {
       "description": "AerospikeClusterSpec specifies the desired state of an Aerospike cluster.",
       "required": [
         "nodeCount",
@@ -2890,13 +2890,13 @@
       "properties": {
         "backupSpec": {
           "description": "The specification of how Aerospike namespace backups made by aerospike-operator should be performed and stored. It is only required to be present if one wants to perform version upgrades on the Aerospike cluster.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterBackupSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterBackupSpec"
         },
         "namespaces": {
           "description": "The specification of the Aerospike namespaces in the cluster. Must have exactly one element.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceSpec"
+            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceSpec"
           }
         },
         "nodeCount": {
@@ -2910,7 +2910,7 @@
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterStatus": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterStatus": {
       "description": "AerospikeClusterStatus represents the current state of an Aerospike cluster.",
       "required": [
         "AerospikeClusterSpec"
@@ -2918,11 +2918,11 @@
       "properties": {
         "AerospikeClusterSpec": {
           "description": "The desired state of the Aerospike cluster.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeClusterSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeClusterSpec"
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup": {
       "description": "AerospikeNamespaceBackup represents a single backup operation targeting a single Aerospike namespace.",
       "required": [
         "spec",
@@ -2943,22 +2943,22 @@
         },
         "spec": {
           "description": "The specification of the backup operation.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupSpec"
         },
         "status": {
           "description": "The status of the backup operation.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupStatus"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupStatus"
         }
       },
       "x-kubernetes-group-version-kind": [
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackup"
         }
       ]
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupList": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupList": {
       "description": "AerospikeNamespaceBackupList represents a list of AerospikeNamespaceBackup resources.",
       "required": [
         "metadata",
@@ -2973,7 +2973,7 @@
           "description": "The list of AerospikeNamespaceBackup resources.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackup"
+            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackup"
           }
         },
         "kind": {
@@ -2988,12 +2988,12 @@
       "x-kubernetes-group-version-kind": [
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceBackupList"
         }
       ]
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupSpec": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupSpec": {
       "description": "AerospikeNamespaceBackupSpec specifies the configuration for a backup operation.",
       "required": [
         "target"
@@ -3001,11 +3001,11 @@
       "properties": {
         "storage": {
           "description": "The specification of how the backup will be stored.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.BackupStorageSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.BackupStorageSpec"
         },
         "target": {
           "description": "The specification of the Aerospike cluster and Aerospike namespace to backup.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.TargetNamespace"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.TargetNamespace"
         },
         "ttl": {
           "description": "The retention period (days) during which to keep backup data in cloud storage, suffixed with d. Defaults to 0d, meaning the backup data will be kept forever.",
@@ -3013,7 +3013,7 @@
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupStatus": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupStatus": {
       "description": "AerospikeNamespaceBackupStatus is the status for an AerospikeNamespaceBackup resource.",
       "required": [
         "AerospikeNamespaceBackupSpec"
@@ -3021,11 +3021,11 @@
       "properties": {
         "AerospikeNamespaceBackupSpec": {
           "description": "The configuration for the backup operation.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceBackupSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceBackupSpec"
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore": {
       "description": "AerospikeNamespaceRestore represents a single restore operation targeting a single Aerospike namespace.",
       "required": [
         "spec",
@@ -3046,22 +3046,22 @@
         },
         "spec": {
           "description": "The specification of the restore operation.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreSpec"
         },
         "status": {
           "description": "The status of the restore operation.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreStatus"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreStatus"
         }
       },
       "x-kubernetes-group-version-kind": [
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestore"
         }
       ]
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreList": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreList": {
       "description": "AerospikeNamespaceRestoreList is a list of AerospikeNamespaceRestore resources",
       "required": [
         "metadata",
@@ -3076,7 +3076,7 @@
           "description": "The list of AerospikeNamespaceRestore resources.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestore"
+            "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestore"
           }
         },
         "kind": {
@@ -3091,12 +3091,12 @@
       "x-kubernetes-group-version-kind": [
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "AerospikeNamespaceRestoreList"
         }
       ]
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreSpec": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreSpec": {
       "description": "AerospikeNamespaceRestoreSpec specifies the configuration for a restore operation.",
       "required": [
         "target"
@@ -3104,15 +3104,15 @@
       "properties": {
         "storage": {
           "description": "The specification of how the backup should be retrieved.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.BackupStorageSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.BackupStorageSpec"
         },
         "target": {
           "description": "The specification of the Aerospike cluster and namespace the backup will be restored to.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.TargetNamespace"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.TargetNamespace"
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreStatus": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreStatus": {
       "description": "AerospikeNamespaceRestoreStatus is the status for an AerospikeNamespaceRestore resource",
       "required": [
         "AerospikeNamespaceRestoreSpec"
@@ -3120,11 +3120,11 @@
       "properties": {
         "AerospikeNamespaceRestoreSpec": {
           "description": "The configuration for the restore operation.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceRestoreSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceRestoreSpec"
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.AerospikeNamespaceSpec": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.AerospikeNamespaceSpec": {
       "description": "AerospikeNamespaceSpec specifies the configuration for an Aerospike namespace.",
       "required": [
         "name",
@@ -3150,11 +3150,11 @@
         },
         "storage": {
           "description": "Specifies how data for the Aerospike namespace will be stored.",
-          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.StorageSpec"
+          "$ref": "#/definitions/com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.StorageSpec"
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.BackupStorageSpec": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.BackupStorageSpec": {
       "description": "BackupStorageSpec specifies the configuration for the storage of a backup.",
       "required": [
         "type",
@@ -3170,13 +3170,21 @@
           "description": "The name of the secret containing credentials to access the bucket.",
           "type": "string"
         },
+        "secretKey": {
+          "description": "The name of the file in which the credentials are stored.",
+          "type": "string"
+        },
+        "secretNamespace": {
+          "description": "The namespace to which the secret containing the credentials belongs to.",
+          "type": "string"
+        },
         "type": {
           "description": "The type of cloud storage to use for the backup (e.g., gcs).",
           "type": "string"
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.StorageSpec": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.StorageSpec": {
       "description": "StorageSpec specifies how data in a given Aerospike namespace will be stored.",
       "required": [
         "type",
@@ -3201,7 +3209,7 @@
         }
       }
     },
-    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha1.TargetNamespace": {
+    "com.github.travelaudience.aerospike-operator.pkg.apis.aerospike.v1alpha2.TargetNamespace": {
       "description": "TargetNamespace specifies the Aerospike cluster and namespace a single backup or restore operation will target.",
       "required": [
         "cluster",
@@ -3423,7 +3431,7 @@
         },
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "DeleteOptions"
         }
       ]
@@ -3741,6 +3749,7 @@
       }
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
+      "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
       "type": "string",
       "format": "date-time"
     },
@@ -3767,7 +3776,7 @@
         },
         {
           "group": "aerospike.travelaudience.com",
-          "version": "v1alpha1",
+          "version": "v1alpha2",
           "kind": "WatchEvent"
         }
       ]

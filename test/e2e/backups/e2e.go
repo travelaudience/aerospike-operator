@@ -42,8 +42,6 @@ var _ = Describe("AerospikeNamespaceBackupRestore", func() {
 			var err error
 			ns, err = tf.CreateRandomNamespace()
 			Expect(err).NotTo(HaveOccurred())
-			err = tf.CopySecretToNamespace(framework.GCSSecretName, ns)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {

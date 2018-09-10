@@ -22,21 +22,23 @@ import (
 	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	asstrings "github.com/travelaudience/aerospike-operator/pkg/utils/strings"
 )
 
 const (
-	AerospikeClusterKind   = aerospikev1alpha1.AerospikeClusterKind
+	AerospikeClusterKind   = common.AerospikeClusterKind
 	AerospikeClusterPlural = "aerospikeclusters"
 	AerospikeClusterShort  = "asc"
 
-	AerospikeNamespaceBackupKind   = aerospikev1alpha1.AerospikeNamespaceBackupKind
+	AerospikeNamespaceBackupKind   = common.AerospikeNamespaceBackupKind
 	AerospikeNamespaceBackupPlural = "aerospikenamespacebackups"
 	AerospikeNamespaceBackupShort  = "asnb"
 
-	AerospikeNamespaceRestoreKind   = aerospikev1alpha1.AerospikeNamespaceRestoreKind
+	AerospikeNamespaceRestoreKind   = common.AerospikeNamespaceRestoreKind
 	AerospikeNamespaceRestorePlural = "aerospikenamespacerestores"
 	AerospikeNamespaceRestoreShort  = "asnr"
 
@@ -46,9 +48,9 @@ const (
 )
 
 var (
-	AerospikeClusterCRDName          = fmt.Sprintf("%s.%s", AerospikeClusterPlural, aerospikev1alpha1.SchemeGroupVersion.Group)
-	AerospikeNamespaceBackupCRDName  = fmt.Sprintf("%s.%s", AerospikeNamespaceBackupPlural, aerospikev1alpha1.SchemeGroupVersion.Group)
-	AerospikeNamespaceRestoreCRDName = fmt.Sprintf("%s.%s", AerospikeNamespaceRestorePlural, aerospikev1alpha1.SchemeGroupVersion.Group)
+	AerospikeClusterCRDName          = fmt.Sprintf("%s.%s", AerospikeClusterPlural, aerospikev1alpha2.SchemeGroupVersion.Group)
+	AerospikeNamespaceBackupCRDName  = fmt.Sprintf("%s.%s", AerospikeNamespaceBackupPlural, aerospikev1alpha2.SchemeGroupVersion.Group)
+	AerospikeNamespaceRestoreCRDName = fmt.Sprintf("%s.%s", AerospikeNamespaceRestorePlural, aerospikev1alpha2.SchemeGroupVersion.Group)
 )
 
 var (
@@ -58,7 +60,7 @@ var (
 			"type": {
 				Type: "string",
 				Enum: []extsv1beta1.JSON{
-					{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeGCS))},
+					{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeGCS))},
 				},
 			},
 			"bucket": {
@@ -66,6 +68,14 @@ var (
 				MinLength: pointers.NewInt64(1),
 			},
 			"secret": {
+				Type:      "string",
+				MinLength: pointers.NewInt64(1),
+			},
+			"secretNamespace": {
+				Type:      "string",
+				MinLength: pointers.NewInt64(1),
+			},
+			"secretKey": {
 				Type:      "string",
 				MinLength: pointers.NewInt64(1),
 			},
@@ -101,9 +111,20 @@ var (
 				Name: AerospikeClusterCRDName,
 			},
 			Spec: extsv1beta1.CustomResourceDefinitionSpec{
-				Group:   aerospikev1alpha1.SchemeGroupVersion.Group,
-				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
-				Scope:   extsv1beta1.NamespaceScoped,
+				Group: aerospikev1alpha2.SchemeGroupVersion.Group,
+				Versions: []extsv1beta1.CustomResourceDefinitionVersion{
+					{
+						Name:    aerospikev1alpha2.SchemeGroupVersion.Version,
+						Served:  true,
+						Storage: true,
+					},
+					{
+						Name:    aerospikev1alpha1.SchemeGroupVersion.Version,
+						Served:  true,
+						Storage: false,
+					},
+				},
+				Scope: extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
 					Plural:     AerospikeClusterPlural,
 					Kind:       AerospikeClusterKind,
@@ -153,8 +174,8 @@ var (
 															"type": {
 																Type: "string",
 																Enum: []extsv1beta1.JSON{
-																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeFile))},
-																	{Raw: []byte(asstrings.DoubleQuoted(aerospikev1alpha1.StorageTypeDevice))},
+																	{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeFile))},
+																	{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeDevice))},
 																},
 															},
 															"size": {
@@ -209,12 +230,23 @@ var (
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s.%s", "aerospikenamespacebackups", aerospikev1alpha1.SchemeGroupVersion.Group),
+				Name: fmt.Sprintf("%s.%s", "aerospikenamespacebackups", aerospikev1alpha2.SchemeGroupVersion.Group),
 			},
 			Spec: extsv1beta1.CustomResourceDefinitionSpec{
-				Group:   aerospikev1alpha1.SchemeGroupVersion.Group,
-				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
-				Scope:   extsv1beta1.NamespaceScoped,
+				Group: aerospikev1alpha2.SchemeGroupVersion.Group,
+				Versions: []extsv1beta1.CustomResourceDefinitionVersion{
+					{
+						Name:    aerospikev1alpha2.SchemeGroupVersion.Version,
+						Served:  true,
+						Storage: true,
+					},
+					{
+						Name:    aerospikev1alpha1.SchemeGroupVersion.Version,
+						Served:  true,
+						Storage: false,
+					},
+				},
+				Scope: extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
 					Plural:     AerospikeNamespaceBackupPlural,
 					Kind:       AerospikeNamespaceBackupKind,
@@ -243,12 +275,23 @@ var (
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s.%s", "aerospikenamespacerestores", aerospikev1alpha1.SchemeGroupVersion.Group),
+				Name: fmt.Sprintf("%s.%s", "aerospikenamespacerestores", aerospikev1alpha2.SchemeGroupVersion.Group),
 			},
 			Spec: extsv1beta1.CustomResourceDefinitionSpec{
-				Group:   aerospikev1alpha1.SchemeGroupVersion.Group,
-				Version: aerospikev1alpha1.SchemeGroupVersion.Version,
-				Scope:   extsv1beta1.NamespaceScoped,
+				Group: aerospikev1alpha2.SchemeGroupVersion.Group,
+				Versions: []extsv1beta1.CustomResourceDefinitionVersion{
+					{
+						Name:    aerospikev1alpha2.SchemeGroupVersion.Version,
+						Served:  true,
+						Storage: true,
+					},
+					{
+						Name:    aerospikev1alpha1.SchemeGroupVersion.Version,
+						Served:  true,
+						Storage: false,
+					},
+				},
+				Scope: extsv1beta1.NamespaceScoped,
 				Names: extsv1beta1.CustomResourceDefinitionNames{
 					Plural:     AerospikeNamespaceRestorePlural,
 					Kind:       AerospikeNamespaceRestoreKind,

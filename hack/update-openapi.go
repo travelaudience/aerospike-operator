@@ -28,7 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/kube-openapi/pkg/common"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 )
 
@@ -36,39 +36,39 @@ func main() {
 	s := runtime.NewScheme()
 	c := serializer.NewCodecFactory(s)
 
-	utilruntime.Must(aerospikev1alpha1.AddToScheme(s))
-	utilruntime.Must(s.SetVersionPriority(aerospikev1alpha1.SchemeGroupVersion))
+	utilruntime.Must(aerospikev1alpha2.AddToScheme(s))
+	utilruntime.Must(s.SetVersionPriority(aerospikev1alpha2.SchemeGroupVersion))
 
 	cfg := openapi.Config{
 		Scheme: s,
 		Codecs: c,
 		Info: spec.InfoProps{
 			Description: "aerospike-operator manages Aerospike clusters atop Kubernetes, automating their creation and administration.",
-			Title:       aerospikev1alpha1.SchemeGroupVersion.Group,
-			Version:     aerospikev1alpha1.SchemeGroupVersion.Version,
+			Title:       aerospikev1alpha2.SchemeGroupVersion.Group,
+			Version:     aerospikev1alpha2.SchemeGroupVersion.Version,
 			License: &spec.License{
 				Name: "Apache 2.0",
 				URL:  "https://www.apache.org/licenses/LICENSE-2.0.html",
 			},
 		},
 		OpenAPIDefinitions: []common.GetOpenAPIDefinitions{
-			aerospikev1alpha1.GetOpenAPIDefinitions,
+			aerospikev1alpha2.GetOpenAPIDefinitions,
 		},
 		Resources: []openapi.TypeInfo{
 			{
-				GroupVersion:    aerospikev1alpha1.SchemeGroupVersion,
+				GroupVersion:    aerospikev1alpha2.SchemeGroupVersion,
 				Resource:        crd.AerospikeClusterPlural,
 				Kind:            crd.AerospikeClusterKind,
 				NamespaceScoped: true,
 			},
 			{
-				GroupVersion:    aerospikev1alpha1.SchemeGroupVersion,
+				GroupVersion:    aerospikev1alpha2.SchemeGroupVersion,
 				Resource:        crd.AerospikeNamespaceBackupPlural,
 				Kind:            crd.AerospikeNamespaceBackupKind,
 				NamespaceScoped: true,
 			},
 			{
-				GroupVersion:    aerospikev1alpha1.SchemeGroupVersion,
+				GroupVersion:    aerospikev1alpha2.SchemeGroupVersion,
 				Resource:        crd.AerospikeNamespaceRestorePlural,
 				Kind:            crd.AerospikeNamespaceRestoreKind,
 				NamespaceScoped: true,

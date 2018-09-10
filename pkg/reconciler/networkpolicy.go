@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
@@ -38,7 +38,7 @@ var (
 	protocolUDP = v1.ProtocolUDP
 )
 
-func (r *AerospikeClusterReconciler) ensureNetworkPolicy(aerospikeCluster *aerospikev1alpha1.AerospikeCluster) error {
+func (r *AerospikeClusterReconciler) ensureNetworkPolicy(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) error {
 	policy := networkv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeCluster.Name,
@@ -49,7 +49,7 @@ func (r *AerospikeClusterReconciler) ensureNetworkPolicy(aerospikeCluster *aeros
 			Namespace: aerospikeCluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion:         aerospikev1alpha1.SchemeGroupVersion.String(),
+					APIVersion:         aerospikev1alpha2.SchemeGroupVersion.String(),
 					Kind:               crd.AerospikeClusterKind,
 					Name:               aerospikeCluster.Name,
 					UID:                aerospikeCluster.UID,
