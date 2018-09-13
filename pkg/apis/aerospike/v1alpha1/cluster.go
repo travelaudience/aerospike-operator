@@ -108,6 +108,10 @@ type StorageSpec struct {
 	// kept forever.
 	// +optional
 	PersistentVolumeClaimTTL *string `json:"persistentVolumeClaimTTL,omitempty"`
+	// Whether to always keep an in-memory copy of all data in this Aerospike
+	// namespace.
+	// +optional
+	DataInMemory *bool `json:"dataInMemory,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

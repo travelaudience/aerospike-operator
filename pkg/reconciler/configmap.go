@@ -178,5 +178,9 @@ func getNamespaceProps(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, ind
 		props[nsDevicePath] = getIndexBasedDevicePath(index)
 	}
 
+	if namespace.Storage.DataInMemory != nil {
+		props[nsDataInMemory] = *namespace.Storage.DataInMemory
+	}
+
 	return props
 }

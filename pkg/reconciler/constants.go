@@ -94,6 +94,7 @@ const (
 	nsStorageSizeKey       = "storageSize"
 	nsFilePath             = "filePath"
 	nsDevicePath           = "devicePath"
+	nsDataInMemory         = "dataInMemory"
 
 	aspromPortName      = "prometheus"
 	aspromPort          = 9145
@@ -225,5 +226,9 @@ namespace {{.name}} {
 		{{if .storageSize}}
 			filesize {{.storageSize}}
 		{{end}}
+
+		{{- if .dataInMemory}}
+			data-in-memory {{.dataInMemory}}
+		{{- end}}
 	}
 }`

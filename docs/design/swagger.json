@@ -3191,6 +3191,10 @@
         "size"
       ],
       "properties": {
+        "dataInMemory": {
+          "description": "Whether to always keep an in-memory copy of all data in this Aerospike namespace.",
+          "type": "boolean"
+        },
         "persistentVolumeClaimTTL": {
           "description": "The retention period (days) during which to keep PVCs for being re-used after unmounted. Defaults to 0d, meaning the PVCs will be kept forever.",
           "type": "string"

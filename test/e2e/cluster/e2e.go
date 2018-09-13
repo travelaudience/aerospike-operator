@@ -130,5 +130,8 @@ var _ = Describe("AerospikeCluster", func() {
 		It("can still be created using aerospike.travelaudience.com/v1alpha1", func() {
 			testCreateAerospikeClusterWithV1alpha1(tf, ns)
 		})
+		It("supports setting data-in-memory for a namespace", func() {
+			testDataInMemory(tf, ns)
+		})
 	})
 })

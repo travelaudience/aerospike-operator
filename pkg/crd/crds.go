@@ -189,6 +189,9 @@ var (
 																Type:    "string",
 																Pattern: ttlPattern,
 															},
+															"dataInMemory": {
+																Type: "boolean",
+															},
 														},
 														Required: []string{
 															"type",

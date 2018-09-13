@@ -28,6 +28,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/admission"
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/asutils"
+	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
@@ -148,4 +149,21 @@ func testCreateAerospikeClusterWithV1alpha1(tf *framework.TestFramework, ns *v1.
 	aerospikeCluster := tf.NewV1alpha1AerospikeClusterWithDefaults()
 	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func testDataInMemory(tf *framework.TestFramework, ns *v1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.Namespaces[0].Storage.DataInMemory = pointers.NewBool(true)
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, aerospikeCluster.Spec.NodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	c, err := framework.NewAerospikeClient(res)
+	Expect(err).NotTo(HaveOccurred())
+
+	dataInMemoryEnabled, err := c.IsDataInMemoryEnabled(aerospikeCluster.Spec.Namespaces[0].Name)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(dataInMemoryEnabled).To(Equal(true))
 }

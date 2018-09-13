@@ -122,3 +122,20 @@ func (ac *AerospikeClient) GetNamespaceStorageEngine(namespace string) (string, 
 	}
 	return "", fmt.Errorf("namespace has unknown storage type")
 }
+
+func (ac *AerospikeClient) IsDataInMemoryEnabled(namespace string) (bool, error) {
+	c, err := as.NewConnection(fmt.Sprintf("%s:%d", ac.host, reconciler.ServicePort), 10*time.Second)
+	if err != nil {
+		return false, err
+	}
+	infoCmd := fmt.Sprintf("namespace/%s", namespace)
+	r, err := as.RequestInfo(c, infoCmd)
+	if err != nil {
+		return false, err
+	}
+	stats := asutils.ParseStatistics(r[infoCmd])
+	if value, ok := stats["storage-engine.data-in-memory"]; ok {
+		return value == "true", nil
+	}
+	return false, fmt.Errorf("namespace has unknown storage type")
+}
