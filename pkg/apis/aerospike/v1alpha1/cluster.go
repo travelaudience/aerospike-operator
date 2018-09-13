@@ -59,7 +59,7 @@ type AerospikeClusterStatus struct {
 	AerospikeClusterSpec
 	// Details about the current condition of the AerospikeCluster resource.
 	// +k8s:openapi-gen=false
-	Conditions []apiextensions.CustomResourceDefinitionCondition `json="conditions"`
+	Conditions []apiextensions.CustomResourceDefinitionCondition `json:"conditions"`
 }
 
 // AerospikeNamespaceSpec specifies the configuration for an Aerospike namespace.
