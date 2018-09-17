@@ -42,6 +42,7 @@ import (
 	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
 	"github.com/travelaudience/aerospike-operator/pkg/controller"
 	"github.com/travelaudience/aerospike-operator/pkg/crd"
+	v1alpha2converters "github.com/travelaudience/aerospike-operator/pkg/crd/converters/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/signals"
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
@@ -50,6 +51,7 @@ import (
 var (
 	fs         *flag.FlagSet
 	kubeconfig string
+	wh         *admission.ValidatingAdmissionWebhook
 )
 
 func init() {
@@ -108,7 +110,7 @@ func main() {
 
 	// register (if enabled) and run the validating admission webhook and health
 	// endpoint
-	wh := admission.NewValidatingAdmissionWebhook(namespace, kubeClient, aerospikeClient)
+	wh = admission.NewValidatingAdmissionWebhook(namespace, kubeClient, aerospikeClient)
 	if err := wh.Register(); err != nil {
 		log.Fatalf("failed to register admission webhook: %v", err)
 	}
@@ -161,7 +163,7 @@ func main() {
 func createRecorder(kubeClient kubernetes.Interface, name, namespace string) record.EventRecorder {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: typedcorev1.New(kubeClient.Core().RESTClient()).Events(namespace)})
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: typedcorev1.New(kubeClient.CoreV1().RESTClient()).Events(namespace)})
 	return eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: name})
 }
 
@@ -178,6 +180,16 @@ func run(stopCh chan struct{}, cfg *restclient.Config, kubeClient *kubernetes.Cl
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	aerospikeInformerFactory := aerospikeinformers.NewSharedInformerFactory(aerospikeClient, time.Second*30)
+
+	// wait for the aerospike-operator service's endpoints to be ready
+	if err := wh.WaitReady(); err != nil {
+		log.Fatalf("failed to wait for webhook to be ready: %v", err)
+	}
+
+	// upgrade existing resources to v1alpha2
+	if err := v1alpha2converters.ConvertResources(extsClient, aerospikeClient); err != nil {
+		log.Fatalf("failed to upgrade existing resources to v1alpha2: %v", err)
+	}
 
 	clusterController := controller.NewAerospikeClusterController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)
 	backupController := controller.NewAerospikeNamespaceBackupController(kubeClient, aerospikeClient, kubeInformerFactory, aerospikeInformerFactory)

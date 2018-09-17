@@ -31,6 +31,12 @@ rules:
   - get
   - update
   - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions/status
+  verbs:
+  - update
 - apiGroups: [""]
   resources:
   - configmaps
@@ -112,6 +118,7 @@ rules:
   - aerospikeclusters
   verbs:
   - get
+  - update
   - list
   - patch
   - watch
@@ -121,6 +128,7 @@ rules:
   - aerospikenamespacebackups
   verbs:
   - create
+  - update
   - get
   - list
   - patch
@@ -133,6 +141,7 @@ rules:
   verbs:
   - get
   - list
+  - update
   - patch
   - watch
 ---

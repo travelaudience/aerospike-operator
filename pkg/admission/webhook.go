@@ -75,6 +75,9 @@ const (
 	// tlsSecretName is the name of the secret that will hold tls artifacts used
 	// by the webhook.
 	tlsSecretName = "aerospike-operator-tls"
+	// whReadyTimeout is the time to wait until the validating webhook service
+	// endpoints are ready
+	whReadyTimeout = time.Second * 30
 )
 
 type admissionFunc func(admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse
@@ -427,4 +430,37 @@ func admissionResponseFromError(err error) *admissionv1beta1.AdmissionResponse {
 			Message: err.Error(),
 		},
 	}
+}
+
+// WaitReady waits for the endpoints associated with the aerospike-operator service to be ready.
+func (s *ValidatingAdmissionWebhook) WaitReady() error {
+	log.Info("waiting for the validating admission webhook to be ready")
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			ready, err := s.isReady()
+			if err != nil {
+				return err
+			}
+			if ready {
+				return nil
+			}
+		case <-time.After(whReadyTimeout):
+			return fmt.Errorf("timed out waiting for the validating admission webhook to be ready")
+		}
+	}
+}
+
+// isReady returns a value indicating whether the aerospike-operator service's endpoints contain at least one endpoint.
+func (s *ValidatingAdmissionWebhook) isReady() (bool, error) {
+	endpoints, err := s.kubeClient.CoreV1().Endpoints(s.namespace).Get(serviceName, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	if len(endpoints.Subsets) == 0 {
+		return false, nil
+	}
+	return true, nil
 }
