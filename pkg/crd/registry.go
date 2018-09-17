@@ -125,7 +125,7 @@ func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition, timeou
 		// grab the current crd object from the event
 		obj := event.Object.(*extsv1beta1.CustomResourceDefinition)
 		// search for Established in .Status.Conditions and make sure it is True
-		// https://github.com/kubernetes/apiextensions-apiserver/blob/kubernetes-1.11.2/pkg/apis/apiextensions/types.go#L130
+		// https://github.com/kubernetes/apiextensions-apiserver/blob/kubernetes-1.11.3/pkg/apis/apiextensions/types.go#L130
 		for _, cond := range obj.Status.Conditions {
 			switch cond.Type {
 			case extsv1beta1.Established:

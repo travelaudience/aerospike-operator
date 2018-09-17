@@ -19,7 +19,7 @@ build: dep gen
 # 'required' dependency in Gopkg.toml, and replaced by a call to dep ensure
 # (see https://github.com/golang/dep/issues/1306)
 .PHONY: dep
-dep: KUBERNETES_VERSION=1.11.2
+dep: KUBERNETES_VERSION=1.11.3
 dep: KUBERNETES_CODE_GENERATOR_PKG=k8s.io/code-generator
 dep: KUBERNETES_APIMACHINERY_PKG=k8s.io/apimachinery
 dep:

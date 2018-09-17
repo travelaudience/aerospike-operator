@@ -1,22 +1,22 @@
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.11.2"
+  version = "kubernetes-1.11.3"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.11.2"
+  version = "kubernetes-1.11.3"
 
 [[constraint]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.11.2"
+  version = "kubernetes-1.11.3"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.11.2"
+  version = "kubernetes-1.11.3"
 
 [[constraint]]
   name = "k8s.io/kubernetes"
-  version = "v1.11.2"
+  version = "v1.11.3"
 
 [[constraint]]
   name = "github.com/aerospike/aerospike-client-go"
@@ -24,7 +24,7 @@
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.11.2"
+  version = "kubernetes-1.11.3"
 
 [[override]]
   branch = "release-8.0"
