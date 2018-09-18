@@ -248,8 +248,8 @@ namespace, one may use `kubectl`:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikenamespacebackups
-NAME                                   AGE
-as-namespace-0-20180702T1451Z          8m
+NAME                            TARGET CLUSTER   TARGET NAMESPACE   AGE
+as-namespace-0-20180702T1451Z   as-cluster-0     as-namespace-0     8m
 ----
 
 One may also use the `asnb` short name instead of
@@ -258,8 +258,8 @@ One may also use the `asnb` short name instead of
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get asnb
-NAME                                   AGE
-as-namespace-0-20180702T1451Z          8m
+NAME                            TARGET CLUSTER   TARGET NAMESPACE   AGE
+as-namespace-0-20180702T1451Z   as-cluster-0     as-namespace-0     8m
 ----
 
 To list all `AerospikeNamespaceBackup` resources in the current Kubernetes
@@ -268,9 +268,9 @@ cluster, one may run
 [source,bash]
 ----
 $ kubectl get asnb --all-namespaces
-NAMESPACE                NAME                                   AGE
-kubernetes-namespace-0   as-namespace-0-20180702T1451Z          8m
-kubernetes-namespace-1   as-namespace-0-20180702T1556Z          2m
+NAMESPACE                NAME                            TARGET CLUSTER   TARGET NAMESPACE   AGE
+kubernetes-namespace-0   as-namespace-0-20180702T1451Z   as-cluster-0     as-namespace-0     8m
+kubernetes-namespace-1   as-namespace-0-20180702T1556Z   as-cluster-0     as-namespace-0     2m
 ----
 
 === Deleting backups

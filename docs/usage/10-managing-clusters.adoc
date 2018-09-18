@@ -245,8 +245,8 @@ To list all Aerospike clusters in a given Kubernetes namespace, one may use
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikeclusters
-NAME           AGE
-as-cluster-0   8m
+NAME           VERSION   NODE COUNT   AGE
+as-cluster-0   4.2.0.3   2            19m
 ----
 
 One may also use the `asc` shorthand instead of `aerospikeclusters`, for
@@ -255,8 +255,8 @@ brevity:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get asc
-NAME           AGE
-as-cluster-0   8m
+NAME           VERSION   NODE COUNT   AGE
+as-cluster-0   4.2.0.3   2            19m
 ----
 
 To list all Aerospike clusters in the current Kubernetes cluster (i.e. across
@@ -265,9 +265,9 @@ all Kubernetes namespaces), one may run
 [source,bash]
 ----
 $ kubectl get asc --all-namespaces
-NAMESPACE                NAME           AGE
-kubernetes-namespace-0   as-cluster-0   8m
-kubernetes-namespace-1   as-cluster-1   4m
+NAMESPACE                NAME           VERSION   NODE COUNT   AGE
+kubernetes-namespace-0   as-cluster-0   4.2.0.3   2            8m
+kubernetes-namespace-1   as-cluster-1   4.2.0.5   3            4m
 ----
 
 == Creating and deleting Aerospike namespaces

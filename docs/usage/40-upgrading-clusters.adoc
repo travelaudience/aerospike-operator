@@ -196,8 +196,8 @@ the `AerospikeCluster` resource:
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get aerospikenamespacebackups
-NAME                                 AGE
-as-namespace-0-4203-4203-upgrade    2m
+NAME                               TARGET CLUSTER   TARGET NAMESPACE   AGE
+as-namespace-0-4203-4203-upgrade   as-cluster-0     as-namespace-0     2m
 ----
 [source,bash]
 ----
