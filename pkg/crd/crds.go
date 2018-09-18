@@ -229,6 +229,26 @@ var (
 						},
 					},
 				},
+				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
+					{
+						Name:        "Version",
+						Type:        "string",
+						Description: "The Aerospike version running in the Aerospike cluster",
+						JSONPath:    ".status.version",
+					},
+					{
+						Name:        "Node Count",
+						Type:        "integer",
+						Description: "The number of nodes in the Aerospike cluster",
+						JSONPath:    ".status.nodeCount",
+					},
+					{
+						Name:        "Age",
+						Type:        "date",
+						Description: "Time elapsed since the resource was created",
+						JSONPath:    ".metadata.creationTimestamp",
+					},
+				},
 			},
 		},
 		{
@@ -274,6 +294,26 @@ var (
 						},
 					},
 				},
+				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
+					{
+						Name:        "Target Cluster",
+						Type:        "string",
+						Description: "The name of the Aerospike cluster targeted by the backup operation",
+						JSONPath:    ".spec.target.cluster",
+					},
+					{
+						Name:        "Target Namespace",
+						Type:        "string",
+						Description: "The name of the Aerospike namespace targeted by the backup operation",
+						JSONPath:    ".spec.target.namespace",
+					},
+					{
+						Name:        "Age",
+						Type:        "date",
+						Description: "Time elapsed since the resource was created",
+						JSONPath:    ".metadata.creationTimestamp",
+					},
+				},
 			},
 		},
 		{
@@ -313,6 +353,26 @@ var (
 								},
 							},
 						},
+					},
+				},
+				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
+					{
+						Name:        "Target Cluster",
+						Type:        "string",
+						Description: "The name of the Aerospike cluster targeted by the restore operation",
+						JSONPath:    ".spec.target.cluster",
+					},
+					{
+						Name:        "Target Namespace",
+						Type:        "string",
+						Description: "The name of the Aerospike namespace targeted by the restore operation",
+						JSONPath:    ".spec.target.namespace",
+					},
+					{
+						Name:        "Age",
+						Type:        "date",
+						Description: "Time elapsed since the resource was created",
+						JSONPath:    ".metadata.creationTimestamp",
 					},
 				},
 			},
