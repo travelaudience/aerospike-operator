@@ -24,6 +24,10 @@ endif::[]
 ** The `aerospike.travelaudience.com/v1alpha1` API is being deprecated, and will be permanently disabled in a future version.
 * Added the `secretNamespace` and `secretKey` fiels to <<./docs/design/api-spec.adoc#backupstoragespec,BackupStorageSpec>>. This allows the secrets used to backup/restore to/from cloud storage to exist in a Kubernetes namespace different from the one holding the AerospikeCluster resource.
 * Added the https://www.aerospike.com/docs/reference/configuration/#data-in-memory[`data-in-memory`] field to <<./docs/design/api-spec.adoc#storagespec,StorageSpec>>.
+* Added https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#additional-printer-columns[additional printer colums] to `AerospikeCluster`, `AerospikeNamespaceBackup` and `AerospikeNamespaceRestore`.
+** Listing `AerospikeCluster` resources now displays version, node count and age.
+** Listing `AerospikeNamespaceBackup` resources now displays target Aerospike cluster and namespace, as well as age.
+** Listing `AerospikeNamespaceRestore` resources now displays target Aerospike cluster and namespace, as well as age.
 
 === Bug Fixes
 
