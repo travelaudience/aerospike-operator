@@ -146,12 +146,6 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 }
 
 func (s *ValidatingAdmissionWebhook) validateAerospikeClusterUpdate(old, new *aerospikev1alpha2.AerospikeCluster) error {
-	// reject the update if the .status field was deleted
-	emptyStatus := aerospikev1alpha2.AerospikeClusterStatus{}
-	if !reflect.DeepEqual(old.Status, emptyStatus) && reflect.DeepEqual(new.Status, emptyStatus) {
-		return fmt.Errorf("the .status field cannot be deleted")
-	}
-
 	// check whether a version upgrade has been requested, in which case we
 	// prevent configuration/topology changes from occurring simultaneously
 	if old.Spec.Version != new.Spec.Version {

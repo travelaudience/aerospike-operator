@@ -40,11 +40,6 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceBackup(ar av1beta1.A
 		if err != nil {
 			return admissionResponseFromError(err)
 		}
-		// reject the update if the .status field was deleted
-		emptyStatus := aerospikev1alpha2.AerospikeNamespaceBackupStatus{}
-		if !reflect.DeepEqual(old.Status, emptyStatus) && reflect.DeepEqual(obj.Status, emptyStatus) {
-			return admissionResponseFromError(fmt.Errorf("the .status field cannot be deleted"))
-		}
 		// reject updates to the .spec field
 		if !reflect.DeepEqual(obj.Spec, old.Spec) {
 			return admissionResponseFromError(fmt.Errorf("the spec of an aerospikenamespacebackup resource cannot be changed after creation"))

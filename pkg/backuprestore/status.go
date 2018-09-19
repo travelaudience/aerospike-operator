@@ -17,51 +17,27 @@ limitations under the License.
 package backuprestore
 
 import (
-	"encoding/json"
 	"time"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 )
 
 func (h *AerospikeBackupRestoreHandler) appendCondition(obj aerospikev1alpha2.BackupRestoreObject, condition apiextensions.CustomResourceDefinitionCondition) error {
-	oldBytes, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-
 	condition.LastTransitionTime = metav1.NewTime(time.Now())
 	obj.SetConditions(append(obj.GetConditions(), condition))
 
-	newBytes, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-
+	var err error
 	switch obj.GetOperationType() {
 	case common.OperationTypeBackup:
-		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha2.AerospikeNamespaceBackup{})
-		if err != nil {
-			return err
-		}
-		if _, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
-			return err
-		}
+		_, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).UpdateStatus(obj.(*aerospikev1alpha2.AerospikeNamespaceBackup))
 	case common.OperationTypeRestore:
-		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &aerospikev1alpha2.AerospikeNamespaceRestore{})
-		if err != nil {
-			return err
-		}
-		if _, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).Patch(obj.GetName(), types.MergePatchType, patchBytes); err != nil {
-			return err
-		}
+		_, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).UpdateStatus(obj.(*aerospikev1alpha2.AerospikeNamespaceRestore))
 	}
-	return nil
+	return err
 }
 
 func (h *AerospikeBackupRestoreHandler) isFailedOrFinished(obj aerospikev1alpha2.BackupRestoreObject) bool {

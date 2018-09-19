@@ -41,7 +41,7 @@ func (r *AerospikeClusterReconciler) updateStatus(aerospikeCluster *aerospikev1a
 	aerospikeCluster.Status.Version = aerospikeCluster.Spec.Version
 }
 
-// patchCluster updates the status field of the aerospikeCluster
+// patchCluster updates the aerospikecluster resource.
 func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha2.AerospikeCluster) error {
 	// return if there are no changes to patch
 	if reflect.DeepEqual(old, new) {
@@ -59,13 +59,27 @@ func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha2.Ae
 	if err != nil {
 		return err
 	}
-	_, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(old.Namespace).Patch(old.Name, types.MergePatchType, patchBytes)
+	// grab the status changes before patching
+	newStatus := new.Status
+	new, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(old.Namespace).Patch(old.Name, types.MergePatchType, patchBytes)
 	if err != nil {
 		return err
 	}
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(new),
-	}).Debug("status updated")
+	}).Debug("resource updated")
+
+	// update the status subresource
+	if !reflect.DeepEqual(new.Status, newStatus) {
+		new.Status = newStatus
+		new, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(new.Namespace).UpdateStatus(new)
+		if err != nil {
+			return err
+		}
+		log.WithFields(log.Fields{
+			logfields.AerospikeCluster: meta.Key(new),
+		}).Debug("status updated")
+	}
 	return nil
 }
 

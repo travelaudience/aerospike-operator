@@ -230,6 +230,7 @@ var (
 					},
 				},
 				Subresources: &extsv1beta1.CustomResourceSubresources{
+					Status: &extsv1beta1.CustomResourceSubresourceStatus{},
 					Scale: &extsv1beta1.CustomResourceSubresourceScale{
 						SpecReplicasPath:   ".spec.nodeCount",
 						StatusReplicasPath: ".status.nodeCount",
@@ -301,6 +302,9 @@ var (
 						},
 					},
 				},
+				Subresources: &extsv1beta1.CustomResourceSubresources{
+					Status: &extsv1beta1.CustomResourceSubresourceStatus{},
+				},
 				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
 					{
 						Name:        "Target Cluster",
@@ -361,6 +365,9 @@ var (
 							},
 						},
 					},
+				},
+				Subresources: &extsv1beta1.CustomResourceSubresources{
+					Status: &extsv1beta1.CustomResourceSubresourceStatus{},
 				},
 				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
 					{

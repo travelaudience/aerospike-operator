@@ -144,6 +144,14 @@ rules:
   - update
   - patch
   - watch
+- apiGroups:
+  - aerospike.travelaudience.com
+  resources:
+  - aerospikeclusters/status
+  - aerospikenamespacebackups/status
+  - aerospikenamespacerestores/status
+  verbs:
+  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
