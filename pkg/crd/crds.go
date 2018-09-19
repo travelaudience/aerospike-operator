@@ -229,6 +229,13 @@ var (
 						},
 					},
 				},
+				Subresources: &extsv1beta1.CustomResourceSubresources{
+					Scale: &extsv1beta1.CustomResourceSubresourceScale{
+						SpecReplicasPath:   ".spec.nodeCount",
+						StatusReplicasPath: ".status.nodeCount",
+						LabelSelectorPath:  nil,
+					},
+				},
 				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
 					{
 						Name:        "Version",
