@@ -310,13 +310,13 @@ var (
 						Name:        "Target Cluster",
 						Type:        "string",
 						Description: "The name of the Aerospike cluster targeted by the backup operation",
-						JSONPath:    ".spec.target.cluster",
+						JSONPath:    ".status.target.cluster",
 					},
 					{
 						Name:        "Target Namespace",
 						Type:        "string",
 						Description: "The name of the Aerospike namespace targeted by the backup operation",
-						JSONPath:    ".spec.target.namespace",
+						JSONPath:    ".status.target.namespace",
 					},
 					{
 						Name:        "Age",
@@ -374,13 +374,13 @@ var (
 						Name:        "Target Cluster",
 						Type:        "string",
 						Description: "The name of the Aerospike cluster targeted by the restore operation",
-						JSONPath:    ".spec.target.cluster",
+						JSONPath:    ".status.target.cluster",
 					},
 					{
 						Name:        "Target Namespace",
 						Type:        "string",
 						Description: "The name of the Aerospike namespace targeted by the restore operation",
-						JSONPath:    ".spec.target.namespace",
+						JSONPath:    ".status.target.namespace",
 					},
 					{
 						Name:        "Age",

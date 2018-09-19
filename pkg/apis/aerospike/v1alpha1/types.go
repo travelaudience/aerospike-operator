@@ -37,4 +37,5 @@ type BackupRestoreObject interface {
 	GetFailedConditionType() apiextensions.CustomResourceDefinitionConditionType
 	GetFinishedConditionType() apiextensions.CustomResourceDefinitionConditionType
 	GetStartedConditionType() apiextensions.CustomResourceDefinitionConditionType
+	SyncStatusWithSpec() bool
 }

@@ -18,12 +18,14 @@ package backuprestore
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	batchlistersv1 "k8s.io/client-go/listers/batch/v1"
@@ -73,6 +75,11 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha2.BackupResto
 			logfields.Kind: obj.GetKind(),
 			logfields.Key:  meta.Key(obj),
 		}).Debug("no action is needed")
+		if obj.SyncStatusWithSpec() {
+			if err := h.updateStatus(obj); err != nil {
+				return err
+			}
+		}
 		return h.clearSecrets(obj)
 	}
 
@@ -92,7 +99,7 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha2.BackupResto
 	}
 
 	// check whether the associated job exists, and create it if it doesn't
-	j, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).Get(h.getJobName(obj))
+	job, err := h.jobsLister.Jobs(obj.GetObjectMeta().Namespace).Get(h.getJobName(obj))
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// get the secret containing the credentials to access cloud storage
@@ -101,14 +108,20 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha2.BackupResto
 				return err
 			}
 			// the job doesn't exist yet, so create it
-			return h.launchJob(obj, secret)
+			if err := h.launchJob(obj, secret); err != nil {
+				return err
+			}
+		} else {
+			return err
 		}
-		return err
+	} else {
+		// at this point there is already an associated job, so we must check its
+		// status and report accordingly
+		h.maybeSetConditions(obj, job)
 	}
-
-	// at this point there is already an associated job, so we must check its
-	// status and report accordingly
-	return h.updateStatus(obj, j)
+	// sync .status with .spec
+	obj.SyncStatusWithSpec()
+	return h.updateStatus(obj)
 }
 
 // launchJob performs a number of checks and launches the job associated with
@@ -131,32 +144,34 @@ func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha2.BackupRe
 		"%s job created as %s", obj.GetOperationType(), meta.Key(job))
 	// append a condition to the resource indicating the current status
 	condition := apiextensions.CustomResourceDefinitionCondition{
-		Type:    obj.GetStartedConditionType(),
-		Status:  apiextensions.ConditionTrue,
-		Message: fmt.Sprintf("%s job created as %s", obj.GetOperationType(), meta.Key(job)),
+		LastTransitionTime: metav1.NewTime(time.Now()),
+		Type:               obj.GetStartedConditionType(),
+		Status:             apiextensions.ConditionTrue,
+		Message:            fmt.Sprintf("%s job created as %s", obj.GetOperationType(), meta.Key(job)),
 	}
-	return h.appendCondition(obj, condition)
+	obj.SetConditions(append(obj.GetConditions(), condition))
+	return nil
 }
 
-// updateStatus checks the status of the job associated with obj and updates the
-// resource's status.
-func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha2.BackupRestoreObject, job *batch.Job) error {
-	var condition batch.JobConditionType
+// maybeSetConditions checks the status of the job associated with obj and updates the
+// resource's conditions.
+func (h *AerospikeBackupRestoreHandler) maybeSetConditions(obj aerospikev1alpha2.BackupRestoreObject, job *batch.Job) {
+	var jobCondition batch.JobConditionType
 
-	// look for the complete of failed condition in the associated job
+	// look for the complete or failed condition in the associated job
 	for _, c := range job.Status.Conditions {
 		if c.Type == batch.JobComplete && c.Status == v1.ConditionTrue {
-			condition = batch.JobComplete
+			jobCondition = batch.JobComplete
 			break
 		}
 		if c.Type == batch.JobFailed && c.Status == v1.ConditionTrue {
-			condition = batch.JobFailed
+			jobCondition = batch.JobFailed
 			break
 		}
 	}
 
 	// update the resource's status based on the job condition
-	switch condition {
+	switch jobCondition {
 	case batch.JobComplete:
 		// log that the job was successful
 		log.WithFields(log.Fields{
@@ -166,13 +181,13 @@ func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha2.Backu
 		// record an event indicating success
 		h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobFinished,
 			"%s job has finished", obj.GetOperationType())
-		// append a condition to the resource's status indicating success
-		condition := apiextensions.CustomResourceDefinitionCondition{
-			Type:    obj.GetFinishedConditionType(),
-			Status:  apiextensions.ConditionTrue,
-			Message: fmt.Sprintf("%s job has finished", obj.GetOperationType()),
-		}
-		return h.appendCondition(obj, condition)
+		// append a jobCondition to the resource's status indicating success
+		obj.SetConditions(append(obj.GetConditions(), apiextensions.CustomResourceDefinitionCondition{
+			LastTransitionTime: metav1.NewTime(time.Now()),
+			Type:               obj.GetFinishedConditionType(),
+			Status:             apiextensions.ConditionTrue,
+			Message:            fmt.Sprintf("%s job has finished", obj.GetOperationType()),
+		}))
 	case batch.JobFailed:
 		// log that the job failed
 		log.WithFields(log.Fields{
@@ -182,14 +197,12 @@ func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha2.Backu
 		// record an event indicating failure
 		h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonJobFailed,
 			"%s job failed %d times", obj.GetOperationType(), job.Status.Failed)
-		// append a condition to the resource's status indicating failure
-		condition := apiextensions.CustomResourceDefinitionCondition{
-			Type:    obj.GetFailedConditionType(),
-			Status:  apiextensions.ConditionTrue,
-			Message: fmt.Sprintf("%s job failed %d times", obj.GetOperationType(), job.Status.Failed),
-		}
-		return h.appendCondition(obj, condition)
-	default:
-		return nil
+		// append a jobCondition to the resource's status indicating failure
+		obj.SetConditions(append(obj.GetConditions(), apiextensions.CustomResourceDefinitionCondition{
+			LastTransitionTime: metav1.NewTime(time.Now()),
+			Type:               obj.GetFailedConditionType(),
+			Status:             apiextensions.ConditionTrue,
+			Message:            fmt.Sprintf("%s job failed %d times", obj.GetOperationType(), job.Status.Failed),
+		}))
 	}
 }

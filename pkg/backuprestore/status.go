@@ -17,19 +17,13 @@ limitations under the License.
 package backuprestore
 
 import (
-	"time"
-
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 )
 
-func (h *AerospikeBackupRestoreHandler) appendCondition(obj aerospikev1alpha2.BackupRestoreObject, condition apiextensions.CustomResourceDefinitionCondition) error {
-	condition.LastTransitionTime = metav1.NewTime(time.Now())
-	obj.SetConditions(append(obj.GetConditions(), condition))
-
+func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha2.BackupRestoreObject) error {
 	var err error
 	switch obj.GetOperationType() {
 	case common.OperationTypeBackup:

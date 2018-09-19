@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"reflect"
+
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -119,4 +121,17 @@ func (b *AerospikeNamespaceRestore) GetFinishedConditionType() apiextensions.Cus
 
 func (b *AerospikeNamespaceRestore) GetStartedConditionType() apiextensions.CustomResourceDefinitionConditionType {
 	return common.ConditionRestoreStarted
+}
+
+func (b *AerospikeNamespaceRestore) SyncStatusWithSpec() bool {
+	mustUpdate := false
+	if !reflect.DeepEqual(b.Status.Storage, b.Spec.Storage) {
+		b.Status.Storage = b.Spec.Storage
+		mustUpdate = true
+	}
+	if !reflect.DeepEqual(b.Status.Target, b.Spec.Target) {
+		b.Status.Target = b.Spec.Target
+		mustUpdate = true
+	}
+	return mustUpdate
 }
