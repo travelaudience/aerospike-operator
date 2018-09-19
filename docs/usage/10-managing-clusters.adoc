@@ -326,10 +326,20 @@ in an inconsistent or inoperable state.
 == Scaling an Aerospike cluster
 
 As load increases or decreases, one may want to scale a given Aerospike cluster
-up or down. Scaling an Aerospike cluster is done by editing the associated
+up or down. Scaling an Aerospike cluster can be done using the `kubectl scale`
+command. For instance, in the example <<as-cluster-0-example,above>>, the
+following command will cause `aerospike-operator` to create a new Aerospike
+node:
+
+[source,bash]
+----
+$ kubectl scale asc as-cluster-0 --replicas=3
+----
+
+Scaling an Aerospike cluster can also be done by directly editing the associated
 `AerospikeCluster` resource in order to update the value of the
 `.spec.nodeCount` field. For instance, setting `.spec.nodeCount` to three in the
-example <<as-cluster-0-example,above>> will cause `aerospike-operator` to
+example <<as-cluster-0-example,above>> will also cause `aerospike-operator` to
 create a new Aerospike node:
 
 [source,bash]
