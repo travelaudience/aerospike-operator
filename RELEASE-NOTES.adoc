@@ -28,6 +28,8 @@ endif::[]
 ** Listing `AerospikeCluster` resources now displays version, node count and age.
 ** Listing `AerospikeNamespaceBackup` resources now displays target Aerospike cluster and namespace, as well as age.
 ** Listing `AerospikeNamespaceRestore` resources now displays target Aerospike cluster and namespace, as well as age.
+* Added support for the `/scale` and `/status` subresources.
+** It is now possible to scale an Aerospike cluster using `kubectl scale`.
 
 === Bug Fixes
 
