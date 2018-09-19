@@ -3,18 +3,20 @@ This document provides a list of the current limitations of aerospike-operator.
 :icons: font
 :toc:
 
-As of this writing, `aerospike-operator` and the Aerospike cluster it manages
-have the following limitations:
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
 
-* `aerospike-operator` supports Aerospike Community Edition only
-  footnote:[All limits in the https://www.aerospike.com/products/product-matrix/[Product Matrix] apply to clusters managed by `aerospike-operator`.].
+As of this writing, `aerospike-operator` and the Aerospike cluster it manages have the following limitations:
+
+* `aerospike-operator` supports Aerospike Community Edition only footnote:[All limits in the https://www.aerospike.com/products/product-matrix/[Product Matrix] apply to clusters managed by `aerospike-operator`.].
 * There must be exactly one Aerospike namespace per Aerospike cluster.
-* Fully customizing the Aerospike configuration file is not supported
-  footnote:[The list of configuration properties whose value can be customized is provided in the <<../design/api-spec.adoc#,API spec>> document].
+* Fully customizing the Aerospike configuration file is not supported footnote:[The list of configuration properties whose value can be customized is provided in the <<../design/api-spec.adoc#,API spec>> document].
 * Raw device and file storage support are limited to 2TB per namespace.
-** Raw device storage requires a Kubernetes 1.11 cluster with alpha features
-   enabled.
-* The replication factor and the storage spec for an existing Aerospike
-  namespace cannot be changed. In particular, this means that resizing existing
-  persistent volumes is not supported.
+** Raw device storage requires a Kubernetes 1.11 cluster with alpha features enabled.
+* The replication factor and the storage spec for an existing Aerospike namespace cannot be changed. In particular, this means that resizing existing persistent volumes is not supported.
 * The backup and restore functionality supports Google Cloud Storage only.

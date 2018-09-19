@@ -4,6 +4,14 @@ This document describes the aerospike-operator API.
 :icons: font
 :toc:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 == Base Types
 
 [[aerospikecluster]]
@@ -33,8 +41,7 @@ More info:
 [[aerospikenamespacebackup]]
 === AerospikeNamespaceBackup
 
-The AerospikeNamespaceBackup type represents a single backup operation targeting
-a single Aerospike namespace.
+The AerospikeNamespaceBackup type represents a single backup operation targeting a single Aerospike namespace.
 
 |===
 | Field | Description | Scheme | Required
@@ -58,8 +65,7 @@ More info:
 [[aerospikenamespacerestore]]
 === AerospikeNamespaceRestore
 
-The AerospikeNamespaceRestore type represents a single restore operation
-targeting a single Aerospike namespace.
+The AerospikeNamespaceRestore type represents a single restore operation targeting a single Aerospike namespace.
 
 |===
 | Field | Description | Scheme | Required
@@ -85,17 +91,13 @@ More info:
 [[aerospikeclusterspec]]
 === AerospikeClusterSpec
 
-The AerospikeClusterSpec type specifies the desired state of an Aerospike
-cluster.
+The AerospikeClusterSpec type specifies the desired state of an Aerospike cluster.
 
 |===
 | Field | Description | Scheme | Required
 | version | The version of Aerospike to be deployed. | string | true
 | nodeCount | The number of nodes in the Aerospike cluster. | int32 | true
-| namespaces | The specification of the Aerospike namespaces in the cluster.
-Must have exactly one element.
-footnote:[Even though the `.spec.namespaces` field must have exactly one element, it was decided to make it an array in order to allow extensibility of the API in the future.]
-. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
+| namespaces | The specification of the Aerospike namespaces in the cluster. Must have exactly one element footnote:[Even though the `.spec.namespaces` field must have exactly one element, it was decided to make it an array in order to allow extensibility of the API in the future.]. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
 | backupSpec | The specification of how Aerospike namespace backups made by aerospike-operator should be performed and stored. It is only required to be present if one wants to perform version upgrades on the Aerospike cluster. | <<aerospikebackupspec,AerospikeBackupSpec>> | false
 |===
 
@@ -137,8 +139,7 @@ spec:
 [[aerospikeclusterbackupspec]]
 === AerospikeClusterBackupSpec
 
-The AerospikeClusterBackupSpec type specifies how Aerospike namespace backups
-made by aerospike-operator before a version upgrade should be stored.
+The AerospikeClusterBackupSpec type specifies how Aerospike namespace backups made by aerospike-operator before a version upgrade should be stored.
 
 |===
 | Field | Description | Scheme | Required
@@ -156,8 +157,7 @@ made by aerospike-operator before a version upgrade should be stored.
 [[aerospikenamespacespec]]
 === AerospikeNamespaceSpec
 
-The AerospikeNamespaceSpec type specifies the configuration for an Aerospike
-namespace.
+The AerospikeNamespaceSpec type specifies the configuration for an Aerospike namespace.
 
 |===
 | Field | Description | Scheme | Required
@@ -175,19 +175,14 @@ More info:
 ==== Validations
 
 * `name` must be a non-empty string having at most 23 characters.
-* `replicationFactor` must be an integer between 1 and
-  <<aerospikeclusterspec,`nodeCount`>> (if present).
+* `replicationFactor` must be an integer between 1 and <<aerospikeclusterspec,`nodeCount`>> (if present).
 * `memorySize` must represent a positive quantity (if present).
 * `defaultTTL` must represent a non-negative quantity (if present).
 * `storage` must be non-null.
 
 [NOTE]
 ====
-The minimum value for `replicationFactor` is 1 since, in Aerospike, the "master
-copy" counts as a replica. This contrasts with other databases where replicas
-are the number of _aditional_ copies of data that should exist. Similarly, the
-maximum value is `nodeCount` since it is the maximum number of copies that may
-exist.
+The minimum value for `replicationFactor` is 1 since, in Aerospike, the "master copy" counts as a replica. This contrasts with other databases where replicas are the number of _aditional_ copies of data that should exist. Similarly, the maximum value is `nodeCount` since it is the maximum number of copies that may exist.
 ====
 
 <<toc,Back>>
@@ -213,8 +208,7 @@ More info:
 ==== Validations
 
 * `type` must be one of `file` or `device`.
-* `size` must represent a positive quantity and cannot exceed 2000G (i.e., two
-  terabytes).
+* `size` must represent a positive quantity and cannot exceed 2000G (i.e., two terabytes).
 * `storageClassName` must be a non-empty string (if present).
 * `persistentVolumeClaimTTL` must represent a non-negative quantity (if present).
 
@@ -223,8 +217,7 @@ More info:
 [[aerospikenamespacebackupspec]]
 === AerospikeNamespaceBackupSpec
 
-The AerospikeNamespaceBackupSpec type specifies the configuration for a backup
-operation.
+The AerospikeNamespaceBackupSpec type specifies the configuration for a backup operation.
 
 |===
 | Field | Description | Scheme | Required
@@ -267,8 +260,7 @@ spec:
 [[aerospikenamespacerestorespec]]
 === AerospikeNamespaceRestoreSpec
 
-The AerospikeNamespaceRestoreSpec type specifies the configuration for a restore
-operation.
+The AerospikeNamespaceRestoreSpec type specifies the configuration for a restore operation.
 
 |===
 | Field | Description | Scheme | Required
@@ -308,8 +300,7 @@ spec:
 [[targetnamespace]]
 === TargetNamespace
 
-The TargetNamespace type specifies the Aerospike cluster and Aerospike namespace
-a single backup or restore operation will target.
+The TargetNamespace type specifies the Aerospike cluster and Aerospike namespace a single backup or restore operation will target.
 
 |===
 | Field | Description | Scheme | Required
@@ -327,8 +318,7 @@ a single backup or restore operation will target.
 [[backupstoragespec]]
 === BackupStorageSpec
 
-The BackupStorageSpec type specifies the configuration for the storage of a
-backup.
+The BackupStorageSpec type specifies the configuration for the storage of a backup.
 
 |===
 | Field | Description | Scheme | Required
@@ -351,21 +341,15 @@ backup.
 
 == Status Types
 
-The following base types have an associated _status_ type whose structure
-mirrors the type's _spec_:
+The following base types have an associated _status_ type whose structure mirrors the type's _spec_:
 
 * AerospikeCluster
 * AerospikeNamespaceBackup
 * AerospikeNamespaceRestore
 
-This mirroring happens because the _status_ type is used to report information
-about a resource's most recently observed status (as described by the
-https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#spec-and-status[Kubernetes API conventions]).
-This allows users to know, at any given time, the actual state of the managed
-resources.
+This mirroring happens because the _status_ type is used to report information about a resource's most recently observed status (as described by the https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#spec-and-status[Kubernetes API conventions]). This allows users to know, at any given time, the actual state of the managed resources.
 
-For instance, during a scale-up operation, an AerospikeCluster resource may
-show the following:
+For instance, during a scale-up operation, an AerospikeCluster resource may show the following:
 
 [source,yaml]
 ----
@@ -398,10 +382,7 @@ status:
       size: 4G
 ----
 
-This means that a size of 5 (i.e., `.spec.nodeCount`) was requested for the
-cluster but at the moment only 3 (i.e., `.status.nodeCount`) members have been
-created. When the size of the cluster meets the desired size the
-AerospikeCluster resource will report the following:
+This means that a size of 5 (i.e., `.spec.nodeCount`) was requested for the cluster but at the moment only 3 (i.e., `.status.nodeCount`) members have been created. When the size of the cluster meets the desired size the AerospikeCluster resource will report the following:
 
 [source,yaml]
 ----
@@ -432,7 +413,6 @@ status:
       size: 4G
 ----
 
-Resources are acted upon by aerospike-operator until their `.spec` and `.status`
-fields match.
+Resources are acted upon by aerospike-operator until their `.spec` and `.status` fields match.
 
 <<toc,Back>>

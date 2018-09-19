@@ -3,55 +3,39 @@ This document details how to make backups of Aerospike namespaces using aerospik
 :icons: font
 :toc:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 == Foreword
 
-Before proceeding, one should make themselves familiar with
-https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/[custom resource definitions]
-and with the <<../design/api-spec.adoc#toc,API spec>> document (in particular
-with the
-<<../design/api-spec.adoc#aerospikenamespacebackup,AerospikeNamespaceBackup>>
-custom resource definition).
+Before proceeding, one should make themselves familiar with https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/[custom resource definitions] and with the <<../design/api-spec.adoc#toc,API spec>> document (in particular with the <<../design/api-spec.adoc#aerospikenamespacebackup,AerospikeNamespaceBackup>> custom resource definition).
 
 == Using `AerospikeNamespaceBackup`
 
 [[aerospike-namespace-backup-prerequisites]]
 === Pre-requisites
 
-Before being able to create backups using `aerospike-operator`, one must perform
-a few steps in order to configure the target cloud storage provider.
+Before being able to create backups using `aerospike-operator`, one must perform a few steps in order to configure the target cloud storage provider.
 
 ==== Google Cloud Storage
 
-In order to backup Aerospike data to Google Cloud Storage, one must start by
-creating a Google Cloud Storage bucket where to store the resulting data. One
-should refer to
-https://cloud.google.com/storage/docs/creating-buckets[Creating Storage Buckets]
-for instructions on how to perform this step.
+In order to backup Aerospike data to Google Cloud Storage, one must start by creating a Google Cloud Storage bucket where to store the resulting data. One should refer to https://cloud.google.com/storage/docs/creating-buckets[Creating Storage Buckets] for instructions on how to perform this step.
 
-NOTE: A single Google Cloud Storage bucket can store multiple backups made by
-`aerospike-operator`.
+NOTE: A single Google Cloud Storage bucket can store multiple backups made by `aerospike-operator`.
 
-To use Google Cloud Storage, a service account is additionally required. One
-should refer to
-https://cloud.google.com/storage/docs/authentication[Cloud Storage Authentication]
-for instructions on how to create a service account and on how to obtain a
-service account credential in JSON format. This credential will be required later
-on.
+To use Google Cloud Storage, a service account is additionally required. One should refer to https://cloud.google.com/storage/docs/authentication[Cloud Storage Authentication] for instructions on how to create a service account and on how to obtain a service account credential in JSON format. This credential will be required later on.
 
-NOTE: For the remainder of this document it is assumed that one is in
-possession of the service account credential in JSON format.
+NOTE: For the remainder of this document it is assumed that one is in possession of the service account credential in JSON format.
 
-Finally, the abovementioned service account must be given the
-`roles/storage.admin` IAM role. One should refer to
-https://cloud.google.com/iam/docs/granting-roles-to-service-accounts[Granting Roles to Service Accounts]
-for instructions on how to grant roles to a service account.
+Finally, the abovementioned service account must be given the `roles/storage.admin` IAM role. One should refer to https://cloud.google.com/iam/docs/granting-roles-to-service-accounts[Granting Roles to Service Accounts] for instructions on how to grant roles to a service account.
 
 [[aerospike-namespace-backup-secret]]
-`aerospike-operator` will use the abovementioned credential to access
-Google Cloud Storage. In order for this credential to be used, a
-https://kubernetes.io/docs/concepts/configuration/secret/[Kubernetes secret]
-containing the credential must be created. The secret must have the following
-structure:
+`aerospike-operator` will use the abovementioned credential to access Google Cloud Storage. In order for this credential to be used, a https://kubernetes.io/docs/concepts/configuration/secret/[Kubernetes secret] containing the credential must be created. The secret must have the following structure:
 
 [source,yaml]
 ----
@@ -65,8 +49,7 @@ metadata:
 type: Opaque
 ----
 
-In the example above, `ewo(...)Qo=` represents the base64-encoded content of the
-service account credentials file. This secret can be created using the following command:
+In the example above, `ewo(...)Qo=` represents the base64-encoded content of the service account credentials file. This secret can be created using the following command:
 
 [source,bash]
 ----
@@ -77,9 +60,7 @@ $ kubectl --namespace kubernetes-namespace-0 create secret generic \
 
 === Backing-up a namespace
 
-The creation of a backup of a given Aerospike namespace is triggered by creating
-an `AerospikeNamespaceBackup` custom resource targeting said Aerospike
-namespace. An example of such a resource can be found below:
+The creation of a backup of a given Aerospike namespace is triggered by creating an `AerospikeNamespaceBackup` custom resource targeting said Aerospike namespace. An example of such a resource can be found below:
 
 [source,yaml]
 ----
@@ -100,82 +81,41 @@ spec:
     secretKey: key.json
 ----
 
-NOTE: `secretNamespace` must be set to the name of the Kubernetes namespace
-where the secret to be used exists. It is an optional field that defaults
-to the name of the Kubernetes namespace the `AerospikeCluster` resource belongs to.
+NOTE: `secretNamespace` must be set to the name of the Kubernetes namespace where the secret to be used exists. It is an optional field that defaults to the name of the Kubernetes namespace the `AerospikeCluster` resource belongs to.
 
-NOTE: `secretKey` must be set to the name of the field inside the secret that
-contains the credentials to be used. It is also an optional field and defaults
-to `key.json`.
+NOTE: `secretKey` must be set to the name of the field inside the secret that contains the credentials to be used. It is also an optional field and defaults to `key.json`.
 
-Creating such a resource will cause `aerospike-operator` to create a backup for
-the `as-namespace-0` namespace of the `as-cluster-0` cluster, and
-to upload it to the `aerospike-backup` GCS bucket using the credentials
-contained in the `gcs-secret` secret (as created
-<<aerospike-namespace-backup-secret,above>>). The resulting backup will be named
-`as-backup-0`, and will result in two files being created in the
-`aerospike-backup` bucket:
+Creating such a resource will cause `aerospike-operator` to create a backup for the `as-namespace-0` namespace of the `as-cluster-0` cluster, and to upload it to the `aerospike-backup` GCS bucket using the credentials contained in the `gcs-secret` secret (as created <<aerospike-namespace-backup-secret,above>>). The resulting backup will be named `as-backup-0`, and will result in two files being created in the `aerospike-backup` bucket:
 
-* `as-backup-0.asb.gz`: contains the Aerospike data itself, compressed in
-  gzip format;
+* `as-backup-0.asb.gz`: contains the Aerospike data itself, compressed in gzip format;
 * `as-backup-0.json`: contains metadata about the backup operation.
 
-NOTE: The `.spec.storage` field is optional. If it is not provided, the value of
-`.spec.backupSpec` in the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>>
-resource pointed at by `.spec.target.cluster` will be used.
+NOTE: The `.spec.storage` field is optional. If it is not provided, the value of `.spec.backupSpec` in the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>> resource pointed at by `.spec.target.cluster` will be used.
 
-IMPORTANT: Any files with these names that may previously exist in the bucket
-will be **replaced** (including any previous backups with the same name). One
-should choose a unique name for every backup, and make sure this name does not
-clash with the names of any files that may already exist in the target bucket.
+IMPORTANT: Any files with these names that may previously exist in the bucket will be **replaced** (including any previous backups with the same name). One should choose a unique name for every backup, and make sure this name does not clash with the names of any files that may already exist in the target bucket.
 
-Under the hood, `aerospike-operator` creates a
-https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/[Kubernetes job]
-for every `AerospikeNamespaceBackup` custom resource that is created. This job
-is then responsible for performing the backup itself using the `asbackup`
-footnote:[https://www.aerospike.com/docs/tools/backup/asbackup.html] tool, as
-well as for uploading the resulting data to cloud storage. For further details
-on how to inspect the status of a backup job, one should refer to
-<<inspecting-a-backup>>.
+Under the hood, `aerospike-operator` creates a https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/[Kubernetes job] for every `AerospikeNamespaceBackup` custom resource that is created. This job is then responsible for performing the backup itself using the `asbackup` footnote:[https://www.aerospike.com/docs/tools/backup/asbackup.html] tool, as well as for uploading the resulting data to cloud storage. For further details on how to inspect the status of a backup job, one should refer to <<inspecting-a-backup>>.
 
-NOTE: In order to make the backup operation faster and cheaper,
-`aerospike-operator` streams the backup data to the target bucket as it becomes
-available (as opposed to temporarily storing the backup data in a persistent
-volume and uploading only when `asbackup` finishes).
+NOTE: In order to make the backup operation faster and cheaper, `aerospike-operator` streams the backup data to the target bucket as it becomes available (as opposed to temporarily storing the backup data in a persistent volume and uploading only when `asbackup` finishes).
 
 === Considerations
 
 ==== Namespace
 
-An `AerospikeNamespaceBackup` resource must be created in the same Kubernetes
-namespace where the target `AerospikeCluster` has been created.
+An `AerospikeNamespaceBackup` resource must be created in the same Kubernetes namespace where the target `AerospikeCluster` has been created.
 
 ==== Name
 
-It is important to pick a unique, meaningful name for a given
-`AerospikeNamespaceBackup` resource. On the one hand, files created in the
-target bucket will be given names based on this resource's name (i.e. on the
-value of `.metadata.name`). On the other hand,
-<<./30-restoring-namespaces.adoc#,restoring>> a backup requires one to know the
-exact name given to the backup when creating it.
+It is important to pick a unique, meaningful name for a given `AerospikeNamespaceBackup` resource. On the one hand, files created in the target bucket will be given names based on this resource's name (i.e. on the value of `.metadata.name`). On the other hand, <<./30-restoring-namespaces.adoc#,restoring>> a backup requires one to know the exact name given to the backup when creating it.
 
 ==== Topology changes
 
-As recommended
-footnote:[https://www.aerospike.com/docs/tools/backup/asbackup.html#other-options]
-in the Aerospike documentation, `aerospike-operator` runs `asbackup` using the
-`--no-cluster-change` flag. As such, any configuration or topology changes in the
-cluster (i.e., a configuration update or a failed pod) will cause any backup
-operations in progress at the moment to be aborted.
+As recommended footnote:[https://www.aerospike.com/docs/tools/backup/asbackup.html#other-options] in the Aerospike documentation, `aerospike-operator` runs `asbackup` using the `--no-cluster-change` flag. As such, any configuration or topology changes in the cluster (i.e., a configuration update or a failed pod) will cause any backup operations in progress at the moment to be aborted.
 
 [[inspecting-a-backup]]
 === Inspecting a backup
 
-When an `AerospikeNamespaceBackup` custom resource is created,
-`aerospike-operator` will create a Kubernetes job that is responsible for
-actually creating and uploading the backup to cloud storage. The name of the
-backup job can be retrieved by inspecting the value of the `.status.conditions`
-field of the `AerospikeNamespaceBackup` resource (or the associated events):
+When an `AerospikeNamespaceBackup` custom resource is created, `aerospike-operator` will create a Kubernetes job that is responsible for actually creating and uploading the backup to cloud storage. The name of the backup job can be retrieved by inspecting the value of the `.status.conditions` field of the `AerospikeNamespaceBackup` resource (or the associated events):
 
 [[source,bash]]
 ----
@@ -203,13 +143,7 @@ Events:
   Normal  JobFinished  4m    aerospikenamespacebackup  backup job has finished
 ----
 
-In the example above, the name of the backup job is `as-backup-0-backup`.
-The `BackupFinished` condition in the status field indicates that the backup was
-successfully performed and uploaded to cloud storage. In the event of a failure
-with either the creation or the upload of the backup, a `BackupFailed` condition
-will be appended to this field. Inspecting the job resource and the associated
-pod (created by Kubernetes) will reveal additional details about the backup
-process itself:
+In the example above, the name of the backup job is `as-backup-0-backup`. The `BackupFinished` condition in the status field indicates that the backup was successfully performed and uploaded to cloud storage. In the event of a failure with either the creation or the upload of the backup, a `BackupFailed` condition will be appended to this field. Inspecting the job resource and the associated pod (created by Kubernetes) will reveal additional details about the backup process itself:
 
 [source,bash]
 ----
@@ -218,6 +152,7 @@ $ kubectl -n kubernetes-namespace-0 get pods \    # Get pods in kubernetes-names
     --output=jsonpath={.items[0].metadata.name}   # Output the first matching pod's name.
 as-backup-0-backup-n6r9v                          # Name of the pod created by the job.
 ----
+
 [source,bash]
 ----
 $ kubectl -n kubernetes-namespace-0 get pod as-backup-0-backup-n6r9v
@@ -225,9 +160,7 @@ NAME                              READY     STATUS      RESTARTS   AGE
 as-backup-0-backup-n6r9v          0/1       Completed   0          5m
 ----
 
-Inspecting the logs for the `as-backup-0-backup-n6r9v` pod will output
-important information about the backup process (including the logs for
-`asbackup`):
+Inspecting the logs for the `as-backup-0-backup-n6r9v` pod will output important information about the backup process (including the logs for `asbackup`):
 
 [source,bash]
 ----
@@ -242,8 +175,7 @@ time="2018-07-02T14:48:31Z" level=info msg="backup is complete"
 
 === Listing backups
 
-To list all `AerospikeNamespaceBackup` resources in a given Kubernetes
-namespace, one may use `kubectl`:
+To list all `AerospikeNamespaceBackup` resources in a given Kubernetes namespace, one may use `kubectl`:
 
 [source,bash]
 ----
@@ -252,8 +184,7 @@ NAME                            TARGET CLUSTER   TARGET NAMESPACE   AGE
 as-namespace-0-20180702T1451Z   as-cluster-0     as-namespace-0     8m
 ----
 
-One may also use the `asnb` short name instead of
-`aerospikenamespacebackups`:
+One may also use the `asnb` short name instead of `aerospikenamespacebackups`:
 
 [source,bash]
 ----
@@ -262,8 +193,7 @@ NAME                            TARGET CLUSTER   TARGET NAMESPACE   AGE
 as-namespace-0-20180702T1451Z   as-cluster-0     as-namespace-0     8m
 ----
 
-To list all `AerospikeNamespaceBackup` resources in the current Kubernetes
-cluster, one may run
+To list all `AerospikeNamespaceBackup` resources in the current Kubernetes cluster, one may run
 
 [source,bash]
 ----
@@ -282,18 +212,11 @@ Deleting an `AerospikeNamespaceBackup` resource can be done using `kubectl`:
 $ kubectl -n kubernetes-namespace-0 delete asnb as-namespace-0-20180702T1451Z
 ----
 
-IMPORTANT: In order to prevent accidental deletion of important backup data,
-backups are **NOT** deleted from cloud storage when the corresponding
-`AerospikeNamespaceBackup` resource is deleted. To delete a backup from cloud
-storage, one should manually delete the corresponding files from the cloud
-storage bucket.
+IMPORTANT: In order to prevent accidental deletion of important backup data, backups are **NOT** deleted from cloud storage when the corresponding `AerospikeNamespaceBackup` resource is deleted. To delete a backup from cloud storage, one should manually delete the corresponding files from the cloud storage bucket.
 
 == Using `asbackup`
 
-Even though `aerospike-operator` provides backup functionality to cloud storage,
-one may prefer to use `asbackup` directly to create a backup of a given Aerospike
-namespace to some other location. In this case, one needs to point `asbackup` at
-the service created by `aerospike-operator` for the target Aerospike cluster:
+Even though `aerospike-operator` provides backup functionality to cloud storage, one may prefer to use `asbackup` directly to create a backup of a given Aerospike namespace to some other location. In this case, one needs to point `asbackup` at the service created by `aerospike-operator` for the target Aerospike cluster:
 
 [source,bash]
 ----
@@ -307,5 +230,4 @@ $ asbackup --no-config-file --no-cluster-change \
 2018-07-02 14:54:56 GMT [INF] [   27] Backed up 1000000 record(s), 0 secondary index(es), 0 UDF file(s) from 2 node(s), 234000059 byte(s) in total (~234 B/rec)
 ----
 
-In this scenario, one is responsible for setting up the required storage
-infrastructure and for the management of backup data.
+In this scenario, one is responsible for setting up the required storage infrastructure and for the management of backup data.

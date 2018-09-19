@@ -24,19 +24,19 @@ WARNING: `aerospike-operator` is currently _alpha_, and is under active developm
 
 `aerospike-operator` currently supports launching Aerospike clusters running the following Aerospike Server CE versions:
 
- * https://www.aerospike.com/download/server/notes.html#4.0.0.4[`4.0.0.4`]
- * https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.5`]
- * https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.6`]
- * https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.1`]
- * https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.6`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.5[`4.2.0.5`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.10[`4.2.0.10`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.2[`4.3.0.2`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.4[`4.3.0.4`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.6[`4.3.0.6`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.7[`4.3.0.7`]
+* https://www.aerospike.com/download/server/notes.html#4.0.0.4[`4.0.0.4`]
+* https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.5`]
+* https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.6`]
+* https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.1`]
+* https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.6`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.5[`4.2.0.5`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.10[`4.2.0.10`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.2[`4.3.0.2`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.4[`4.3.0.4`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.6[`4.3.0.6`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.7[`4.3.0.7`]
 
 == Documentation
 

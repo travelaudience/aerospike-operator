@@ -80,13 +80,7 @@ IMPORTANT: Before upgrading `aerospike-operator`, one **MUST** update the `aeros
 === Breaking changes
 
 * Change the naming strategy for persistent volume claims to use `GenerateName`.
-** **Action required:** Persistent volume claims created in previous versions of
-`aerospike-operator` will be replaced by new ones when a restart or upgrade
-operation is performed on an `AerospikeCluster` resource. To avoid losing data
-for Aerospike namespaces whose replication factor is equal to 1, one must
-create a backup of all Aerospike namespaces whose replication factor is equal to
-1 _before_ upgrading `aerospike-operator`. Then, _after_ upgrading
-`aerospike-operator`, one must restore these backups to new Aerospike clusters.
+** **Action required:** Persistent volume claims created in previous versions of `aerospike-operator` will be replaced by new ones when a restart or upgrade operation is performed on an `AerospikeCluster` resource. To avoid losing data for Aerospike namespaces whose replication factor is equal to 1, one must create a backup of all Aerospike namespaces whose replication factor is equal to 1 _before_ upgrading `aerospike-operator`. Then, _after_ upgrading `aerospike-operator`, one must restore these backups to new Aerospike clusters.
 
 === Improvements
 
@@ -95,73 +89,49 @@ create a backup of all Aerospike namespaces whose replication factor is equal to
 ** Device storage requires a Kubernetes 1.11 cluster with alpha features enabled.
 * Use Aerospike Tools 3.15.3.14.
 * Use `aerospike/aerospike-client-go` 1.34.1.
-* Support running custom upgrade steps via the introduction of
-<<./docs/design/upgrade-strategies.adoc#,upgrade strategies>>.
+* Support running custom upgrade steps via the introduction of <<./docs/design/upgrade-strategies.adoc#,upgrade strategies>>.
 * Add support for Aerospike versions 4.0.0.4, 4.0.0.5, 4.1.0.1 and 4.2.0.5.
 
 === Documentation
 
-* _Design:_ Add an <<./docs/design/upgrade-strategies.adoc#,Upgrade Strategies>>
-design document.
+* _Design:_ Add an <<./docs/design/upgrade-strategies.adoc#,Upgrade Strategies>> design document.
 
 == Changes in `0.7.0`
 
 === Breaking changes
 
-IMPORTANT: Before upgrading `aerospike-operator` to `0.7.0` or later, one should
-perform the actions indicated by the *_Action required_* items below as
-applicable.
+IMPORTANT: Before upgrading `aerospike-operator` to `0.7.0` or later, one should perform the actions indicated by the *_Action required_* items below as applicable.
 
 * Enforce the existence of a single Aerospike namespace per Aerospike cluster.
-  ** *Action required:* Existing `AerospikeCluster` resources with two Aerospike
-  namespaces must be backed-up and restored to *two* new, separate Aerospike
-  clusters with a *single* Aerospike namespace each.
+  ** *Action required:* Existing `AerospikeCluster` resources with two Aerospike namespaces must be backed-up and restored to *two* new, separate Aerospike clusters with a *single* Aerospike namespace each.
 
 === Improvements
 
 * Use stable node IDs for Aerospike nodes.
-* Prevent Aerospike from trying to establish heartbeat connections to IP
-  addresses of pods that don't exist anymore.
-* Support operating on up to six Aerospike clusters simultaneously instead of
-  only two.
-* Prevent the `.status` field of an `AerospikeCluster` resource from being
-  deleted. 
-* Allow standby replicas of `aerospike-operator` to serve the validating
-  admission webhook.
-* Improving the handling of errors caused by the Kubernetes API forcibly closing
-  open watch connections.
-* Wait for endpoints for custom resource definitions to be available before
-  starting the controllers.
+* Prevent Aerospike from trying to establish heartbeat connections to IP addresses of pods that don't exist anymore.
+* Support operating on up to six Aerospike clusters simultaneously instead of only two.
+* Prevent the `.status` field of an `AerospikeCluster` resource from being deleted. 
+* Allow standby replicas of `aerospike-operator` to serve the validating admission webhook.
+* Improving the handling of errors caused by the Kubernetes API forcibly closing open watch connections.
+* Wait for endpoints for custom resource definitions to be available before starting the controllers.
 * Improve logging when running with `--debug=false`.
 
 === Bug Fixes
 
-* Fix panics that might occur if some optional fields were absent from a
-  `AerospikeCluster` resource.
+* Fix panics that might occur if some optional fields were absent from a `AerospikeCluster` resource.
 
 === Documentation
 
-* _Design:_ Make it clear that `.spec.backupSpec` is only required when one
-  wants to upgrade an Aerospike cluster.
-* _Design:_ Make it clear that `.spec.nodeCount` must be greater than or equal
-  to `.spec.namespaces[*].replicationFactor`.
-* _Design:_ Add an link:./docs/design/swagger.json[OpenAPI spec] for the
-  `aerospike.travelaudience.com/v1alpha1` API.
-* _Design/Usage:_ Address single namespace limitation.
-* _Usage:_ Briefly mention capacity planning as a precursor to the creation of
-  `AerospikeCluster` resources.
-* _Usage:_ Make it clear that the secret used for backups and restores must
-  contain a `key.json` entry.
-* _Usage:_ Fix the name of the `.spec.namespaces[*].storage.storageClassName`
-  field.
-* _Usage:_ Add a "quickstart" subsection to the
-  <<./docs/usage/00-installation-guide.adoc#,Installation Guide>> page.
+* _Design:_ Make it clear that `.spec.backupSpec` is only required when one wants to upgrade an Aerospike cluster.
+* _Design:_ Make it clear that `.spec.nodeCount` must be greater than or equal to `.spec.namespaces[*].replicationFactor`.
+* _Design:_ Add an link:./docs/design/swagger.json[OpenAPI spec] for the `aerospike.travelaudience.com/v1alpha1` API.
+* _Design/Usage:_ Address single namespace limitation. * _Usage:_ Briefly mention capacity planning as a precursor to the creation of `AerospikeCluster` resources.
+* _Usage:_ Make it clear that the secret used for backups and restores must contain a `key.json` entry.
+* _Usage:_ Fix the name of the `.spec.namespaces[*].storage.storageClassName` field.
+* _Usage:_ Add a "quickstart" subsection to the <<./docs/usage/00-installation-guide.adoc#,Installation Guide>> page.
 * _Examples:_ Add missing permissions to the example cluster role binding.
-* _Examples:_ Specify resource requests and limits for `aerospike-operator` pods
-  in the example deployment.
-* _Other:_ Add links to `README.md` for better navigation.
-* _Other:_ Mention supported Aerospike versions in `README.md`.
-* _Other:_ List existing design documents in `README.md`.
+* _Examples:_ Specify resource requests and limits for `aerospike-operator` pods in the example deployment.
+* _Other:_ Add links to `README.md` for better navigation. * _Other:_ Mention supported Aerospike versions in `README.md`. * _Other:_ List existing design documents in `README.md`.
 
 === Other
 

@@ -3,10 +3,17 @@ This document describes how to build and run aerospike-operator.
 :icons: font
 :toc:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 == Pre-requisites
 
-To build `aerospike-operator`, one needs to install the following software in
-their workstation:
+To build `aerospike-operator`, one needs to install the following software in their workstation:
 
 * Docker
 * Go
@@ -16,42 +23,31 @@ their workstation:
 * `make`
 * https://github.com/GoogleContainerTools/skaffold[`skaffold`]
 
-To run `aerospike-operator` one needs a Kubernetes 1.11+ cluster. The build
-toolchain includes `skaffold` profiles that allow for easy deployment in GKE
-and Minikube clusters.
+To run `aerospike-operator` one needs a Kubernetes 1.11+ cluster. The build toolchain includes `skaffold` profiles that allow for easy deployment in GKE and Minikube clusters.
 
 === Google Kubernetes Engine
 
 To use the GKE profile, one needs to have the following:
 
 * A Google Cloud Platform project.
-** The
-   https://cloud.google.com/container-builder/docs/[Cloud Container Builder API]
-   must be enabled for this project.
+** The https://cloud.google.com/container-builder/docs/[Cloud Container Builder API] must be enabled for this project.
 * A Google Cloud Platform service account with at least the following IAM roles:
 ** `roles/cloudbuild.builds.builder`
 ** `roles/container.admin`
 ** `roles/storage.admin`
 * A JSON file containing the credentials for the abovementioned service account.
 ** It is assumed the JSON file is located at `<path-to-credentials>`.
-* The https://cloud.google.com/sdk/[Google Cloud SDK] (i.e. `gcloud`) installed
-  in one's workstation.
-** One should set the value of the `GOOGLE_APPLICATION_CREDENTIALS` environment
-   variable to `/path/to/key.json`.
+* The https://cloud.google.com/sdk/[Google Cloud SDK] (i.e. `gcloud`) installed in one's workstation.
+** One should set the value of the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to `/path/to/key.json`.
 * A Google Kubernetes Engine 1.11+ cluster.
 ** `kubectl` must be configured to connect to this cluster.
-** One must also run
-   https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker[`gcloud auth configure-docker`]
-   in order to register `gcloud` as a Docker credential helper.
-** Finally, one must manually bind the `cluster-admin` cluster role in the GKE
-   cluster to the abovementioned service account, as described in
-   https://cloud.google.com/kubernetes-engine/docs/how-to/role-based-access-control#setting_up_role-based_access_control[Role-Based Access Control].
+** One must also run https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker[`gcloud auth configure-docker`] in order to register `gcloud` as a Docker credential helper.
+** Finally, one must manually bind the `cluster-admin` cluster role in the GKE cluster to the abovementioned service account, as described in https://cloud.google.com/kubernetes-engine/docs/how-to/role-based-access-control#setting_up_role-based_access_control[Role-Based Access Control].
 * A Google Cloud Storage bucket.
 
 === Minikube
 
-To use the Minikube profile, one only needs to have a Minikube cluster running
-Kubernetes 1.11+.
+To use the Minikube profile, one only needs to have a Minikube cluster running Kubernetes 1.11+.
 
 == Cloning the repository
 
@@ -74,27 +70,20 @@ To install all the required dependencies one may run:
 $ make dep
 ----
 
-This will fetch project dependencies using `dep` as specified in `Gopkg.lock`,
-as well as some packages required for code generation. The latter are fetched
-using `go get`, but should be moved to `Gopkg.toml` as soon as
-https://github.com/golang/dep/issues/1306[this issue] is resolved.
+This will fetch project dependencies using `dep` as specified in `Gopkg.lock`, as well as some packages required for code generation. The latter are fetched using `go get`, but should be moved to `Gopkg.toml` as soon as https://github.com/golang/dep/issues/1306[this issue] is resolved.
 
-TIP: Running this command for the first time can take long, but subsequent runs
-are usually faster.
+TIP: Running this command for the first time can take long, but subsequent runs are usually faster.
 
 == Generating code
 
-Part of working with custom resource definitions involves generating code using
-https://github.com/kubernetes/code-generator[`k8s.io/code-generator`]. To run
-code generation, one should run the following command:
+Part of working with custom resource definitions involves generating code using https://github.com/kubernetes/code-generator[`k8s.io/code-generator`]. To run code generation, one should run the following command:
 
 [source,bash]
 ----
 $ make gen
 ----
 
-This will create the following files in the project tree, which are ignored by
-Git:
+This will create the following files in the project tree, which are ignored by Git:
 
 [source,bash]
 ----
@@ -108,23 +97,17 @@ pkg
 └── client (GENERATED)
 ----
 
-TIP: The code generation step should be run after cloning the project and
-whenever a modification to `pkg/apis` is made.
+TIP: The code generation step should be run after cloning the project and whenever a modification to `pkg/apis` is made.
 
 == Running `aerospike-operator`
 
-`aerospike-operator` must run inside a Kubernetes cluster. `skaffold` is used in
-order to ease the deployment.
+`aerospike-operator` must run inside a Kubernetes cluster. `skaffold` is used in order to ease the deployment.
 
 === Google Kubernetes Engine
 
-IMPORTANT: Before proceeding one must edit the `skaffold.operator.yaml` and
-`hack/skaffold.operator.yaml` files in order to replace all occurrences of
-`<project-id>` with the ID of the GCP project where one's GKE cluster has been
-created.
+IMPORTANT: Before proceeding one must edit the `skaffold.operator.yaml` and `hack/skaffold.operator.yaml` files in order to replace all occurrences of `<project-id>` with the ID of the GCP project where one's GKE cluster has been created.
 
-To deploy `aerospike-operator` to the GKE cluster targeted by the current
-`kubectl` context one may run:
+To deploy `aerospike-operator` to the GKE cluster targeted by the current `kubectl` context one may run:
 
 [source,bash]
 ----
@@ -132,11 +115,7 @@ $ PROFILE=gke \
   make run
 ----
 
-This will create an `aerospike-operator` inside the `aerospike-operator`
-namespace with two replicas. At any given time, one of this replicas is the
-_leader_, and the other one is a _standby_. To inspect the logs of the
-`aerospike-operator` pods, one may run the following command (replacing the
-name of the pod as appropriate):
+This will create an `aerospike-operator` inside the `aerospike-operator` namespace with two replicas. At any given time, one of this replicas is the _leader_, and the other one is a _standby_. To inspect the logs of the `aerospike-operator` pods, one may run the following command (replacing the name of the pod as appropriate):
 
 [source,bash]
 ----
@@ -147,8 +126,7 @@ time="2018-07-22T21:27:11Z" level=info msg="starting admission webhook"
 time="2018-07-22T21:27:11Z" level=info msg="current leader: aerospike-operator-79dcd89f7d-glhgt"
 ----
 
-In this case, `aerospike-operator-79dcd89f7d-5cznt` is the _standby_ replica,
-and `aerospike-operator-79dcd89f7d-glhgt` is the _leader_:
+In this case, `aerospike-operator-79dcd89f7d-5cznt` is the _standby_ replica, and `aerospike-operator-79dcd89f7d-glhgt` is the _leader_:
 
 [source,bash]
 ----
@@ -162,9 +140,7 @@ time="2018-07-22T21:27:07Z" level=info msg="started leading"
 time="2018-07-22T21:27:11Z" level=info msg="started workers" controller=aerospikecluster
 ----
 
-To re-deploy `aerospike-operator` after making local changes to the code, one
-simply needs to re-run the following command and wait for the deployment to
-rollout:
+To re-deploy `aerospike-operator` after making local changes to the code, one simply needs to re-run the following command and wait for the deployment to rollout:
 
 [source,bash]
 ----
@@ -173,12 +149,9 @@ $ PROFILE=gke make run
 
 === Minikube
 
-IMPORTANT: Before proceeding one must edit the `skaffold.operator.yaml` and
-`hack/skaffold.operator.yaml` files in order to remove all occurrences of
-`eu.gcr.io/<project-id>`, leaving only `aerospike-operator` as the image name.
+IMPORTANT: Before proceeding one must edit the `skaffold.operator.yaml` and `hack/skaffold.operator.yaml` files in order to remove all occurrences of `eu.gcr.io/<project-id>`, leaving only `aerospike-operator` as the image name.
 
-To deploy `aerospike-operator` to the Minikube cluster targeted by the current
-`kubectl` context one may run:
+To deploy `aerospike-operator` to the Minikube cluster targeted by the current `kubectl` context one may run:
 
 [source,bash]
 ----
@@ -186,21 +159,15 @@ $ PROFILE=minikube \
   make run
 ----
 
-This will create the same two-replica deployment described above. To re-deploy
-`aerospike-operator` after making local changes to the code, one simply needs to
-re-run the command above.
+This will create the same two-replica deployment described above. To re-deploy `aerospike-operator` after making local changes to the code, one simply needs to re-run the command above.
 
-## Running the end-to-end test suite
+== Running the end-to-end test suite
 
 === Google Kubernetes Engine
 
-IMPORTANT: Before proceeding one must edit the `skaffold.e2e.yaml` and
-`hack/skaffold.e2e.yaml` files in order to replace all occurrences of
-`project-id` with the ID of the GCP project where one's GKE cluster has been
-created.
+IMPORTANT: Before proceeding one must edit the `skaffold.e2e.yaml` and `hack/skaffold.e2e.yaml` files in order to replace all occurrences of `project-id` with the ID of the GCP project where one's GKE cluster has been created.
 
-Before being able to run the end-to-end test suite, one must create a Kubernetes
-secret containing the service account credentials in JSON format:
+Before being able to run the end-to-end test suite, one must create a Kubernetes secret containing the service account credentials in JSON format:
 
 [source,bash]
 ----
@@ -209,9 +176,7 @@ $ kubectl --namespace <namespace> \
     --from-file=<credentials-filename>
 ----
 
-Once this secret has been created, and after deploying `aerospike-operator`
-according to the steps above, one may run the test suite against the cluster by
-running:
+Once this secret has been created, and after deploying `aerospike-operator` according to the steps above, one may run the test suite against the cluster by running:
 
 [source,bash]
 ----
@@ -223,17 +188,14 @@ $ GCS_BUCKET_NAME=<bucket-name> \
   make test.e2e
 ----
 
-This will create a pod named `aerospike-operator-e2e` in the
-`aerospike-operator-e2e` namespace. To inspect its logs as tests run, one may
-run:
+This will create a pod named `aerospike-operator-e2e` in the `aerospike-operator-e2e` namespace. To inspect its logs as tests run, one may run:
 
 [source,bash]
 ----
 $ make test.e2e.logs
 ----
 
-By the time the end-to-end test suite finishes, one will see the following
-message in the logs:
+By the time the end-to-end test suite finishes, one will see the following message in the logs:
 
 [source,bash]
 ----
@@ -245,6 +207,4 @@ SUCCESS! -- 24 Passed | 0 Failed | 0 Flaked | 0 Pending | 0 Skipped
 
 === Minikube
 
-Running the end-to-end test suite in Minikube is currently not supported, as
-support for Minikube is primarily targeted at providing a fast way around
-development and smoke testing.
+Running the end-to-end test suite in Minikube is currently not supported, as support for Minikube is primarily targeted at providing a fast way around development and smoke testing.

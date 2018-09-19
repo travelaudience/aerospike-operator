@@ -3,18 +3,23 @@ This document details how to install aerospike-operator in a Kubernetes cluster.
 :icons: font
 :toc:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 == Pre-requisites
 
 === Kubernetes
 
-`aerospike-operator` requires Kubernetes 1.11+. Running `aerospike-operator` in
-older Kubernetes versions is not supported.
+`aerospike-operator` requires Kubernetes 1.11+. Running `aerospike-operator` in older Kubernetes versions is not supported.
 
 === Google Kubernetes Engine
 
-Due to a https://cloud.google.com/container-engine/docs/role-based-access-control#defining_permissions_in_a_role[known issue with RBAC on Google Kubernetes Engine],
-one must grant themselves the `cluster-admin` role *manually* before proceeding
-to install `aerospike-operator`. In order to do so, one must run
+Due to a https://cloud.google.com/container-engine/docs/role-based-access-control#defining_permissions_in_a_role[known issue with RBAC on Google Kubernetes Engine], one must grant themselves the `cluster-admin` role *manually* before proceeding to install `aerospike-operator`. In order to do so, one must run
 
 [source,bash]
 ----
@@ -23,16 +28,14 @@ $ kubectl create clusterrolebinding \
     <cluster-role-binding-name> --clusterrole=cluster-admin --user=${MY_GCLOUD_USER}
 ----
 
-One must replace the `<cluster-role-binding-name>` placeholder above with a
-unique, meaningful name.
+One must replace the `<cluster-role-binding-name>` placeholder above with a unique, meaningful name.
 
 [[installing]]
 == Installing `aerospike-operator`
 
 === Quickstart
 
-In order to install `aerospike-operator` using the default configuration,
-one may run
+In order to install `aerospike-operator` using the default configuration, one may run
 
 [source,bash]
 ----
@@ -40,50 +43,36 @@ $ kubectl create -f https://raw.githubusercontent.com/travelaudience/aerospike-o
 $ kubectl create -f https://raw.githubusercontent.com/travelaudience/aerospike-operator/master/docs/examples/10-aerospike-operator.yml
 ----
 
-This will quickly get `aerospike-operator` up and running in one's Kubernetes
-cluster. In order to understand what happens behind the scenes, or in case one
-wants to tweak the `aerospike-operator` configuration, one should read the next
-section carefully.
+This will quickly get `aerospike-operator` up and running in one's Kubernetes cluster. In order to understand what happens behind the scenes, or in case one wants to tweak the `aerospike-operator` configuration, one should read the next section carefully.
 
 === Advanced installation
 
-To install `aerospike-operator` in one's Kubernetes cluster, one must first
-clone the `aerospike-operator` repository into one's workstation:
+To install `aerospike-operator` in one's Kubernetes cluster, one must first clone the `aerospike-operator` repository into one's workstation:
 
 [source,bash]
 ----
 $ git clone https://github.com/travelaudience/aerospike-operator.git
 ----
 
-Then, one must switch to the `aerospike-operator` directory created by the above
-command and run
+Then, one must switch to the `aerospike-operator` directory created by the above command and run
 
 [source,bash]
 ----
 $ kubectl create -f docs/examples/00-prereqs.yml
 ----
 
-This will create a dedicated namespace for `aerospike-operator`, create a
-dedicated service account in this namespace and configure the permissions
-associated with the service account so that `aerospike-operator` can operate in
-RBAC-enabled clusters.
+This will create a dedicated namespace for `aerospike-operator`, create a dedicated service account in this namespace and configure the permissions associated with the service account so that `aerospike-operator` can operate in RBAC-enabled clusters.
 
-After installing the pre-requisites, one must create a deployment for
-`aerospike-operator`. One may do it by running
+After installing the pre-requisites, one must create a deployment for `aerospike-operator`. One may do it by running
 
 [source,bash]
 ----
 $ kubectl create -f docs/examples/10-aerospike-operator.yml
 ----
 
-TIP: Optionally, one may edit this file in order to tweak the default
-installation parameters (such as if one wants to enable debug logging). One
-should check the <<configuration>> section for further details on the available
-flags.
+TIP: Optionally, one may edit this file in order to tweak the default installation parameters (such as if one wants to enable debug logging). One should check the <<configuration>> section for further details on the available flags.
 
-This will create a service footnote:[Required for the embbeded
-validating admission webhook to work.] and a deployment for
-`aerospike-operator`:
+This will create a service footnote:[Required for the embbeded validating admission webhook to work.] and a deployment for `aerospike-operator`:
 
 [source,bash]
 ----
@@ -99,8 +88,7 @@ NAME                 DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 aerospike-operator   2         2         2            1           2m
 ----
 
-In its turn, and upon starting, `aerospike-operator` will register three
-https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/[custom resource definitions (CRDs)]:
+In its turn, and upon starting, `aerospike-operator` will register three https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/[custom resource definitions (CRDs)]:
 
 [source,bash]
 ----
@@ -111,9 +99,7 @@ aerospikenamespacebackups.aerospike.travelaudience.com    2m
 aerospikenamespacerestores.aerospike.travelaudience.com   2m
 ----
 
-`aerospike-operator` will also create a secret containing TLS artifacts and
-register a
-https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/[validating admission webhook]:
+`aerospike-operator` will also create a secret containing TLS artifacts and register a https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/[validating admission webhook]:
 
 [source,bash]
 ----
@@ -122,6 +108,7 @@ NAME                     TYPE                DATA    AGE
 aerospike-operator-tls   kubernetes.io/tls   2       2m
 (...)
 ----
+
 [source,bash]
 ----
 $ kubectl get validatingwebhookconfiguration
@@ -129,27 +116,14 @@ NAME                                              AGE
 aerospike-operator.aerospike.travelaudience.com   2m
 ----
 
-This webhook runs within `aerospike-operator` itself and helps providing a
-richer user experience by rejecting invalid Aerospike cluster configurations
-upfront. In some Kubernetes clusters, however, running the admission webhook may
-not be supported. This may happen, for example, if the
-`ValidatingAdmissionWebhook` admission controller has been disabled by the
-Kubernetes cluster administrator. In some other scenarios the
-`admissionregistration.k8s.io/v1beta1` API itself may have been disabled. To
-disable the admission webhook in these scenarios one may specify the
-`--admission-enabled=false` <<configuration,flag>> when starting
-`aerospike-operator`.
+This webhook runs within `aerospike-operator` itself and helps providing a richer user experience by rejecting invalid Aerospike cluster configurations upfront. In some Kubernetes clusters, however, running the admission webhook may not be supported. This may happen, for example, if the `ValidatingAdmissionWebhook` admission controller has been disabled by the Kubernetes cluster administrator. In some other scenarios the `admissionregistration.k8s.io/v1beta1` API itself may have been disabled. To disable the admission webhook in these scenarios one may specify the `--admission-enabled=false` <<configuration,flag>> when starting `aerospike-operator`.
 
-WARNING: Disabling the validating admission webhook prevents
-`aerospike-operator` from performing certain validations on user input. In such
-scenarios, the user may end up creating an invalid configuration or triggering
-an unsupported operation.
+WARNING: Disabling the validating admission webhook prevents `aerospike-operator` from performing certain validations on user input. In such scenarios, the user may end up creating an invalid configuration or triggering an unsupported operation.
 
 [[configuration]]
 == Configuring `aerospike-operator`
 
-The behaviour of `aerospike-operator` can be tweaked using command-line flags.
-The following flags are supported:
+The behaviour of `aerospike-operator` can be tweaked using command-line flags. The following flags are supported:
 
 |===
 | Flag                  | Default | Description
@@ -158,11 +132,7 @@ The following flags are supported:
 | `--kubeconfig`        | `""`    | Path to a kubeconfig. Only required if out-of-cluster.
 |===
 
-To set values for these flags, one should edit the deployment created in
-<<installing>> and add the desired values in the
-`.spec.template.spec.containers[0].args` field of the deployment. The example
-below describes how to enable debug logging and disable the validating admission
-webhook:
+To set values for these flags, one should edit the deployment created in <<installing>> and add the desired values in the `.spec.template.spec.containers[0].args` field of the deployment. The example below describes how to enable debug logging and disable the validating admission webhook:
 
 [source,yaml]
 ----
@@ -186,17 +156,11 @@ spec:
   (...)
 ----
 
-WARNING: When running with the `--debug=true` flag `aerospike-operator` will
-disable
-https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity-beta-feature[inter-pod anti-affinity],
-making it possible for two Aerospike pods to be co-located on the same
-Kubernetes node. Running `aerospike-operator` with this flag outside a testing
-environment is strongly discouraged.
+WARNING: When running with the `--debug=true` flag `aerospike-operator` will disable https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity-beta-feature[inter-pod anti-affinity], making it possible for two Aerospike pods to be co-located on the same Kubernetes node. Running `aerospike-operator` with this flag outside a testing environment is strongly discouraged.
 
 == Uninstalling `aerospike-operator`
 
-To completely uninstall `aerospike-operator` and all associated resources, one
-should start by deleting the deployment and pre-requisites:
+To completely uninstall `aerospike-operator` and all associated resources, one should start by deleting the deployment and pre-requisites:
 
 [source,bash]
 ----
@@ -204,16 +168,14 @@ $ kubectl delete -f docs/examples/10-aerospike-operator.yml
 $ kubectl delete -f docs/examples/00-prereqs.yml
 ----
 
-Then, one should delete any existing validating admission webhook
-configurations created by `aerospike-operator`:
+Then, one should delete any existing validating admission webhook configurations created by `aerospike-operator`:
 
 [source,bash]
 ----
 $ kubectl delete validatingwebhookconfiguration aerospike-operator.aerospike.travelaudience.com
 ----
 
-Finally, one should delete any custom resource definitions introduced by
-`aerospike-operator`:
+Finally, one should delete any custom resource definitions introduced by `aerospike-operator`:
 
 [source,bash]
 ----
@@ -222,6 +184,4 @@ $ kubectl delete crd aerospikenamespacebackups.aerospike.travelaudience.com
 $ kubectl delete crd aerospikenamespacerestores.aerospike.travelaudience.com
 ----
 
-IMPORTANT: Running the commands above will **PERMANENTLY DESTROY** all Aerospike
-clusters managed by `aerospike-operator`. One should proceed with caution before
-running these commands.
+IMPORTANT: Running the commands above will **PERMANENTLY DESTROY** all Aerospike clusters managed by `aerospike-operator`. One should proceed with caution before running these commands.

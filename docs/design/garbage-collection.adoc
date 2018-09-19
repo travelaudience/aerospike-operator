@@ -3,71 +3,40 @@ This document describes how expired resources are deleted by aerospike-operator.
 :icons: font
 :toc:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 == Background
 
 ==== Backups and cloud storage
 
-`aerospike-operator` provides support for performing backups of a given
-Aerospike namespace to cloud storage footnote:[As of this writing, only Google
-Cloud Storage (GCS) is supported.]. In order to do so, the administrator needs
-to create an `AerospikeNamespaceBackup` custom resource targeting both the
-Aerospike cluster and the Aerospike namespace they want to backup. This
-`AerospikeNamespaceBackup` custom resource may optionally specify a time-to-live
-(TTL) for data in cloud storage. However, and as of this writing, there is no
-mechanism in `aerospike-operator` to ensure that the cleanup occurs (i.e. the
-`.spec.ttl` field of `AerospikeNamespaceBackup` is essentially ignored).
+`aerospike-operator` provides support for performing backups of a given Aerospike namespace to cloud storage footnote:[As of this writing, only Google Cloud Storage (GCS) is supported.]. In order to do so, the administrator needs to create an `AerospikeNamespaceBackup` custom resource targeting both the Aerospike cluster and the Aerospike namespace they want to backup. This `AerospikeNamespaceBackup` custom resource may optionally specify a time-to-live (TTL) for data in cloud storage. However, and as of this writing, there is no mechanism in `aerospike-operator` to ensure that the cleanup occurs (i.e. the `.spec.ttl` field of `AerospikeNamespaceBackup` is essentially ignored).
 
 ==== Persistent volumes and persistent volume claims
 
-In order to persist data for a given Aerospike cluster, `aerospike-operator`
-creates a persistent volume claim (PVC) per Aerospike namespace
-footnote:[Currently, each Aerospike cluster supports a single Aerospike
-namespace, so this effectively amounts to one persistent volume claim per pod.]
-per pod. These PVCs are then attached to their respective pods. When a pod is
-deleted, its PVCs are naturally detached from the pod, but kept intact so they
-can be reused later. In fact, when an Aerospike node is restarted (for example,
-as a result of a configuration change), the corresponding pod is deleted and a
-new one is created reusing the existing PVCs. However, there may be situations
-when this behaviour may not be desirable. For instance, when a scale down
-operation is performed, one or more pods will be "permanently" deleted. If a
-scale up operation is requested shortly after, the PVCs will be reused and
-Aerospike will reload their data, possibly reducing the time taken for the
-cluster to rebalance. However, if the scale up operation if performed after a
-long period, the data available in the persistent volumes bound to the
-persistent volume claims may be severely outdated, possibly bringing more
-disadvantages than advantages (causing, for example, slower startup times and
-triggering record eviction).
+In order to persist data for a given Aerospike cluster, `aerospike-operator` creates a persistent volume claim (PVC) per Aerospike namespace footnote:[Currently, each Aerospike cluster supports a single Aerospike namespace, so this effectively amounts to one persistent volume claim per pod.] per pod. These PVCs are then attached to their respective pods. When a pod is deleted, its PVCs are naturally detached from the pod, but kept intact so they can be reused later. In fact, when an Aerospike node is restarted (for example, as a result of a configuration change), the corresponding pod is deleted and a new one is created reusing the existing PVCs. However, there may be situations when this behaviour may not be desirable. For instance, when a scale down operation is performed, one or more pods will be "permanently" deleted. If a scale up operation is requested shortly after, the PVCs will be reused and Aerospike will reload their data, possibly reducing the time taken for the cluster to rebalance. However, if the scale up operation if performed after a long period, the data available in the persistent volumes bound to the persistent volume claims may be severely outdated, possibly bringing more disadvantages than advantages (causing, for example, slower startup times and triggering record eviction).
 
-Additionally, during Aerospike version upgrade operations, `aerospike-operator`
-may occasionally need to replace existing PVCs with new ones. In such
-situations, and unless proper garbage collection is implemented, old PVCs will
-be kept forever.
+Additionally, during Aerospike version upgrade operations, `aerospike-operator` may occasionally need to replace existing PVCs with new ones. In such situations, and unless proper garbage collection is implemented, old PVCs will be kept forever.
 
 == Goals
 
 * Delete expired `AerospikeNamespaceBackups` based on their `.spec.ttl` field.
-* Delete expired PVCs used by Aerospike cluster nodes based on the
-  `persistentVolumeClaimTTL` field specified in the `StorageSpec` of the
-  Aerospike namespace it is associated with.
+* Delete expired PVCs used by Aerospike cluster nodes based on the `persistentVolumeClaimTTL` field specified in the `StorageSpec` of the Aerospike namespace it is associated with.
 
 == Design Overview
 
-The garbage collector will be implemented as a separate controller which will
-periodically list all existing `AerospikeNamespaceBackup` resources and all
-existing PVCs owned by an `AerospikeCluster` resource. It will then select the
-expired ones (i.e. those whose time-to-live has been exceeded) and delete them.
+The garbage collector will be implemented as a separate controller which will periodically list all existing `AerospikeNamespaceBackup` resources and all existing PVCs owned by an `AerospikeCluster` resource. It will then select the expired ones (i.e. those whose time-to-live has been exceeded) and delete them.
 
 === AerospikeNamespaceBackups
 
-In order to determine which `AerospikeNamespaceBackups` resources have expired,
-the garbage collector controller will go through each resource and check if the
-number of days specified in its `.spec.ttl` field has been exceeded. Days will
-be counted from the timestamp in the `.metadata.creationTimestamp` field of the
-`AerospikeNamespaceBackup` resource.
+In order to determine which `AerospikeNamespaceBackups` resources have expired, the garbage collector controller will go through each resource and check if the number of days specified in its `.spec.ttl` field has been exceeded. Days will be counted from the timestamp in the `.metadata.creationTimestamp` field of the `AerospikeNamespaceBackup` resource.
 
-Additionally, in order to delete `AerospikeNamespaceBackups` created
-automatically by `aerospike-operator` before performing version upgrades, a
-`ttl` field will also be added to the `AerospikeBackupSpec` struct:
+Additionally, in order to delete `AerospikeNamespaceBackups` created automatically by `aerospike-operator` before performing version upgrades, a `ttl` field will also be added to the `AerospikeBackupSpec` struct:
 
 [source,yaml]
 ----
@@ -80,22 +49,13 @@ backupSpec:
     secret: bucket-secret
 ----
 
-It should be noted that a field with the same semantics already exists as
-`.spec.ttl` in the `AerospikeNamespaceBackup` CRD. Hence, no changes are
-required there.
+It should be noted that a field with the same semantics already exists as `.spec.ttl` in the `AerospikeNamespaceBackup` CRD. Hence, no changes are required there.
 
-When deleting AerospikeNamespaceBackups, the controller will also try to delete
-the corresponding data from cloud storage. This will be performed using the
-credentials specified in `.backupSpec.storage.secret` or `.spec.storage.secret`,
-as appropriate. If the secret pointed to by these fields does not exist, a
-warning message will be printed and the backup data will not be deleted.
+When deleting AerospikeNamespaceBackups, the controller will also try to delete the corresponding data from cloud storage. This will be performed using the credentials specified in `.backupSpec.storage.secret` or `.spec.storage.secret`, as appropriate. If the secret pointed to by these fields does not exist, a warning message will be printed and the backup data will not be deleted.
 
 === Persistent Volume Claims
 
-The first step towards the implementation of a garbage collector for persistent
-volume claims will be to include a `persistentVolumeClaimTTL` field in the
-`StorageSpec` struct representing the time-to-live that will be applied to all
-persistent volume claims associated with the `AerospikeCluster` resource:
+The first step towards the implementation of a garbage collector for persistent volume claims will be to include a `persistentVolumeClaimTTL` field in the `StorageSpec` struct representing the time-to-live that will be applied to all persistent volume claims associated with the `AerospikeCluster` resource:
 
 [source,yaml]
 ----
@@ -112,68 +72,37 @@ persistent volume claims associated with the `AerospikeCluster` resource:
       persistentVolumeClaimTTL: 30d
 ----
 
-This time-to-live will be counted from the point the persistent volume claim was
-last "unmounted" (i.e., since the associated pod was deleted as a result of a
-configuration or version upgrade). Since such information is not readily
-available in the `PersistentVolumeClaim` resource, `aerospike-operator` will
-include it by setting an annotation on the resource when deleting a pod and
-removing it when re-creating it and re-using the persistent volume claim. Then,
-garbage-collecting these resources if a matter of checking whether the
-annotation is present, checking whether its value exceeds the time-to-live
-defined in the `AerospikeCluster` resource and deleting the
-`PersistentVolumeClaim` resource.
+This time-to-live will be counted from the point the persistent volume claim was last "unmounted" (i.e., since the associated pod was deleted as a result of a configuration or version upgrade). Since such information is not readily available in the `PersistentVolumeClaim` resource, `aerospike-operator` will include it by setting an annotation on the resource when deleting a pod and removing it when re-creating it and re-using the persistent volume claim. Then, garbage-collecting these resources if a matter of checking whether the annotation is present, checking whether its value exceeds the time-to-live defined in the `AerospikeCluster` resource and deleting the `PersistentVolumeClaim` resource.
 
-When iterating over a list of PVC resources, the following information is
-required in each resource in order to check its eligibility for deletion:
+When iterating over a list of PVC resources, the following information is required in each resource in order to check its eligibility for deletion:
 
 * The associated time-to-live;
-* The pod it belongs to, so `aerospike-operator` can check if the pod is running
-  with the PVC mounted;
+* The pod it belongs to, so `aerospike-operator` can check if the pod is running with the PVC mounted;
 * The timestamp at which it was last unmounted.
 
-In order to associate this information with each `PersistentVolumeClaim`
-resource, `aerospike-operator` will append the following annotations to these
-resources when they are created:
+In order to associate this information with each `PersistentVolumeClaim` resource, `aerospike-operator` will append the following annotations to these resources when they are created:
 
 |====
 | *Annotation* | *Description*
-| `aerospike.travelaudience.com/ttl`      | Specifies the number of days the PVC is
-                                            allowed to exist in the "unmounted" state
-                                            before being deleted.
+| `aerospike.travelaudience.com/ttl`      | Specifies the number of days the PVC is allowed to exist in the "unmounted" state before being deleted.
 | `aerospike.travelaudience.com/pod-name` | Indicates to which pod the PVC belongs.
 |====
 
-When deleting a pod, `aerospike-operator` will append the following annotation
-to the PVC(s):
+When deleting a pod, `aerospike-operator` will append the following annotation to the PVC(s):
 
 |====
 | *Annotation* | *Description*
-| `aerospike.travelaudience.com/last-unmounted-on` | Specifies the timestamp at which
-                                                     the PVC was last "unmounted".
+| `aerospike.travelaudience.com/last-unmounted-on` | Specifies the timestamp at which the PVC was last "unmounted".
 |====
 
-This annotation will be removed from a `PersistentVolumeClaim` resource
-everytime the associated pod is re-created and re-uses it. Additionally, the
-current mechanism for reusing PVCs will be changed in order to avoid reusing a
-PVC that has already expired and not yet deleted by the garbage collector.
+This annotation will be removed from a `PersistentVolumeClaim` resource everytime the associated pod is re-created and re-uses it. Additionally, the current mechanism for reusing PVCs will be changed in order to avoid reusing a PVC that has already expired and not yet deleted by the garbage collector.
 
-Based on these new annotations, `aerospike-operator` will only delete a PVC if
-all the following conditions are true:
+Based on these new annotations, `aerospike-operator` will only delete a PVC if all the following conditions are true:
 
-* The PVC has the `aerospike.travelaudience.com/last-unmounted-on` annotation
-  set;
-* The period of time specified in `aerospike.travelaudience.com/ttl`
-  annotation has already elapsed (since the timestamp specified in the
-  annotation above);
-* The pod indicated in the `aerospike.travelaudience.com/pod-name` annotation
-  is not running with the PVC attached.
+* The PVC has the `aerospike.travelaudience.com/last-unmounted-on` annotation set;
+* The period of time specified in `aerospike.travelaudience.com/ttl` annotation has already elapsed (since the timestamp specified in the annotation above);
+* The pod indicated in the `aerospike.travelaudience.com/pod-name` annotation is not running with the PVC attached.
 
 == Alternatives Considered
 
-An alternative approach for implementing the eviction of backup data from cloud
-storage was initially considered. This approach would involve setting the
-expiration of cloud storage objects using each cloud provider's API. However,
-and in the case of Google Cloud Storage, object expiration can only be set on a
-per-bucket basis (instead of on a per-object basis). This would mean that the
-TTL would apply to all files existing in the bucket, which could be dangerous in
-case the target buckets are shared with other workloads.
+An alternative approach for implementing the eviction of backup data from cloud storage was initially considered. This approach would involve setting the expiration of cloud storage objects using each cloud provider's API. However, and in the case of Google Cloud Storage, object expiration can only be set on a per-bucket basis (instead of on a per-object basis). This would mean that the TTL would apply to all files existing in the bucket, which could be dangerous in case the target buckets are shared with other workloads.

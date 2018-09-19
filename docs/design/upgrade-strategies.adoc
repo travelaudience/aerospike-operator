@@ -3,33 +3,22 @@ This document describes an extension to the upgrade mechanism in aerospike-opera
 :icons: font
 :toc:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 [[background]]
 == Background
 
-As of this writing, `aerospike-operator` allows for performing Aerospike version
-upgrades in the Aerospike clusters it manages. Version upgrades are performed
-by the administrator by changing the `.spec.version` field of the corresponding
-`AerospikeCluster` resource. Upon being requested, the transition between the
-source and the target versions is validated by `aerospike-operator` against a
-whitelist of supported transitions. If the transition is valid and supported,
-the upgrade process is performed as described in the <<upgrades.adoc#,Upgrades design document>>
-(i.e. by deleting and re-creating each pod in the Aerospike cluster using the
-target version). However, and as described in this same document, there have
-historically been both major and minor versions of Aerospike that did require
-some special upgrade steps. For example, an upgrade from pre-`4.2.0.2` to `4.2.0.2`
-or newer requires storage devices or files to be completely erased before
-re-starting each node using the new Aerospike version (as a result of changes
-made to Aerospike's internal storage format). Supporting such a transition in
-`aerospike-operator` would require the current upgrade mechanism to be enhanced
-in order to support special upgrade steps. Introducing these enhancements to
-the upgrade mechanism at this point will allow for greater flexibility and
-reduced complexity in the future, when new versions of Aerospike requiring
-special steps are introduced.
+As of this writing, `aerospike-operator` allows for performing Aerospike version upgrades in the Aerospike clusters it manages. Version upgrades are performed by the administrator by changing the `.spec.version` field of the corresponding `AerospikeCluster` resource. Upon being requested, the transition between the source and the target versions is validated by `aerospike-operator` against a whitelist of supported transitions. If the transition is valid and supported, the upgrade process is performed as described in the <<upgrades.adoc#,Upgrades design document>> (i.e. by deleting and re-creating each pod in the Aerospike cluster using the target version). However, and as described in this same document, there have historically been both major and minor versions of Aerospike that did require some special upgrade steps. For example, an upgrade from pre-`4.2.0.2` to `4.2.0.2` or newer requires storage devices or files to be completely erased before re-starting each node using the new Aerospike version (as a result of changes made to Aerospike's internal storage format). Supporting such a transition in `aerospike-operator` would require the current upgrade mechanism to be enhanced in order to support special upgrade steps. Introducing these enhancements to the upgrade mechanism at this point will allow for greater flexibility and reduced complexity in the future, when new versions of Aerospike requiring special steps are introduced.
 
 == Goals
 
-* Provide support for performing special upgrade steps when upgrading
-an Aerospike cluster, based on the specified source and target versions.
+* Provide support for performing special upgrade steps when upgrading an Aerospike cluster, based on the specified source and target versions.
 
 == Non-Goals
 
@@ -37,11 +26,7 @@ an Aerospike cluster, based on the specified source and target versions.
 
 == Design Overview
 
-In order to introduce support for special upgrade steps to the current upgrade
-mechanism, the concept of `upgrade strategy` is introduced. An upgrade strategy
-is an extensible set of properties that are passed to the reconciler and used to
-make certain decisions and trigger certain behaviours inside the reconcile loop.
-An example of such an upgrade strategy is the following:
+In order to introduce support for special upgrade steps to the current upgrade mechanism, the concept of `upgrade strategy` is introduced. An upgrade strategy is an extensible set of properties that are passed to the reconciler and used to make certain decisions and trigger certain behaviours inside the reconcile loop. An example of such an upgrade strategy is the following:
 
 [source,go]
 ----
@@ -53,36 +38,27 @@ type UpgradeStrategy struct {
 }
 ----
 
-Introducing such a set of properties will allow `aerospike-operator` to represent
-and adequately support the <<background,abovementioned>> transition between
-pre-`4.2.0.2` and `4.2.0.2` (or newer) by using the following upgrade strategy:
+Introducing such a set of properties will allow `aerospike-operator` to represent and adequately support the <<background,abovementioned>> transition between pre-`4.2.0.2` and `4.2.0.2` (or newer) by using the following upgrade strategy:
 
 [source,go]
 ----
 To42XYStrategy := UpgradeStrategy{RecreatePersistentVolumeClaims: true}
 ----
 
-For all other transitions where no special action is required, the following
-upgrade strategy can be used:
+For all other transitions where no special action is required, the following upgrade strategy can be used:
 
 [source,go]
 ----
 DefaultStrategy := UpgradeStrategy{RecreatePersistentVolumeClaims: false}
 ----
 
-From the point this extensible set of properties is introduced, upgrading an
-Aerospike cluster to a later version becomes a matter of:
+From the point this extensible set of properties is introduced, upgrading an Aerospike cluster to a later version becomes a matter of:
 
 . Deciding what upgrade strategy to use based on the source and target versions.
-. Modifying the reconciler's behaviour in order to properly observe the upgrade
-strategy.
+. Modifying the reconciler's behaviour in order to properly observe the upgrade strategy.
 
 [[get-strategy]]
-`aerospike-operator` currently validates transitions between a source and
-target versions using the `VersionUpgrade` struct. A new `GetStrategy`
-method will be added to this struct that will return the adequate upgrade strategy
-for the transition. For instance, the upgrade strategy for a transition between
-`4.0.0.4` and `4.2.0.2` will be obtained by:
+`aerospike-operator` currently validates transitions between a source and target versions using the `VersionUpgrade` struct. A new `GetStrategy` method will be added to this struct that will return the adequate upgrade strategy for the transition. For instance, the upgrade strategy for a transition between `4.0.0.4` and `4.2.0.2` will be obtained by:
 
 [source,go]
 ----
@@ -90,19 +66,9 @@ upgrade := versioning.VersionUpgrade{sourceVersion, targetVersion}
 us, err := upgrade.GetStrategy()
 ----
 
-After executing the code above, `us.RecreatePersistentVolumeClaims` will be `true`,
-and `err` will be `nil`. Similarly, the upgrade strategy for a transition between
-`4.0.0.4` to `4.0.0.5` will be obtained using the same code (with a different value
-for targetVersion) and, in this case, `us.RecreatePersistentVolumeClaims` will be
-`false`. In a scenario where an upgrade between `sourceVersion` and `targetVersion` is
-not allowed, `us` will be `nil` and `err` will contain an error.
-In order to keep things simple and reduce the amount of code to a minimum, a default
-upgrade strategy will be implemented and will be returned whenever a given transition
-does not require special upgrade steps. This default upgrade strategy will correspond
-to the current behaviour of the reconciler (i.e. the behaviour as of `0.7.0`).
+After executing the code above, `us.RecreatePersistentVolumeClaims` will be `true`, and `err` will be `nil`. Similarly, the upgrade strategy for a transition between `4.0.0.4` to `4.0.0.5` will be obtained using the same code (with a different value for targetVersion) and, in this case, `us.RecreatePersistentVolumeClaims` will be `false`. In a scenario where an upgrade between `sourceVersion` and `targetVersion` is not allowed, `us` will be `nil` and `err` will contain an error. In order to keep things simple and reduce the amount of code to a minimum, a default upgrade strategy will be implemented and will be returned whenever a given transition does not require special upgrade steps. This default upgrade strategy will correspond to the current behaviour of the reconciler (i.e. the behaviour as of `0.7.0`).
 
-The choice of the upgrade strategy for a given transition will be made according to
-a set of rules such as the following:
+The choice of the upgrade strategy for a given transition will be made according to a set of rules such as the following:
 
 [source,go]
 ----
@@ -116,34 +82,16 @@ if vu.Target.Major == 4 && vu.Source.Minor <= 1 && vu.Target.Minor >= 2 {
 return DefaultStrategy, nil
 ----
 
-This allows for covering more version transitions with less code. Once the two
-mentioned upgrade strategies are defined, the reconcile loop will be modified
-in order to support them.
+This allows for covering more version transitions with less code. Once the two mentioned upgrade strategies are defined, the reconcile loop will be modified in order to support them.
 
-The current method for provisioning PV/PVCs will be slightly refactored in order
-to allow the proper implementation of a method for re-creating new PVCs. This may
-include using a different naming strategy for the PVCs of each pod so that, instead
-of deleting and re-creating each PVC, `aerospike-operator` can simply create new ones
-and leave the deletion of the old ones to the garbage collector
-footnote:[Garbage collection is out-of-scope for this document and will be described
-in detail as part of a different design document.].
-The set of labels that is added to each PVC will also be revisited as part of
-this effort. Regardless of the actual implementation details, `aerospike-operator`
-will ensure that the new pods will never be started using the old PVCs.
+The current method for provisioning PV/PVCs will be slightly refactored in order to allow the proper implementation of a method for re-creating new PVCs. This may include using a different naming strategy for the PVCs of each pod so that, instead of deleting and re-creating each PVC, `aerospike-operator` can simply create new ones and leave the deletion of the old ones to the garbage collector footnote:[Garbage collection is out-of-scope for this document and will be described in detail as part of a different design document.]. The set of labels that is added to each PVC will also be revisited as part of this effort. Regardless of the actual implementation details, `aerospike-operator` will ensure that the new pods will never be started using the old PVCs.
 
-The introduction of such a mechanism and behaviour at this point naturally paves
-the way for extensibility in the future. New versions of Aerospike requiring special,
-different upgrade steps will be supported in the same fashion by later versions of
-`aerospike-operator` to be released as required. For an analysis of an alternative
-approach that was considered, one can have a look at the
-<<alternatives-considered,Alternatives Considered section>>.
+The introduction of such a mechanism and behaviour at this point naturally paves the way for extensibility in the future. New versions of Aerospike requiring special, different upgrade steps will be supported in the same fashion by later versions of `aerospike-operator` to be released as required. For an analysis of an alternative approach that was considered, one can have a look at the <<alternatives-considered,Alternatives Considered section>>.
 
 [[alternatives-considered]]
 == Alternatives Considered
 
-Instead of using a `GetStrategy` method as described <<get-strategy,above>>, a matrix containing supported version transitions and the associated
-upgrade strategies was considered. A representation of such a matrix could be the
-following:
+Instead of using a `GetStrategy` method as described <<get-strategy,above>>, a matrix containing supported version transitions and the associated upgrade strategies was considered. A representation of such a matrix could be the following:
 
 |==============================================================================
 | *Source\Target* | *4.0.0.4* | *4.0.0.5* | *4.1.0.1* | *4.2.0.3* | *4.2.0.4*
@@ -155,8 +103,4 @@ following:
 |   *4.2.0.4*     |     -     |     -     |     -     |     -     |     -
 |=============================================================================
 
-This would allow to retrieve a specific UpgradeStrategy for each pair of versions
-(source and target versions). However, such a matrix mostly contains repeated
-information, and its size easily explodes as support for new versions are introduced.
-As such, choosing a strategy based on a set of rules instead of a matrix was the
-preferred approach to the problem.
+This would allow to retrieve a specific UpgradeStrategy for each pair of versions (source and target versions). However, such a matrix mostly contains repeated information, and its size easily explodes as support for new versions are introduced. As such, choosing a strategy based on a set of rules instead of a matrix was the preferred approach to the problem.

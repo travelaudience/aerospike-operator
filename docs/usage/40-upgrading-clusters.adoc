@@ -3,50 +3,32 @@ This document describes how to perform version upgrades in Aerospike clusters ma
 :icons: font
 :toc:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 == Foreword
 
-Before proceeding, one should make themselves familiar with
-https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/[custom resource definitions]
-and with the <<../design/api-spec.adoc#toc,API spec>> document (in particular
-with the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>> and
-<<../design/api-spec.adoc#aerospikenamespacebackup,AerospikeNamespaceBackup>>
-custom resource definitions).
+Before proceeding, one should make themselves familiar with https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/[custom resource definitions] and with the <<../design/api-spec.adoc#toc,API spec>> document (in particular with the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>> and <<../design/api-spec.adoc#aerospikenamespacebackup,AerospikeNamespaceBackup>> custom resource definitions).
 
 == Upgrading an Aerospike cluster
 
-In order to benefit from the latest features, improvements and bug fixes made to
-Aerospike, one will certainly find the need to upgrade an Aerospike cluster to a
-later version during its lifetime. `aerospike-operator` provides first-class
-support for performing version upgrades in live Aerospike clusters.
+In order to benefit from the latest features, improvements and bug fixes made to Aerospike, one will certainly find the need to upgrade an Aerospike cluster to a later version during its lifetime. `aerospike-operator` provides first-class support for performing version upgrades in live Aerospike clusters.
 
 [[aerospike-upgrades-prerequisites]]
 === Pre-requisites
 
-Before actually starting an upgrade operation, `aerospike-operator` performs a
-*mandatory* backup of the Aerospike namespace managed by the target Aerospike
-cluster. This is done in order to guarantee the safety of the data in case of a
-major failure during the upgrade process. Hence, and before being able to
-upgrade an Aerospike cluster, one must configure automatic pre-upgrade backups
-for the target Aerospike cluster. This is done by making sure that the <<./20-backing-up-namespaces.adoc#aerospike-namespace-backup-prerequisites,pre-requisites>>
-for the core backup functionality have been met, and by specifying a spec for
-these backups in the associated `AerospikeCluster` resource.
+Before actually starting an upgrade operation, `aerospike-operator` performs a *mandatory* backup of the Aerospike namespace managed by the target Aerospike cluster. This is done in order to guarantee the safety of the data in case of a major failure during the upgrade process. Hence, and before being able to upgrade an Aerospike cluster, one must configure automatic pre-upgrade backups for the target Aerospike cluster. This is done by making sure that the <<./20-backing-up-namespaces.adoc#aerospike-namespace-backup-prerequisites,pre-requisites>> for the core backup functionality have been met, and by specifying a spec for these backups in the associated `AerospikeCluster` resource.
 
-WARNING: Although `aerospike-operator` performs pre-upgrade backups of the
-Aerospike namespace managed by the target Aerospike cluster before actually
-starting the upgrade process, automatic restore of these backups in case of a
-failure during the upgrade is **NOT** supported.
+WARNING: Although `aerospike-operator` performs pre-upgrade backups of the Aerospike namespace managed by the target Aerospike cluster before actually starting the upgrade process, automatic restore of these backups in case of a failure during the upgrade is **NOT** supported.
 
-WARNING: For the remainder of this document, it is assumed that the core backup
-functionality was adequately configured in one's Kubernetes cluster by following
-the steps detailed in the
-<<./20-backing-up-namespaces.adoc#aerospike-namespace-backup-prerequisites,Pre-requisites>>
-section of the <<./20-backing-up-namespaces.adoc#,Backing-up Namespaces>>
-document.
+WARNING: For the remainder of this document, it is assumed that the core backup functionality was adequately configured in one's Kubernetes cluster by following the steps detailed in the <<./20-backing-up-namespaces.adoc#aerospike-namespace-backup-prerequisites,Pre-requisites>> section of the <<./20-backing-up-namespaces.adoc#,Backing-up Namespaces>> document.
 
-Pre-upgrade backups are configured via the `.spec.backupSpec` field of an
-`AerospikeCluster` resource. This field contains a nested `storage` field that
-is similar in structure and semantics to the `.spec.storage` field of an
-`AerospikeNamespaceBackup` resource: 
+Pre-upgrade backups are configured via the `.spec.backupSpec` field of an `AerospikeCluster` resource. This field contains a nested `storage` field that is similar in structure and semantics to the `.spec.storage` field of an `AerospikeNamespaceBackup` resource:
 
 [source,yaml]
 ----
@@ -64,19 +46,11 @@ spec:
   (...)
 ----
 
-NOTE: `secretNamespace` must be set to the name of the Kubernetes namespace
-where the secret to be used exists. It is an optional field that defaults
-to the name of the Kubernetes namespace the `AerospikeCluster` resource belongs to.
+NOTE: `secretNamespace` must be set to the name of the Kubernetes namespace where the secret to be used exists. It is an optional field that defaults to the name of the Kubernetes namespace the `AerospikeCluster` resource belongs to.
 
-NOTE: `secretKey` must be set to the name of the field inside the secret that
-contains the credentials to be used. It is also an optional field and defaults
-to `key.json`.
+NOTE: `secretKey` must be set to the name of the field inside the secret that contains the credentials to be used. It is also an optional field and defaults to `key.json`.
 
-The `.spec.backupSpec` field can be specified either when first creating the
-`AerospikeCluster` resource or at a later time by updating it (e.g. using
-`kubectl edit`). `aerospike-operator` will refuse to upgrade an Aerospike
-cluster for which this field has not been specified
-footnote:[Assuming that the validating admission webhook has not been disabled.]:
+The `.spec.backupSpec` field can be specified either when first creating the `AerospikeCluster` resource or at a later time by updating it (e.g. using `kubectl edit`). `aerospike-operator` will refuse to upgrade an Aerospike cluster for which this field has not been specified footnote:[Assuming that the validating admission webhook has not been disabled.]:
 
 [source,bash]
 ----
@@ -85,80 +59,41 @@ $ kubectl edit asc as-cluster-0
 error: aerospikeclusters "as-cluster-0" could not be patched: admission webhook "aerospikeclusters.aerospike.travelaudience.com" denied the request: no value for .spec.backupSpec has been specified
 ----
 
-NOTE: The `.spec.backupSpec` field is only required if one intends to perform
-version upgrades on the target Aerospike cluster. In simpler usage scenarios,
-such as when creating an Aerospike cluster for testing purposes, this field is
-not strictly required and can be omitted.
+NOTE: The `.spec.backupSpec` field is only required if one intends to perform version upgrades on the target Aerospike cluster. In simpler usage scenarios, such as when creating an Aerospike cluster for testing purposes, this field is not strictly required and can be omitted.
 
 === Supported versions and upgrades
 
-In order to minimize the chances of a failed upgrade, `aerospike-operator`
-includes a whitelist of supported and tested Aerospike versions.
-`aerospike-operator` will refuse to upgrade an Aerospike cluster to a version of
-Aerospike that is not whitelisted. In practice this means that before upgrading
-an Aerospike cluster to a later version one may need to upgrade
-`aerospike-operator` itself as described in the
-<<./50-upgrading-aerospike-operator.adoc#,Upgrading `aerospike-operator`>>
-document. The current version of `aerospike-operator` supports the following
-Aerospike CE versions:
+In order to minimize the chances of a failed upgrade, `aerospike-operator` includes a whitelist of supported and tested Aerospike versions. `aerospike-operator` will refuse to upgrade an Aerospike cluster to a version of Aerospike that is not whitelisted. In practice this means that before upgrading an Aerospike cluster to a later version one may need to upgrade `aerospike-operator` itself as described in the <<./50-upgrading-aerospike-operator.adoc#,Upgrading `aerospike-operator`>> document. The current version of `aerospike-operator` supports the following Aerospike CE versions:
 
- * https://www.aerospike.com/download/server/notes.html#4.0.0.4[`4.0.0.4`]
- * https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.5`]
- * https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.6`]
- * https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.1`]
- * https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.6`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.5[`4.2.0.5`]
- * https://www.aerospike.com/download/server/notes.html#4.2.0.10[`4.2.0.10`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.2[`4.3.0.2`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.4[`4.3.0.4`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.6[`4.3.0.6`]
- * https://www.aerospike.com/download/server/notes.html#4.3.0.7[`4.3.0.7`]
+* https://www.aerospike.com/download/server/notes.html#4.0.0.4[`4.0.0.4`]
+* https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.5`]
+* https://www.aerospike.com/download/server/notes.html#4.0.0.5[`4.0.0.6`]
+* https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.1`]
+* https://www.aerospike.com/download/server/notes.html#4.1.0.1[`4.1.0.6`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.3[`4.2.0.3`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.4[`4.2.0.4`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.5[`4.2.0.5`]
+* https://www.aerospike.com/download/server/notes.html#4.2.0.10[`4.2.0.10`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.2[`4.3.0.2`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.4[`4.3.0.4`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.6[`4.3.0.6`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.7[`4.3.0.7`]
 
-Future versions of `aerospike-operator` will introduce support for new minor,
-patch and release versions as they become available.
+Future versions of `aerospike-operator` will introduce support for new minor, patch and release versions as they become available.
 
-WARNING: At any given time, the availability of a given version of Aerospike is
-dependent on the existence of the respective tag in the
-https://hub.docker.com/r/aerospike/aerospike-server/[`aerospike/aerospike-server`]
-official repository.
+WARNING: At any given time, the availability of a given version of Aerospike is dependent on the existence of the respective tag in the https://hub.docker.com/r/aerospike/aerospike-server/[`aerospike/aerospike-server`] official repository.
 
-It should be noted that after upgrading an Aerospike cluster to a later version,
-downgrading is *NOT* supported. To downgrade to an older version one must create
-a new `AerospikeCluster` resource based on the desired version and
-<<./30-restoring-namespaces.adoc#,restore>> the managed Aerospike namespace
-using the pre-upgrade backup created as part of the upgrade process.
+It should be noted that after upgrading an Aerospike cluster to a later version, downgrading is *NOT* supported. To downgrade to an older version one must create a new `AerospikeCluster` resource based on the desired version and <<./30-restoring-namespaces.adoc#,restore>> the managed Aerospike namespace using the pre-upgrade backup created as part of the upgrade process.
 
 === Performing an upgrade
 
-The interface for upgrading an Aerospike cluster managed by `aerospike-operator`
-is the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>> custom
-resource definition. To perform an upgrade on a given Aerospike cluster, one
-must specify the desired target version in the `.spec.version` field of the
-associated `AerospikeCluster` resource. Changes in the value of this field will
-cause `aerospike-operator` to perform a rolling upgrade
-footnote:[For further details on the upgrade procedure one should refer to the <<../design/upgrades.adoc#,design document>>.]
-on the associated Aerospike cluster.
+The interface for upgrading an Aerospike cluster managed by `aerospike-operator` is the <<../design/api-spec.adoc#aerospikecluster,AerospikeCluster>> custom resource definition. To perform an upgrade on a given Aerospike cluster, one must specify the desired target version in the `.spec.version` field of the associated `AerospikeCluster` resource. Changes in the value of this field will cause `aerospike-operator` to perform a rolling upgrade footnote:[For further details on the upgrade procedure one should refer to the <<../design/upgrades.adoc#,design document>>.] on the associated Aerospike cluster.
 
-WARNING: Maximum service availability during the rolling upgrade process can
-only be guaranteed when the target Aerospike cluster consists of more than one
-node (i.e., has a value of `.spec.nodeCount` greater than one). Similarly,
-maximum data availability can only be ensured if the managed Aerospike namespace
-has a replication factor greater than one (i.e.
-`.spec.namespaces[0].replicationFactor` is greater than one).
+WARNING: Maximum service availability during the rolling upgrade process can only be guaranteed when the target Aerospike cluster consists of more than one node (i.e., has a value of `.spec.nodeCount` greater than one). Similarly, maximum data availability can only be ensured if the managed Aerospike namespace has a replication factor greater than one (i.e. `.spec.namespaces[0].replicationFactor` is greater than one).
 
-WARNING: In order to ensure that the upgrade operation has the least possible
-impact on service and data availability, `aerospike-operator` will refuse to
-perform any configuration or topology changes on an Aerospike cluster while is
-is being upgraded. This means, for example, that upgrading the cluster to a
-later version and scaling it up or down at the same time is not supported. To
-perform both operations, one should first perform the upgrade operation, wait
-for it to succeed and only them scale the cluster up or down.
+WARNING: In order to ensure that the upgrade operation has the least possible impact on service and data availability, `aerospike-operator` will refuse to perform any configuration or topology changes on an Aerospike cluster while is is being upgraded. This means, for example, that upgrading the cluster to a later version and scaling it up or down at the same time is not supported. To perform both operations, one should first perform the upgrade operation, wait for it to succeed and only them scale the cluster up or down.
 
-The upgrade procedure is better understood using an example. For illustration
-purposes, it is assumed that the following `AerospikeCluster` resource has
-previously been created:
+The upgrade procedure is better understood using an example. For illustration purposes, it is assumed that the following `AerospikeCluster` resource has previously been created:
 
 [source,yaml]
 ----
@@ -185,8 +120,7 @@ spec:
       size: 1G
 ----
 
-At this point, setting `.spec.version` to `4.2.0.4` in the `as-cluster-0`
-resource will cause `aerospike-operator` to start the upgrade procedure:
+At this point, setting `.spec.version` to `4.2.0.4` in the `as-cluster-0` resource will cause `aerospike-operator` to start the upgrade procedure:
 
 [source,bash]
 ----
@@ -195,9 +129,7 @@ $ kubectl -n kubernetes-namespace-0 edit asc as-cluster-0  # .spec.version was s
 aerospikecluster.aerospike.travelaudience.com "as-cluster-0" edited
 ----
 
-After a few moments, an `AerospikeNamespaceBackup` resource will have been
-created, and a `ClusterAutoBackupStarted` condition will have been appended to
-the `AerospikeCluster` resource:
+After a few moments, an `AerospikeNamespaceBackup` resource will have been created, and a `ClusterAutoBackupStarted` condition will have been appended to the `AerospikeCluster` resource:
 
 [source,bash]
 ----
@@ -224,10 +156,7 @@ Events:
   Normal  ClusterUpgradeStarted      2m    aerospikecluster  cluster backup started
 ----
 
-Depending on the size of the managed Aerospike namespace, it can take from a few
-minutes to a few hours for this backup to complete. By the time the underlying
-job are complete, a `ClusterAutoBackupFinished` condition will be appended to
-the `AerospikeCluster` resource:
+Depending on the size of the managed Aerospike namespace, it can take from a few minutes to a few hours for this backup to complete. By the time the underlying job are complete, a `ClusterAutoBackupFinished` condition will be appended to the `AerospikeCluster` resource:
 
 [source,bash]
 ----
@@ -254,9 +183,7 @@ Events:
   Normal  ClusterUpgradeStarted      2m    aerospikecluster  cluster backup finished
 ----
 
-At this point, `aerospike-operator` will start working on the upgrade itself,
-and a `ClusterUpgradeStarted` condition will be appended to the
-`AerospikeCluster` resource:
+At this point, `aerospike-operator` will start working on the upgrade itself, and a `ClusterUpgradeStarted` condition will be appended to the `AerospikeCluster` resource:
 
 [source,bash]
 ----
@@ -289,10 +216,7 @@ Events:
   Normal  ClusterUpgradeStarted      2m    aerospikecluster  upgrade from version 4.2.0.3 to 4.2.0.4 started
 ----
 
-As `aerospike-operator` progresses through each of the pods, it will report the
-current state by associating events with the `AerospikeCluster` resource. By the
-time the upgrade procedure finishes, a `ClusterUpgradeFinished` condition is
-appended to the `AerospikeCluster` resource:
+As `aerospike-operator` progresses through each of the pods, it will report the current state by associating events with the `AerospikeCluster` resource. By the time the upgrade procedure finishes, a `ClusterUpgradeFinished` condition is appended to the `AerospikeCluster` resource:
 
 [source,bash]
 ----
@@ -332,8 +256,7 @@ Events:
   Normal  ClusterUpgradeFinished     2m    aerospikecluster  finished upgrade from version 4.2.0.3 to 4.2.0.4
 ----
 
-At this point, all the pods that make up the Aerospike cluster will be running
-the `4.2.0.4` version of Aerospike:
+At this point, all the pods that make up the Aerospike cluster will be running the `4.2.0.4` version of Aerospike:
 
 [source,bash]
 ----
@@ -344,13 +267,4 @@ Jul 02 2018 16:10:03 GMT: INFO (as): (as.c:319) <><><><><><><><><><>  Aerospike 
 
 === Failed upgrades
 
-An upgrade operation can fail for a number of reasons, such as the inability to
-perform the pre-upgrade backup or the inability to start one of the pods running
-the target version. In the presence of a failure during the upgrade process,
-`aerospike-operator` appends either an `AutoBackupFailed` or a
-`ClusterUpgradeFailed` condition to the `AerospikeCluster` resource. From that
-moment on, `aerospike-operator` stops processing this Aerospike cluster and
-manual disaster recovery is required. In such a scenarion, the best approach to
-proper disaster recovery is to create a new Aerospike cluster and restore the
-pre-upgrade backup made by `aerospike-operator` by following the steps detailed
-in <<./30-restoring-namespaces.adoc#restoring-namespaces,Restoring Namespaces>>.
+An upgrade operation can fail for a number of reasons, such as the inability to perform the pre-upgrade backup or the inability to start one of the pods running the target version. In the presence of a failure during the upgrade process, `aerospike-operator` appends either an `AutoBackupFailed` or a `ClusterUpgradeFailed` condition to the `AerospikeCluster` resource. From that moment on, `aerospike-operator` stops processing this Aerospike cluster and manual disaster recovery is required. In such a scenarion, the best approach to proper disaster recovery is to create a new Aerospike cluster and restore the pre-upgrade backup made by `aerospike-operator` by following the steps detailed in <<./30-restoring-namespaces.adoc#restoring-namespaces,Restoring Namespaces>>.
