@@ -31,6 +31,7 @@ endif::[]
 * Added support for the `/scale` and `/status` subresources.
 ** It is now possible to scale an Aerospike cluster using `kubectl scale`.
 * Added support for Aerospike 4.0.0.6, 4.1.0.6, 4.3.0.2, 4.3.0.4, 4.3.0.6 and 4.3.0.7.
+* Updated `aerospike/aerospike-client-go` to 1.35.1.
 
 === Bug Fixes
 
