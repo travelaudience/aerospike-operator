@@ -120,6 +120,12 @@ func (ac *AerospikeClient) GetNamespaceStorageEngine(namespace string) (string, 
 	if _, ok := stats["storage-engine.file"]; ok {
 		return common.StorageTypeFile, nil
 	}
+	if _, ok := stats["storage-engine.device[0]"]; ok {
+		return common.StorageTypeDevice, nil
+	}
+	if _, ok := stats["storage-engine.file[0]"]; ok {
+		return common.StorageTypeFile, nil
+	}
 	return "", fmt.Errorf("namespace has unknown storage type")
 }
 
