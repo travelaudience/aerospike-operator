@@ -36,8 +36,8 @@ one may run
 
 [source,bash]
 ----
-$ kubectl create -f docs/examples/00-prereqs.yml
-$ kubectl create -f docs/examples/10-aerospike-operator.yml
+$ kubectl create -f https://raw.githubusercontent.com/travelaudience/aerospike-operator/master/docs/examples/00-prereqs.yml
+$ kubectl create -f https://raw.githubusercontent.com/travelaudience/aerospike-operator/master/docs/examples/10-aerospike-operator.yml
 ----
 
 This will quickly get `aerospike-operator` up and running in one's Kubernetes
@@ -47,7 +47,16 @@ section carefully.
 
 === Advanced installation
 
-To install `aerospike-operator` in one's Kubernetes cluster, one must first run
+To install `aerospike-operator` in one's Kubernetes cluster, one must first
+clone the `aerospike-operator` repository into one's workstation:
+
+[source,bash]
+----
+$ git clone https://github.com/travelaudience/aerospike-operator.git
+----
+
+Then, one must switch to the `aerospike-operator` directory created by the above
+command and run
 
 [source,bash]
 ----

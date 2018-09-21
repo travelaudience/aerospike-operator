@@ -44,12 +44,11 @@ to be scheduled.
 
 Finally, one should make sure that an adequate
 https://kubernetes.io/docs/concepts/storage/storage-classes/[storage class] is
-configured in the Kubernetes cluster. When a given Aerospike namespace is
-configured to use `file` storage, `aerospike-operator` dynamically provisions a
-persistent volume for said namespace _per_ Aerospike node, and as such expects a
-storage class supporting dynamic provisioning to be available. The size of said
-volume is equal to the value of the `.spec.namespaces[0].storage.size` field of
-the `AerospikeCluster` resource.
+configured in the Kubernetes cluster. `aerospike-operator` dynamically
+provisions a persistent volume _per_ namespace _per_ Aerospike node, and as such
+expects a storage class supporting dynamic provisioning to be available. The
+size of said volume is equal to the value of the
+`.spec.namespaces[0].storage.size` field of the `AerospikeCluster` resource.
 
 WARNING: One should carefully
 https://www.aerospike.com/docs/operations/plan/capacity[capacity plan] storage
@@ -266,7 +265,7 @@ all Kubernetes namespaces), one may run
 ----
 $ kubectl get asc --all-namespaces
 NAMESPACE                NAME           VERSION   NODE COUNT   AGE
-kubernetes-namespace-0   as-cluster-0   4.2.0.3   2            8m
+kubernetes-namespace-0   as-cluster-0   4.2.0.3   2            19m
 kubernetes-namespace-1   as-cluster-1   4.2.0.5   3            4m
 ----
 
@@ -296,7 +295,7 @@ the value of configuration properties such as `high-water-memory-pct` or
 
 Some of the configuration properties exposed by the `AerospikeCluster` custom
 resource definition, such as `replicationFactor`, can only be set when creating
-the Aerospike cluster. Some other properties, such as `memorySizeGB`, can be
+the Aerospike cluster. Some other properties, such as `memorySize`, can be
 tweaked on a live Aerospike cluster.
 
 When a configuration change to a live Aerospike cluster is detected,
