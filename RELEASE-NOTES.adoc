@@ -35,13 +35,13 @@ IMPORTANT: Before upgrading `aerospike-operator`, one **MUST** update the `aeros
 * Added support for Aerospike 4.0.0.6, 4.1.0.6, 4.3.0.2, 4.3.0.4, 4.3.0.6 and 4.3.0.7.
 * Updated `aerospike/aerospike-client-go` to 1.35.1.
 
-=== Documentation
-
-* _Usage:_ Improved the <<./docs/usage/00-installation-guide.adoc#,Installation Guide>>.
-
 === Bug Fixes
 
 * Fixed a bug which caused `.status.conditions` not to be reported in `AerospikeCluster` resources.
+
+=== Documentation
+
+* _Usage:_ Improved the <<./docs/usage/00-installation-guide.adoc#,Installation Guide>>.
 
 === Other
 
