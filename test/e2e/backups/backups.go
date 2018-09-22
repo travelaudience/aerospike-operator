@@ -20,6 +20,8 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
@@ -44,7 +46,7 @@ func testNamespaceBackupRestore(tf *framework.TestFramework, ns *v1.Namespace, n
 	err = tf.WaitForBackupRestoreCompleted(backup)
 	Expect(err).NotTo(HaveOccurred())
 
-	// NewAerospikeClusterWithDefault uses generated names. Hence, the restore is always made to a different cluster.
+	// NewAerospikeClusterWithDefaults uses generated names. Hence, the restore is always made to a different cluster.
 	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -90,7 +92,7 @@ func testNamespaceRestoreFromDifferentNamespace(tf *framework.TestFramework, ns 
 	// use a different name for the target namespace
 	aerospikeCluster.Spec.Namespaces[0] = tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-1", 1, 1, 0, 1)
 
-	// NewAerospikeClusterWithDefault uses generated names. Hence, the restore is always made to a different cluster.
+	// NewAerospikeClusterWithDefaults uses generated names. Hence, the restore is always made to a different cluster.
 	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -98,6 +100,57 @@ func testNamespaceRestoreFromDifferentNamespace(tf *framework.TestFramework, ns 
 	Expect(err).NotTo(HaveOccurred())
 
 	asRestore := tf.NewAerospikeNamespaceRestoreGCS(asc, asc.Spec.Namespaces[0].Name, backup)
+	restore, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(ns.Name).Create(&asRestore)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForBackupRestoreCompleted(restore)
+	Expect(err).NotTo(HaveOccurred())
+
+	c2, err := framework.NewAerospikeClient(asc)
+	Expect(err).NotTo(HaveOccurred())
+	err = c2.ReadSequentialIntegers(asc.Spec.Namespaces[0].Name, nRecords)
+	Expect(err).NotTo(HaveOccurred())
+	c2.Close()
+}
+
+func testNamespaceBackupRestoreWithoutBackupStorageSpec(tf *framework.TestFramework, ns *v1.Namespace, nRecords int) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.BackupSpec = &v1alpha2.AerospikeClusterBackupSpec{
+		Storage: v1alpha2.BackupStorageSpec{
+			Type:            common.StorageTypeGCS,
+			Bucket:          framework.GCSBucketName,
+			Secret:          framework.GCSSecretName,
+			SecretNamespace: &framework.GCSSecretNamespace,
+			SecretKey:       &framework.GCSSecretKey,
+		},
+	}
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	c1, err := framework.NewAerospikeClient(asc)
+	Expect(err).NotTo(HaveOccurred())
+	err = c1.WriteSequentialIntegers(asc.Spec.Namespaces[0].Name, nRecords)
+	Expect(err).NotTo(HaveOccurred())
+	c1.Close()
+
+	asBackup := tf.NewAerospikeNamespaceBackupGCSWithoutBackupStorageSpec(asc, asc.Spec.Namespaces[0].Name, nil)
+	backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForBackupRestoreCompleted(backup)
+	Expect(err).NotTo(HaveOccurred())
+
+	// NewAerospikeClusterWithDefaults uses generated names. Hence, the restore is always made to a different cluster.
+	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
+	Expect(err).NotTo(HaveOccurred())
+
+	asRestore := tf.NewAerospikeNamespaceRestoreGCSWithoutBackupStorageSpec(asc, asc.Spec.Namespaces[0].Name, backup)
 	restore, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(ns.Name).Create(&asRestore)
 	Expect(err).NotTo(HaveOccurred())
 

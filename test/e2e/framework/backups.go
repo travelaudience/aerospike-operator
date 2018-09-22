@@ -62,6 +62,21 @@ func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alph
 	}
 }
 
+func (tf *TestFramework) NewAerospikeNamespaceBackupGCSWithoutBackupStorageSpec(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, ttl *string) aerospikev1alpha2.AerospikeNamespaceBackup {
+	return aerospikev1alpha2.AerospikeNamespaceBackup{
+		ObjectMeta: v1.ObjectMeta{
+			GenerateName: backupPrefix,
+		},
+		Spec: aerospikev1alpha2.AerospikeNamespaceBackupSpec{
+			Target: aerospikev1alpha2.TargetNamespace{
+				Cluster:   cluster.Name,
+				Namespace: namespace,
+			},
+			TTL: ttl,
+		},
+	}
+}
+
 func (tf *TestFramework) NewAerospikeNamespaceRestoreGCS(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, backup *aerospikev1alpha2.AerospikeNamespaceBackup) aerospikev1alpha2.AerospikeNamespaceRestore {
 	return aerospikev1alpha2.AerospikeNamespaceRestore{
 		ObjectMeta: v1.ObjectMeta{
@@ -78,6 +93,20 @@ func (tf *TestFramework) NewAerospikeNamespaceRestoreGCS(cluster *aerospikev1alp
 				Secret:          GCSSecretName,
 				SecretNamespace: &GCSSecretNamespace,
 				SecretKey:       &GCSSecretKey,
+			},
+		},
+	}
+}
+
+func (tf *TestFramework) NewAerospikeNamespaceRestoreGCSWithoutBackupStorageSpec(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, backup *aerospikev1alpha2.AerospikeNamespaceBackup) aerospikev1alpha2.AerospikeNamespaceRestore {
+	return aerospikev1alpha2.AerospikeNamespaceRestore{
+		ObjectMeta: v1.ObjectMeta{
+			Name: backup.Name,
+		},
+		Spec: aerospikev1alpha2.AerospikeNamespaceRestoreSpec{
+			Target: aerospikev1alpha2.TargetNamespace{
+				Cluster:   cluster.Name,
+				Namespace: namespace,
 			},
 		},
 	}

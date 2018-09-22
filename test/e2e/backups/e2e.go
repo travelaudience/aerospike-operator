@@ -49,12 +49,16 @@ var _ = Describe("AerospikeNamespaceBackupRestore", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("successfuly completes a backup and a restore of a namespace", func() {
+		It("successfully completes a backup and a restore of a namespace", func() {
 			testNamespaceBackupRestore(tf, ns, 100000)
 		})
 
 		It("restores from a backup to a namespace with a different name", func() {
 			testNamespaceRestoreFromDifferentNamespace(tf, ns, 100000)
+		})
+
+		It("successfully completes a backup and a restore of a namespace when backupstoragespec is not specified", func() {
+			testNamespaceBackupRestoreWithoutBackupStorageSpec(tf, ns, 100000)
 		})
 	})
 })

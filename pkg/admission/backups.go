@@ -115,7 +115,7 @@ func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj aerospikev1alp
 
 	// make sure that the secret containing cloud storage credentials exists and
 	// matches the expected format
-	secretNamespace := obj.GetStorage().GetSecretNamespace(obj.GetNamespace())
+	secretNamespace := storageSpec.GetSecretNamespace(obj.GetNamespace())
 	secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(storageSpec.GetSecret(), v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -123,7 +123,7 @@ func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj aerospikev1alp
 		}
 		return err
 	}
-	secretKey := obj.GetStorage().GetSecretKey()
+	secretKey := storageSpec.GetSecretKey()
 	if _, ok := secret.Data[secretKey]; !ok {
 		return fmt.Errorf("secret %q does not contain expected field %q", secret.Name, secretKey)
 	}
