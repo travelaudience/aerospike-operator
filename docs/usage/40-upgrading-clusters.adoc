@@ -78,6 +78,8 @@ In order to minimize the chances of a failed upgrade, `aerospike-operator` inclu
 * https://www.aerospike.com/download/server/notes.html#4.3.0.4[`4.3.0.4`]
 * https://www.aerospike.com/download/server/notes.html#4.3.0.6[`4.3.0.6`]
 * https://www.aerospike.com/download/server/notes.html#4.3.0.7[`4.3.0.7`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.8[`4.3.0.8`]
+* https://www.aerospike.com/download/server/notes.html#4.3.0.10[`4.3.0.10`]
 
 Future versions of `aerospike-operator` will introduce support for new minor, patch and release versions as they become available.
 

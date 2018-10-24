@@ -30,6 +30,8 @@ const (
 	aerospikeServer_4_3_0_4  = "4.3.0.4"
 	aerospikeServer_4_3_0_6  = "4.3.0.6"
 	aerospikeServer_4_3_0_7  = "4.3.0.7"
+	aerospikeServer_4_3_0_8  = "4.3.0.8"
+	aerospikeServer_4_3_0_10 = "4.3.0.10"
 )
 
 var (
@@ -49,5 +51,7 @@ var (
 		aerospikeServer_4_3_0_4,
 		aerospikeServer_4_3_0_6,
 		aerospikeServer_4_3_0_7,
+		aerospikeServer_4_3_0_8,
+		aerospikeServer_4_3_0_10,
 	}
 )

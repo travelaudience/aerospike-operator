@@ -14,6 +14,7 @@ endif::[]
 
 === Improvements
 
+* Added support for Aerospike 4.3.0.8 and 4.3.0.10.
 * Updated `aerospike/aerospike-client-go` to 1.35.2.
 
 == Changes in `0.10.0`
