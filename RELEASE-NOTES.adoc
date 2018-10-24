@@ -10,6 +10,12 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
+== Changes in `0.10.1`
+
+=== Improvements
+
+* Updated `aerospike/aerospike-client-go` to 1.35.2.
+
 == Changes in `0.10.0`
 
 IMPORTANT: Before upgrading `aerospike-operator`, one **MUST** update the `aerospike-operator` https://github.com/travelaudience/aerospike-operator/blob/master/docs/examples/00-prereqs.yml#L15[cluster role] using, e.g., `kubectl apply -f docs/examples/00-prereqs.yml`. Failure to do so will result in a deffective installation of `aerospike-operator`.

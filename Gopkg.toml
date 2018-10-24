@@ -20,7 +20,7 @@
 
 [[constraint]]
   name = "github.com/aerospike/aerospike-client-go"
-  version = "v1.35.1"
+  version = "v1.35.2"
 
 [[override]]
   name = "k8s.io/apiserver"

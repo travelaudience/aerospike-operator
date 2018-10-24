@@ -50,7 +50,7 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
-  digest = "1:20de4722841362c2b374d34fbbc1f9cff8a4d8869f5a0e596b2a2cafda93b62b"
+  digest = "1:590124d0dabd7327aa1d3523b55618e807cfc5d6c689c45b618064dcf8232bb3"
   name = "github.com/aerospike/aerospike-client-go"
   packages = [
     ".",
@@ -66,8 +66,8 @@
     "utils/buffer",
   ]
   pruneopts = "UT"
-  revision = "7cb6228c3de365117a866ddd51ed124ce7405c2c"
-  version = "v1.35.1"
+  revision = "506514fe33c61d0efcab7f89dc589c6b55664cea"
+  version = "v1.35.2"
 
 [[projects]]
   branch = "release-8.0"
