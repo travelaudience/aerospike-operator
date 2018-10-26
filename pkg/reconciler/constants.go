@@ -142,6 +142,10 @@ const (
 
 	// default value for persistentVolumeClaimTTL
 	defaultPersistentVolumeClaimTTL = "0d"
+
+	// default value for memory-size, corresponding to the default used by aerospike in versions prior to 4.3.0.2
+	// https://www.aerospike.com/docs/reference/configuration/#memory-size
+	defaultMemorySize = "4G"
 )
 
 var asConfigTemplate = template.Must(template.New("aerospike-config").Parse(aerospikeConfig))

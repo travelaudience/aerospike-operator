@@ -157,10 +157,11 @@ func getNamespaceProps(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, ind
 		}
 	}
 
-	if namespace.MemorySize != nil {
-		if *namespace.MemorySize != "" {
-			props[nsMemorySizeKey] = namespace.MemorySize
-		}
+	if namespace.MemorySize != nil && *namespace.MemorySize != "" {
+		props[nsMemorySizeKey] = namespace.MemorySize
+	} else {
+		// explicitly set a value for memory-size since it is required from aerospike 4.3.0.2 onwards
+		props[nsMemorySizeKey] = defaultMemorySize
 	}
 
 	if namespace.DefaultTTL != nil {

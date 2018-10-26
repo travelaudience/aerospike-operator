@@ -20,6 +20,7 @@ endif::[]
 === Bug Fixes
 
 * Fixed a bug which caused the reconcile loop to block for long periods of time when pods entered an error state.
+* Fixed a bug which caused Aerospike 4.3.0.2 and later not to start if `.spec.namespaces[0].memorySize` was not explicitly set.
 
 == Changes in `0.10.0`
 
