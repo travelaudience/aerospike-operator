@@ -60,29 +60,38 @@ func isPodRunningAndReady(pod *v1.Pod) bool {
 	return pod.Status.Phase == v1.PodRunning && podutil.IsPodReady(pod)
 }
 
-func isPodInTerminalState(pod *v1.Pod) bool {
-	// pod is in terminal state if its .status.phase is Failed, or
-	// if its .status.phase is Pending and the reason is "ImagePullBackOff"
-	switch pod.Status.Phase {
-	case v1.PodFailed:
+// isPodInFailureState attempts to checks if the specified pod has reached an error condition from which it is not
+// expected to recover.
+func isPodInFailureState(pod *v1.Pod) bool {
+	// if the value of ".status.phase" is "Failed", trhe pod is trivially in a failure state
+	if pod.Status.Phase == v1.PodFailed {
 		return true
-	case v1.PodPending:
-		for _, containerStatus := range pod.Status.ContainerStatuses {
-			if waiting := containerStatus.State.Waiting; waiting != nil {
-				switch waiting.Reason {
-				case ReasonImagePullBackOff:
-					fallthrough
-				case ReasonImageInspectError:
-					fallthrough
-				case ReasonErrImagePull:
-					fallthrough
-				case ReasonRegistryUnavailable:
-					return true
-				}
-			}
+	}
+
+	// grab the status of every container in the pod (including its init containers)
+	containerStatus := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
+
+	// inspect the status of each individual container for common failure states
+	for _, container := range containerStatus {
+		// if the container is marked as "Terminated", check if its exit code is non-zero since this may still represent
+		// a container that has terminated successfully (such as an init container)
+		if terminated := container.State.Terminated; terminated != nil && terminated.ExitCode != 0 {
+			return true
+		}
+		// if the container is marked as "Waiting", check for common image-related errors
+		if waiting := container.State.Waiting; waiting != nil && isImageError(waiting.Reason) {
+			return true
 		}
 	}
+
+	// no failure state was found
 	return false
+}
+
+// isImageError indicated whether the specified reason corresponds to an error while pulling or inspecting a container
+// image.
+func isImageError(reason string) bool {
+	return reason == ReasonErrImagePull || reason == ReasonImageInspectError || reason == ReasonImagePullBackOff || reason == ReasonRegistryUnavailable
 }
 
 func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.ConditionFunc, timeout time.Duration) error {

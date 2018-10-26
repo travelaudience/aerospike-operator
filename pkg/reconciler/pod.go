@@ -95,6 +95,20 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			// propagate the error
 			return err
 		}
+
+		// check whether the current pod is in a failure state, in which case we must delete and later re-create it
+		if pod != nil && isPodInFailureState(pod) {
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+				logfields.Pod:              meta.Key(pod),
+			}).Warn("pod is in a failure state and will be deleted")
+			if err := r.deletePod(aerospikeCluster, pod); err != nil {
+				return err
+			}
+			// set pod to nil since we have just deleted it
+			pod = nil
+		}
+
 		switch {
 		// check whether the pod needs to be created
 		case pod == nil:
@@ -107,7 +121,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to create pod: %v", err)
 				return err
 			}
-			// check whether the pod needs to be upgraded
+		// check whether the pod needs to be upgraded
 		case upgrade != nil:
 			pod, err = r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i, upgrade)
 			if err != nil {
@@ -117,7 +131,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to upgrade pod: %v", err)
 				return err
 			}
-			// check whether the pod needs to be restarted
+		// check whether the pod needs to be restarted
 		case configMap.Annotations[configMapHashAnnotation] != pod.Annotations[configMapHashAnnotation]:
 			pod, err = r.safeRestartPodWithIndex(aerospikeCluster, configMap, i, upgrade)
 			if err != nil {
@@ -128,7 +142,8 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				return err
 			}
 		}
-		// ensure the node reports the correct clusterSize
+
+		// ensure aerospike is reachable and reports the correct clusterSize
 		if err := r.ensureClusterSize(aerospikeCluster, pod); err != nil {
 			return err
 		}
@@ -500,15 +515,15 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			return false, fmt.Errorf("pod %s has been deleted", meta.Key(currentPod))
 		default:
 			currentPod = event.Object.(*v1.Pod)
-			if isPodInTerminalState(currentPod) {
+			if isPodInFailureState(currentPod) {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 					logfields.Pod:              meta.Key(currentPod),
-				}).Warn("pod is in terminal state")
+				}).Warn("pod is in a failure state")
 				if err := r.deletePod(aerospikeCluster, currentPod); err != nil {
 					return false, err
 				}
-				return false, fmt.Errorf("pod %s in terminal state has been deleted", meta.Key(currentPod))
+				return false, fmt.Errorf("pod %s in a failure state has been deleted", meta.Key(currentPod))
 
 			}
 			return isPodRunningAndReady(currentPod), nil
