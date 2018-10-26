@@ -30,11 +30,20 @@ import (
 
 	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
 	"github.com/travelaudience/aerospike-operator/pkg/backuprestore/gcs"
+	flagutils "github.com/travelaudience/aerospike-operator/pkg/utils/flags"
 )
 
 const (
 	backupCommand  = "backup"
 	restoreCommand = "restore"
+
+	debugFlag      = "debug"
+	bucketNameFlag = "bucket-name"
+	nameFlag       = "name"
+	secretPathFlag = "secret-path"
+	hostFlag       = "host"
+	portFlag       = "port"
+	namespaceFlag  = "namespace"
 )
 
 var (
@@ -59,22 +68,22 @@ type backupMetadata struct {
 
 func init() {
 	bfs = flag.NewFlagSet(backupCommand, flag.ExitOnError)
-	bfs.BoolVar(&debug, "debug", false, "whether to enable debug logging")
-	bfs.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to upload the backup to")
-	bfs.StringVar(&name, "name", "", "the name of the backup file to be stored on GCS")
-	bfs.StringVar(&secretPath, "secret-path", "/secret/key.json", "the path to the service account credentials file")
-	bfs.StringVar(&host, "host", "", "the host to which asbackup will connect")
-	bfs.IntVar(&port, "port", 3000, "the port to which asbackup will connect")
-	bfs.StringVar(&namespace, "namespace", "", "the name of the namespace which to backup")
+	bfs.BoolVar(&debug, debugFlag, false, "[DEPRECATED] whether to enable debug logging")
+	bfs.StringVar(&bucketName, bucketNameFlag, "", "the name of the bucket to upload the backup to")
+	bfs.StringVar(&name, nameFlag, "", "the name of the backup file to be stored on GCS")
+	bfs.StringVar(&secretPath, secretPathFlag, "/secret/key.json", "the path to the service account credentials file")
+	bfs.StringVar(&host, hostFlag, "", "the host to which asbackup will connect")
+	bfs.IntVar(&port, portFlag, 3000, "the port to which asbackup will connect")
+	bfs.StringVar(&namespace, namespaceFlag, "", "the name of the namespace which to backup")
 
 	rfs = flag.NewFlagSet(restoreCommand, flag.ExitOnError)
-	rfs.BoolVar(&debug, "debug", false, "whether to enable debug logging")
-	rfs.StringVar(&bucketName, "bucket-name", "", "the name of the bucket to download the backup from")
-	rfs.StringVar(&name, "name", "", "the name of the backup file to be retrieved from GCS")
-	rfs.StringVar(&secretPath, "secret-path", "/secret/key.json", "the path to the service account credentials file")
-	rfs.StringVar(&host, "host", "", "the host to which asrestore will connect")
-	rfs.IntVar(&port, "port", 3000, "the port to which asrestore will connect")
-	rfs.StringVar(&namespace, "namespace", "", "the name of the namespace which to restore data into")
+	rfs.BoolVar(&debug, debugFlag, false, "[DEPRECATED] whether to enable debug logging")
+	rfs.StringVar(&bucketName, bucketNameFlag, "", "the name of the bucket to download the backup from")
+	rfs.StringVar(&name, nameFlag, "", "the name of the backup file to be retrieved from GCS")
+	rfs.StringVar(&secretPath, secretPathFlag, "/secret/key.json", "the path to the service account credentials file")
+	rfs.StringVar(&host, hostFlag, "", "the host to which asrestore will connect")
+	rfs.IntVar(&port, portFlag, 3000, "the port to which asrestore will connect")
+	rfs.StringVar(&namespace, namespaceFlag, "", "the name of the namespace which to restore data into")
 }
 
 func main() {
@@ -84,6 +93,10 @@ func main() {
 	switch os.Args[1] {
 	case backupCommand:
 		bfs.Parse(os.Args[2:])
+
+		// warn about deprecated flags
+		flagutils.DeprecateFlags(bfs, debugFlag)
+
 		if debug {
 			log.SetLevel(log.DebugLevel)
 		}
@@ -94,6 +107,10 @@ func main() {
 		log.Info("backup is complete")
 	case restoreCommand:
 		rfs.Parse(os.Args[2:])
+
+		// warn about deprecated flags
+		flagutils.DeprecateFlags(rfs, debugFlag)
+
 		if debug {
 			log.SetLevel(log.DebugLevel)
 		}

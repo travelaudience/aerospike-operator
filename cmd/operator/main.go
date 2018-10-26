@@ -45,7 +45,14 @@ import (
 	v1alpha2converters "github.com/travelaudience/aerospike-operator/pkg/crd/converters/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/debug"
 	"github.com/travelaudience/aerospike-operator/pkg/signals"
+	flagutils "github.com/travelaudience/aerospike-operator/pkg/utils/flags"
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
+)
+
+const (
+	admissionEnabledFlag = "admission-enabled"
+	debugEnabledFlag     = "debug"
+	kubeconfigFlag       = "kubeconfig"
 )
 
 var (
@@ -56,13 +63,16 @@ var (
 
 func init() {
 	fs = flag.NewFlagSet("", flag.ExitOnError)
-	fs.BoolVar(&debug.DebugEnabled, "debug", false, "Whether to enable debug mode.")
-	fs.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-	fs.BoolVar(&admission.Enabled, "admission-enabled", true, "Whether to enable the validating admission webhook.")
+	fs.BoolVar(&debug.DebugEnabled, debugEnabledFlag, false, "[DEPRECATED] Whether to enable debug mode.")
+	fs.StringVar(&kubeconfig, kubeconfigFlag, "", "Path to a kubeconfig. Only required if out-of-cluster.")
+	fs.BoolVar(&admission.Enabled, admissionEnabledFlag, true, "[DEPRECATED] Whether to enable the validating admission webhook.")
 }
 
 func main() {
 	fs.Parse(os.Args[1:])
+
+	// warn about deprecated flags
+	flagutils.DeprecateFlags(fs, admissionEnabledFlag, debugEnabledFlag)
 
 	// workaround for https://github.com/kubernetes/kubernetes/issues/17162
 	flag.CommandLine.Parse([]string{})

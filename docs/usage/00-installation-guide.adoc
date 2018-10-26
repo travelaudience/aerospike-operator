@@ -70,7 +70,7 @@ After installing the pre-requisites, one must create a deployment for `aerospike
 $ kubectl create -f docs/examples/10-aerospike-operator.yml
 ----
 
-TIP: Optionally, one may edit this file in order to tweak the default installation parameters (such as if one wants to enable debug logging). One should check the <<configuration>> section for further details on the available flags.
+TIP: Optionally, one may edit this file in order to tweak the default installation parameters. One should check the <<configuration>> section for further details on the available flags.
 
 This will create a service footnote:[Required for the embbeded validating admission webhook to work.] and a deployment for `aerospike-operator`:
 
@@ -116,9 +116,7 @@ NAME                                              AGE
 aerospike-operator.aerospike.travelaudience.com   2m
 ----
 
-This webhook runs within `aerospike-operator` itself and helps providing a richer user experience by rejecting invalid Aerospike cluster configurations upfront. In some Kubernetes clusters, however, running the admission webhook may not be supported. This may happen, for example, if the `ValidatingAdmissionWebhook` admission controller has been disabled by the Kubernetes cluster administrator. In some other scenarios the `admissionregistration.k8s.io/v1beta1` API itself may have been disabled. To disable the admission webhook in these scenarios one may specify the `--admission-enabled=false` <<configuration,flag>> when starting `aerospike-operator`.
-
-WARNING: Disabling the validating admission webhook prevents `aerospike-operator` from performing certain validations on user input. In such scenarios, the user may end up creating an invalid configuration or triggering an unsupported operation.
+This webhook runs within `aerospike-operator` itself and helps providing a richer user experience by rejecting invalid Aerospike cluster configurations upfront.
 
 [[configuration]]
 == Configuring `aerospike-operator`
@@ -126,37 +124,15 @@ WARNING: Disabling the validating admission webhook prevents `aerospike-operator
 The behaviour of `aerospike-operator` can be tweaked using command-line flags. The following flags are supported:
 
 |===
-| Flag                  | Default | Description
-| `--admission-enabled` | `true`  | Whether to enable the validating admission webhook.
-| `--debug`             | `false` | Whether to enable debug mode.
-| `--kubeconfig`        | `""`    | Path to a kubeconfig. Only required if out-of-cluster.
+| Flag                  | Default | Deprecated | Description
+| `--admission-enabled` | `true`  | **YES**    | Whether to enable the validating admission webhook.
+| `--debug`             | `false` | **YES**    | Whether to enable debug mode.
+| `--kubeconfig`        | `""`    |            | Path to a kubeconfig. Only required if out-of-cluster.
 |===
 
-To set values for these flags, one should edit the deployment created in <<installing>> and add the desired values in the `.spec.template.spec.containers[0].args` field of the deployment. The example below describes how to enable debug logging and disable the validating admission webhook:
+To set values for these flags, one should edit the deployment created in <<installing>> and add the desired values in the `.spec.template.spec.containers[0].args` field of the deployment.
 
-[source,yaml]
-----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: aerospike-operator
-  namespace: aerospike-operator
-  (...)
-spec:
-  template:
-    spec:
-      containers:
-      - args:
-        - /usr/local/bin/aerospike-operator
-        - --debug=true
-        - --admission-enabled=false
-        (...)
-      (...)
-    (...)
-  (...)
-----
-
-WARNING: When running with the `--debug=true` flag `aerospike-operator` will disable https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity-beta-feature[inter-pod anti-affinity], making it possible for two Aerospike pods to be co-located on the same Kubernetes node. Running `aerospike-operator` with this flag outside a testing environment is strongly discouraged.
+WARNING: When running with the `--debug=true` flag `aerospike-operator` will disable https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity-beta-feature[inter-pod anti-affinity], making it possible for two Aerospike pods to be co-located on the same Kubernetes node. Running `aerospike-operator` with this flag outside a testing environment is strongly discouraged. For this reason, this flag is now deprecated and should not be specified.
 
 == Uninstalling `aerospike-operator`
 

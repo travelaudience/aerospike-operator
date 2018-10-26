@@ -12,6 +12,10 @@ endif::[]
 
 == Changes in `0.10.1`
 
+=== Deprecations
+
+* Deprecated the `--admission-enabled` and the `--debug` flags. These will be removed in a future version.
+
 === Improvements
 
 * Added support for Aerospike 4.3.0.8 and 4.3.0.10.
