@@ -31,6 +31,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *v1.Namespace) {
@@ -130,6 +131,59 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 	clusterSize, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", res.Name, res.Namespace), 3000)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(int32(clusterSize)).To(Equal(nodeCount))
+}
+
+func testCreateAerospikeClusterWithResources(tf *framework.TestFramework, ns *v1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.Resources = v1.ResourceRequirements{
+		Requests: v1.ResourceList{
+			v1.ResourceCPU:    resource.MustParse("500m"),
+			v1.ResourceMemory: resource.MustParse("1212Mi"),
+		},
+		Limits: v1.ResourceList{
+			v1.ResourceCPU:    resource.MustParse("1500m"),
+			v1.ResourceMemory: resource.MustParse("1512Mi"),
+		},
+	}
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, 1)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(len(pods.Items))).To(Equal(int32(1)))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Cpu()).To(Equal(aerospikeCluster.Spec.Resources.Requests.Cpu()))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Memory()).To(Equal(aerospikeCluster.Spec.Resources.Requests.Memory()))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Limits.Cpu()).To(Equal(aerospikeCluster.Spec.Resources.Limits.Cpu()))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Limits.Memory()).To(Equal(aerospikeCluster.Spec.Resources.Limits.Memory()))
+
+	clusterSize, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", res.Name, res.Namespace), 3000)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(clusterSize)).To(Equal(int32(1)))
+}
+
+func testCreateAerospikeWithComputedResources(tf *framework.TestFramework, ns *v1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.Resources = v1.ResourceRequirements{
+		Requests: v1.ResourceList{
+			v1.ResourceMemory: resource.MustParse("212Mi"),
+		},
+	}
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, 1)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(len(pods.Items))).To(Equal(int32(1)))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Cpu()).NotTo(BeNil())
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Memory()).NotTo(Equal(aerospikeCluster.Spec.Resources.Requests.Memory()))
 }
 
 func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace) {
