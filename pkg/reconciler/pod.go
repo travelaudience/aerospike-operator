@@ -121,7 +121,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to create pod: %v", err)
 				return err
 			}
-		// check whether the pod needs to be upgraded
+			// check whether the pod needs to be upgraded
 		case upgrade != nil:
 			pod, err = r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i, upgrade)
 			if err != nil {
@@ -131,7 +131,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to upgrade pod: %v", err)
 				return err
 			}
-		// check whether the pod needs to be restarted
+			// check whether the pod needs to be restarted
 		case configMap.Annotations[configMapHashAnnotation] != pod.Annotations[configMapHashAnnotation]:
 			pod, err = r.safeRestartPodWithIndex(aerospikeCluster, configMap, i, upgrade)
 			if err != nil {
@@ -316,6 +316,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 							v1.ResourceCPU:    computeCpuRequest(aerospikeCluster),
 							v1.ResourceMemory: computeMemoryRequest(aerospikeCluster),
 						},
+						Limits: computeResourceLimits(aerospikeCluster),
 					},
 				},
 				{
@@ -542,6 +543,25 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 
 	return currentPod, nil
 }
+func computeResourceLimits(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) v1.ResourceList {
+	if !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() && !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
+		return v1.ResourceList{
+			v1.ResourceCPU:    *aerospikeCluster.Spec.Resources.Limits.Cpu(),
+			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
+		}
+	}
+	if !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() {
+		return v1.ResourceList{
+			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Cpu(),
+		}
+	}
+	if !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
+		return v1.ResourceList{
+			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
+		}
+	}
+	return v1.ResourceList{}
+}
 
 func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *v1.Pod) error {
 	// mark the pod PVCs as unmounted with an annotation
@@ -755,6 +775,9 @@ func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospi
 // corresponding resource.Quantity. It currently returns aerospikeServerContainerDefaultCpuRequest parsed as a quantity,
 // but this may change in the future.
 func computeCpuRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) resource.Quantity {
+	if aerospikeCluster.Spec.Resources.Requests.Cpu() != nil {
+		return *aerospikeCluster.Spec.Resources.Requests.Cpu()
+	}
 	return resource.MustParse(strconv.Itoa(aerospikeServerContainerDefaultCpuRequest))
 }
 
@@ -782,7 +805,13 @@ func computeMemoryRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) 
 			sum += aerospikeServerContainerDefaultMemoryRequestGi
 		}
 	}
-	return resource.MustParse(fmt.Sprintf("%dGi", sum))
+	computedMemory := resource.MustParse(fmt.Sprintf("%dGi", sum))
+	// user may want to setup manual memory requests bigger than computed ones
+	if aerospikeCluster.Spec.Resources.Requests.Memory().Cmp(computedMemory) > 0 {
+		return *aerospikeCluster.Spec.Resources.Requests.Memory()
+	} else {
+		return computedMemory
+	}
 }
 
 // computeNodeId computes the value to be used as the id of the aerospike node

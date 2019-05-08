@@ -19,6 +19,7 @@ package v1alpha2
 import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/api/core/v1"
 )
 
 // +genclient
@@ -50,6 +51,8 @@ type AerospikeClusterSpec struct {
 	// It is only required to be present if one wants to perform version upgrades on the Aerospike cluster.
 	// +optional
 	BackupSpec *AerospikeClusterBackupSpec `json:"backupSpec,omitempty"`
+	// Define resources requests and limits for Aerospike Server Container.
+	Resources v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // AerospikeClusterStatus represents the current state of an Aerospike cluster.
