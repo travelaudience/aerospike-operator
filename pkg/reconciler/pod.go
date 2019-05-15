@@ -121,7 +121,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to create pod: %v", err)
 				return err
 			}
-			// check whether the pod needs to be upgraded
+		// check whether the pod needs to be upgraded
 		case upgrade != nil:
 			pod, err = r.maybeUpgradePodWithIndex(aerospikeCluster, configMap, i, upgrade)
 			if err != nil {
@@ -131,7 +131,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to upgrade pod: %v", err)
 				return err
 			}
-			// check whether the pod needs to be restarted
+		// check whether the pod needs to be restarted
 		case configMap.Annotations[configMapHashAnnotation] != pod.Annotations[configMapHashAnnotation]:
 			pod, err = r.safeRestartPodWithIndex(aerospikeCluster, configMap, i, upgrade)
 			if err != nil {
@@ -543,18 +543,24 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 
 	return currentPod, nil
 }
+
+// computeResourceLimits computes the limits for CPU and memory based on user provided resource limits as a
+// ResourceList
 func computeResourceLimits(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) v1.ResourceList {
+	// setup limits for memory and cpu if user provides request limit values for both
 	if !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() && !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
 		return v1.ResourceList{
 			v1.ResourceCPU:    *aerospikeCluster.Spec.Resources.Limits.Cpu(),
 			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
 		}
 	}
+	// setup limits for cpu if user provides request limit values for cpu only
 	if !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() {
 		return v1.ResourceList{
 			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Cpu(),
 		}
 	}
+	// setup limits for memory if user provides request limit values for memory only
 	if !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
 		return v1.ResourceList{
 			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
@@ -772,8 +778,8 @@ func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospi
 }
 
 // computeCpuRequest computes the amount of cpu to be requested for the aerospike-server container and returns the
-// corresponding resource.Quantity. It currently returns aerospikeServerContainerDefaultCpuRequest parsed as a quantity,
-// but this may change in the future.
+// corresponding resource.Quantity. It currently returns aerospikeServerContainerDefaultCpuRequest parsed as a quantity
+// or requested CPU provided by user if it exists as a quantity.
 func computeCpuRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) resource.Quantity {
 	if aerospikeCluster.Spec.Resources.Requests.Cpu() != nil {
 		return *aerospikeCluster.Spec.Resources.Requests.Cpu()
@@ -782,7 +788,8 @@ func computeCpuRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) res
 }
 
 // computeMemoryRequest computes the amount of memory to be requested for the aerospike-server container based on the
-// value of the memorySize field of each namespace, and returns the corresponding resource.Quantity.
+// value of the memorySize field of each namespace. Compares computed amount of memory with user provided memory request and
+// returns the biggest amount as a resource.Quantity.
 func computeMemoryRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) resource.Quantity {
 	sum := 0
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
@@ -808,10 +815,10 @@ func computeMemoryRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) 
 	computedMemory := resource.MustParse(fmt.Sprintf("%dGi", sum))
 	// user may want to setup manual memory requests bigger than computed ones
 	if aerospikeCluster.Spec.Resources.Requests.Memory().Cmp(computedMemory) > 0 {
-		return *aerospikeCluster.Spec.Resources.Requests.Memory()
-	} else {
-		return computedMemory
+		computedMemory = *aerospikeCluster.Spec.Resources.Requests.Memory()
 	}
+
+	return computedMemory
 }
 
 // computeNodeId computes the value to be used as the id of the aerospike node

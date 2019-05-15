@@ -19,7 +19,7 @@ package v1alpha2
 import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // +genclient
@@ -52,7 +52,7 @@ type AerospikeClusterSpec struct {
 	// +optional
 	BackupSpec *AerospikeClusterBackupSpec `json:"backupSpec,omitempty"`
 	// Define resources requests and limits for Aerospike Server Container.
-	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // AerospikeClusterStatus represents the current state of an Aerospike cluster.
