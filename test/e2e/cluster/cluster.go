@@ -22,6 +22,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -135,7 +136,7 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 
 func testCreateAerospikeClusterWithResources(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Spec.Resources = v1.ResourceRequirements{
+	aerospikeCluster.Spec.Resources = &v1.ResourceRequirements{
 		Requests: v1.ResourceList{
 			v1.ResourceCPU:    resource.MustParse("500m"),
 			v1.ResourceMemory: resource.MustParse("1212Mi"),
@@ -167,7 +168,7 @@ func testCreateAerospikeClusterWithResources(tf *framework.TestFramework, ns *v1
 
 func testCreateAerospikeWithComputedResources(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	aerospikeCluster.Spec.Resources = v1.ResourceRequirements{
+	aerospikeCluster.Spec.Resources = &v1.ResourceRequirements{
 		Requests: v1.ResourceList{
 			v1.ResourceMemory: resource.MustParse("212Mi"),
 		},
