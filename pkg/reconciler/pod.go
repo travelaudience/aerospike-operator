@@ -547,6 +547,11 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 // computeResourceLimits computes the limits for CPU and memory based on user provided resource limits as a
 // ResourceList
 func computeResourceLimits(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) v1.ResourceList {
+
+	// validate that there are resource limits
+	if aerospikeCluster.Spec.Resources == nil || aerospikeCluster.Spec.Resources.Limits == nil {
+		return v1.ResourceList{}
+	}
 	// setup limits for memory and cpu if user provides request limit values for both
 	if !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() && !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
 		return v1.ResourceList{
@@ -781,7 +786,7 @@ func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospi
 // corresponding resource.Quantity. It currently returns aerospikeServerContainerDefaultCpuRequest parsed as a quantity
 // or requested CPU provided by user if it exists as a quantity.
 func computeCpuRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) resource.Quantity {
-	if aerospikeCluster.Spec.Resources.Requests.Cpu() != nil {
+	if aerospikeCluster.Spec.Resources != nil && aerospikeCluster.Spec.Resources.Requests.Cpu() != nil {
 		return *aerospikeCluster.Spec.Resources.Requests.Cpu()
 	}
 	return resource.MustParse(strconv.Itoa(aerospikeServerContainerDefaultCpuRequest))
@@ -814,7 +819,7 @@ func computeMemoryRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) 
 	}
 	computedMemory := resource.MustParse(fmt.Sprintf("%dGi", sum))
 	// user may want to setup manual memory requests bigger than computed ones
-	if aerospikeCluster.Spec.Resources.Requests.Memory().Cmp(computedMemory) > 0 {
+	if aerospikeCluster.Spec.Resources != nil && aerospikeCluster.Spec.Resources.Requests.Memory() != nil && aerospikeCluster.Spec.Resources.Requests.Memory().Cmp(computedMemory) > 0 {
 		computedMemory = *aerospikeCluster.Spec.Resources.Requests.Memory()
 	}
 
