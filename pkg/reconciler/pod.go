@@ -29,7 +29,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,11 +52,11 @@ import (
 
 const (
 	// nodeIdPrefix is used as the prefix for node IDs so that they don't begin
-	// with a leading zero. "a" stands for aerospike.
+	// with a leading zero. "a" stands for Aerospike.
 	nodeIdPrefix = "a"
 )
 
-func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *v1.ConfigMap, upgrade *versioning.VersionUpgrade) error {
+func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *corev1.ConfigMap, upgrade *versioning.VersionUpgrade) error {
 	// list existing pods for the cluster
 	pods, err := r.listClusterPods(aerospikeCluster)
 	if err != nil {
@@ -157,7 +157,7 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) ([]*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) ([]*corev1.Pod, error) {
 	// read the list of pods from the lister
 	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(selectors.ResourcesByClusterName(aerospikeCluster.Name))
 	if err != nil {
@@ -169,7 +169,7 @@ func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospike
 	return pods, nil
 }
 
-func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *corev1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*corev1.Pod, error) {
 	// initialConfigFilePath contains the path to the aerospike.conf file that
 	// will be created as a result of mounting the configmap (i.e. before
 	// templating)
@@ -204,7 +204,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 	peerList := strings.Join(peers, ",")
 
 	// pod represents the pod that will be created
-	pod := &v1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			Labels: map[string]string{
@@ -227,11 +227,11 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 				nodeIdAnnotation:        nodeId,
 			},
 		},
-		Spec: v1.PodSpec{
+		Spec: corev1.PodSpec{
 			// use a init container to set the values of service.node-id to the
 			// value of nodeId and of network.heartbeat.mesh-seed-adress-port[]
 			// to the list of currently active nodes
-			InitContainers: []v1.Container{
+			InitContainers: []corev1.Container{
 				{
 					Name:  "init",
 					Image: fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
@@ -246,7 +246,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						"--target-config",
 						finalConfigFilePath,
 					},
-					VolumeMounts: []v1.VolumeMount{
+					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      initialConfigVolumeName,
 							MountPath: initialConfigMountPath,
@@ -256,15 +256,15 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 							MountPath: finalConfigMountPath,
 						},
 					},
-					Resources: v1.ResourceRequirements{
-						Requests: v1.ResourceList{
-							v1.ResourceCPU:    resource.MustParse(initContainerCpuRequest),
-							v1.ResourceMemory: resource.MustParse(initContainerMemoryRequest),
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse(initContainerCpuRequest),
+							corev1.ResourceMemory: resource.MustParse(initContainerMemoryRequest),
 						},
 					},
 				},
 			},
-			Containers: []v1.Container{
+			Containers: []corev1.Container{
 				{
 					Name:  "aerospike-server",
 					Image: fmt.Sprintf("aerospike/aerospike-server:%s", aerospikeCluster.Spec.Version),
@@ -274,7 +274,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						"--config-file",
 						finalConfigFilePath,
 					},
-					Ports: []v1.ContainerPort{
+					Ports: []corev1.ContainerPort{
 						{
 							Name:          servicePortName,
 							ContainerPort: ServicePort,
@@ -292,15 +292,15 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 							ContainerPort: infoPort,
 						},
 					},
-					VolumeMounts: []v1.VolumeMount{
+					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      finalConfigVolumeName,
 							MountPath: finalConfigMountPath,
 						},
 					},
-					ReadinessProbe: &v1.Probe{
-						Handler: v1.Handler{
-							TCPSocket: &v1.TCPSocketAction{
+					ReadinessProbe: &corev1.Probe{
+						Handler: corev1.Handler{
+							TCPSocket: &corev1.TCPSocketAction{
 								Port: intstr.IntOrString{
 									IntVal: ServicePort,
 								},
@@ -311,10 +311,10 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						PeriodSeconds:       asReadinessPeriodSeconds,
 						FailureThreshold:    asReadinessFailureThreshold,
 					},
-					Resources: v1.ResourceRequirements{
-						Requests: v1.ResourceList{
-							v1.ResourceCPU:    computeCpuRequest(aerospikeCluster),
-							v1.ResourceMemory: computeMemoryRequest(aerospikeCluster),
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    computeCpuRequest(aerospikeCluster),
+							corev1.ResourceMemory: computeMemoryRequest(aerospikeCluster),
 						},
 						Limits: computeResourceLimits(aerospikeCluster),
 					},
@@ -322,19 +322,19 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 				{
 					Name:            "asprom",
 					Image:           fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
-					ImagePullPolicy: v1.PullAlways,
+					ImagePullPolicy: corev1.PullAlways,
 					Command: []string{
 						"asprom",
 					},
-					Ports: []v1.ContainerPort{
+					Ports: []corev1.ContainerPort{
 						{
 							Name:          "http",
 							ContainerPort: aspromPort,
 						},
 					},
-					LivenessProbe: &v1.Probe{
-						Handler: v1.Handler{
-							HTTPGet: &v1.HTTPGetAction{
+					LivenessProbe: &corev1.Probe{
+						Handler: corev1.Handler{
+							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/metrics",
 								Port: intstr.IntOrString{
 									IntVal: aspromPort,
@@ -342,20 +342,24 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 							},
 						},
 					},
-					Resources: v1.ResourceRequirements{
-						Requests: v1.ResourceList{
-							v1.ResourceCPU:    resource.MustParse(aspromCpuRequest),
-							v1.ResourceMemory: resource.MustParse(aspromMemoryRequest),
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse(aspromCpuRequest),
+							corev1.ResourceMemory: resource.MustParse(aspromMemoryRequest),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse(aspromCpuLimit),
+							corev1.ResourceMemory: resource.MustParse(aspromMemoryLimit),
 						},
 					},
 				},
 			},
-			Volumes: []v1.Volume{
+			Volumes: []corev1.Volume{
 				{
 					Name: initialConfigVolumeName,
-					VolumeSource: v1.VolumeSource{
-						ConfigMap: &v1.ConfigMapVolumeSource{
-							LocalObjectReference: v1.LocalObjectReference{
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
 								Name: configMap.Name,
 							},
 						},
@@ -363,13 +367,13 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 				},
 				{
 					Name: finalConfigVolumeName,
-					VolumeSource: v1.VolumeSource{
-						EmptyDir: &v1.EmptyDirVolumeSource{},
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},
 				},
 			},
 			// let the reconcile loop handle pod restarts
-			RestartPolicy: v1.RestartPolicyNever,
+			RestartPolicy: corev1.RestartPolicyNever,
 			// use the pod's (stable) name as the hostname
 			Hostname: podName,
 			// use the cluster's name as the subdomain
@@ -379,9 +383,9 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 
 	// only enable in production, so it can be used in 1 node clusters while debugging (minikube)
 	if !debug.DebugEnabled {
-		pod.Spec.Affinity = &v1.Affinity{
-			PodAntiAffinity: &v1.PodAntiAffinity{
-				RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{
+		pod.Spec.Affinity = &corev1.Affinity{
+			PodAntiAffinity: &corev1.PodAntiAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -417,7 +421,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 	for index, namespace := range aerospikeCluster.Spec.Namespaces {
 		// if recreatepersistentvolumeclaims is true, create a new PVC
 		// else get an existing one, and if it does not exist, create one
-		var pvc *v1.PersistentVolumeClaim
+		var pvc *corev1.PersistentVolumeClaim
 		if upgradeStrategy != nil && upgradeStrategy.RecreatePersistentVolumeClaims {
 			if pvc, err = r.createPersistentVolumeClaim(aerospikeCluster, pod, &namespace); err != nil {
 				return nil, err
@@ -441,13 +445,13 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		switch namespace.Storage.Type {
 		case common.StorageTypeDevice:
 			// use raw block device
-			pod.Spec.Containers[0].VolumeDevices = append(pod.Spec.Containers[0].VolumeDevices, v1.VolumeDevice{
+			pod.Spec.Containers[0].VolumeDevices = append(pod.Spec.Containers[0].VolumeDevices, corev1.VolumeDevice{
 				Name:       fmt.Sprintf("%s-%s", namespaceVolumePrefix, namespace.Name),
 				DevicePath: getIndexBasedDevicePath(index),
 			})
 		case common.StorageTypeFile:
 			// use regular storage
-			pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 				Name:      fmt.Sprintf("%s-%s", namespaceVolumePrefix, namespace.Name),
 				MountPath: fmt.Sprintf("%s%s", defaultFilePath, namespace.Name),
 			})
@@ -456,10 +460,10 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			return nil, fmt.Errorf("unsupported storage type %s", namespace.Storage.Type)
 		}
 
-		pod.Spec.Volumes = append(pod.Spec.Volumes, v1.Volume{
+		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
 			Name: fmt.Sprintf("%s-%s", namespaceVolumePrefix, pvc.Labels[selectors.LabelNamespaceKey]),
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: pvc.Name,
 				},
 			},
@@ -479,7 +483,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		for {
 			select {
 			case <-ticker.C:
-				r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarting,
+				r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonNodeStarting,
 					"waiting for aerospike to start on pod %s", meta.Key(res))
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: res.Labels[selectors.LabelClusterKey],
@@ -487,14 +491,14 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 				}).Infof("waiting for aerospike to start on pod %s", meta.Key(res))
 			case success := <-done:
 				if success {
-					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeStarted,
+					r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonNodeStarted,
 						"aerospike started on pod %s", meta.Key(res))
 					log.WithFields(log.Fields{
 						logfields.AerospikeCluster: res.Labels[selectors.LabelClusterKey],
 						logfields.Pod:              meta.Key(res),
 					}).Infof("aerospike started on pod %s", meta.Key(res))
 				} else {
-					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonNodeStartedFailed,
+					r.recorder.Eventf(aerospikeCluster, corev1.EventTypeWarning, events.ReasonNodeStartedFailed,
 						"could not start aerospike on pod %s", meta.Key(res))
 					log.WithFields(log.Fields{
 						logfields.AerospikeCluster: res.Labels[selectors.LabelClusterKey],
@@ -512,10 +516,10 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 		case watch.Error:
 			return false, fmt.Errorf("got event of type error: %+v", event.Object)
 		case watch.Deleted:
-			currentPod = event.Object.(*v1.Pod)
+			currentPod = event.Object.(*corev1.Pod)
 			return false, fmt.Errorf("pod %s has been deleted", meta.Key(currentPod))
 		default:
-			currentPod = event.Object.(*v1.Pod)
+			currentPod = event.Object.(*corev1.Pod)
 			if isPodInFailureState(currentPod) {
 				log.WithFields(log.Fields{
 					logfields.AerospikeCluster: meta.Key(aerospikeCluster),
@@ -544,37 +548,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 	return currentPod, nil
 }
 
-// computeResourceLimits computes the limits for CPU and memory based on user provided resource limits as a
-// ResourceList
-func computeResourceLimits(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) v1.ResourceList {
-
-	// validate that there are resource limits
-	if aerospikeCluster.Spec.Resources == nil || aerospikeCluster.Spec.Resources.Limits == nil {
-		return v1.ResourceList{}
-	}
-	// setup limits for memory and cpu if user provides request limit values for both
-	if !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() && !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
-		return v1.ResourceList{
-			v1.ResourceCPU:    *aerospikeCluster.Spec.Resources.Limits.Cpu(),
-			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
-		}
-	}
-	// setup limits for cpu if user provides request limit values for cpu only
-	if !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() {
-		return v1.ResourceList{
-			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Cpu(),
-		}
-	}
-	// setup limits for memory if user provides request limit values for memory only
-	if !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
-		return v1.ResourceList{
-			v1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
-		}
-	}
-	return v1.ResourceList{}
-}
-
-func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *v1.Pod) error {
+func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *corev1.Pod) error {
 	// mark the pod PVCs as unmounted with an annotation
 	for _, volume := range pod.Spec.Volumes {
 		if claim := volume.PersistentVolumeClaim; claim != nil {
@@ -609,7 +583,7 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) getPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, index int) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) getPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, index int) (*corev1.Pod, error) {
 	// look for the pod with the specified index
 	p, err := r.podsLister.Pods(aerospikeCluster.Namespace).Get(fmt.Sprintf("%s-%d", aerospikeCluster.Name, index))
 	if err != nil {
@@ -651,7 +625,7 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 				logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
 				logfields.Pod:              meta.Key(pod),
 			}).Info("waiting for migrations to finish")
-			r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitForMigrationsStarted,
+			r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonWaitForMigrationsStarted,
 				"waiting for migrations to finish on pod %s",
 				meta.Key(pod),
 			)
@@ -662,7 +636,7 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 						logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
 						logfields.Pod:              meta.Key(pod),
 					}).Info("waiting for migrations to finish")
-					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitingForMigrations,
+					r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonWaitingForMigrations,
 						"waiting for migrations to finish on pod %s",
 						meta.Key(pod),
 					)
@@ -671,7 +645,7 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 						logfields.AerospikeCluster: pod.Labels[selectors.LabelClusterKey],
 						logfields.Pod:              meta.Key(pod),
 					}).Info("migrations finished")
-					r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonWaitForMigrationsFinished,
+					r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonWaitForMigrationsFinished,
 						"migrations finished on pod %s",
 						meta.Key(pod),
 					)
@@ -704,7 +678,7 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 	var wg sync.WaitGroup
 	wg.Add(len(pods))
 	for _, p := range pods {
-		go func(p *v1.Pod) {
+		go func(p *corev1.Pod) {
 			defer wg.Done()
 			if err := tipClearHostname(p, fmt.Sprintf("%s.%s.%s", pod.Name, aerospikeCluster.Name, aerospikeCluster.Namespace)); err != nil {
 				log.WithFields(log.Fields{
@@ -724,7 +698,7 @@ func (r *AerospikeClusterReconciler) safeDeletePodWithIndex(aerospikeCluster *ae
 	return nil
 }
 
-func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) safeRestartPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *corev1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*corev1.Pod, error) {
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 	}).Debugf("restarting the pod with index %d", index)
@@ -749,7 +723,7 @@ func (r *AerospikeClusterReconciler) computeMeshHash(aerospikeCluster *aerospike
 	return asstrings.HashSlice(addrList), nil
 }
 
-func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *v1.Pod) error {
+func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *corev1.Pod) error {
 	timer := time.NewTimer(waitClusterSizeTimeout)
 	defer timer.Stop()
 	ticker := time.NewTicker(time.Second)
@@ -824,6 +798,35 @@ func computeMemoryRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) 
 	}
 
 	return computedMemory
+}
+
+// computeResourceLimits computes the limit amounts of cpu and memory to be used by the aerospike-server container
+// and returns the corresponding ResourceList.
+func computeResourceLimits(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) corev1.ResourceList {
+	// compute configured resource limits, if any
+	if aerospikeCluster.Spec.Resources != nil && aerospikeCluster.Spec.Resources.Limits != nil {
+		// setup limits for memory and cpu if user provides request limit values for both
+		if aerospikeCluster.Spec.Resources.Limits.Cpu() != nil && !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() && aerospikeCluster.Spec.Resources.Limits.Memory() != nil && !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
+			return corev1.ResourceList{
+				corev1.ResourceCPU:    *aerospikeCluster.Spec.Resources.Limits.Cpu(),
+				corev1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
+			}
+		} else {
+			// setup limits for cpu if user provides request limit values for cpu only
+			if aerospikeCluster.Spec.Resources.Limits.Cpu() != nil && !aerospikeCluster.Spec.Resources.Limits.Cpu().IsZero() {
+				return corev1.ResourceList{
+					corev1.ResourceCPU: *aerospikeCluster.Spec.Resources.Limits.Cpu(),
+				}
+			}
+			// setup limits for memory if user provides request limit values for memory only
+			if aerospikeCluster.Spec.Resources.Limits.Memory() != nil && !aerospikeCluster.Spec.Resources.Limits.Memory().IsZero() {
+				return corev1.ResourceList{
+					corev1.ResourceMemory: *aerospikeCluster.Spec.Resources.Limits.Memory(),
+				}
+			}
+		}
+	}
+	return corev1.ResourceList{}
 }
 
 // computeNodeId computes the value to be used as the id of the aerospike node
