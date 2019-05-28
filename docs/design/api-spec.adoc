@@ -21,7 +21,7 @@ The AerospikeCluster type represents an Aerospike cluster.
 
 |===
 | Field | Description | Scheme | Required
-| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#objectmeta-v1-meta[metav1.ObjectMeta] | true
+| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta[metav1.ObjectMeta] | true
 | spec | The specification of the Aerospike cluster. | <<aerospikeclusterspec,AerospikeClusterSpec>> | true
 |===
 
@@ -45,7 +45,7 @@ The AerospikeNamespaceBackup type represents a single backup operation targeting
 
 |===
 | Field | Description | Scheme | Required
-| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#objectmeta-v1-meta[metav1.ObjectMeta] | true
+| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta[metav1.ObjectMeta] | true
 | spec | The specification of the backup operation. | <<aerospikenamespacebackupspec,AerospikeNamespaceBackupSpec>> | true
 |===
 
@@ -69,7 +69,7 @@ The AerospikeNamespaceRestore type represents a single restore operation targeti
 
 |===
 | Field | Description | Scheme | Required
-| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#objectmeta-v1-meta[metav1.ObjectMeta] | true
+| metadata | Standard object metadata. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta[metav1.ObjectMeta] | true
 | spec | The specification of the restore operation. | <<aerospikenamespacerestorespec,AerospikeNamespaceRestoreSpec>> | true
 |===
 

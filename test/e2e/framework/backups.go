@@ -17,16 +17,20 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	watchapi "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
 const (
@@ -42,7 +46,7 @@ var (
 
 func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, ttl *string) aerospikev1alpha2.AerospikeNamespaceBackup {
 	return aerospikev1alpha2.AerospikeNamespaceBackup{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: backupPrefix,
 		},
 		Spec: aerospikev1alpha2.AerospikeNamespaceBackupSpec{
@@ -64,7 +68,7 @@ func (tf *TestFramework) NewAerospikeNamespaceBackupGCS(cluster *aerospikev1alph
 
 func (tf *TestFramework) NewAerospikeNamespaceBackupGCSWithoutBackupStorageSpec(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, ttl *string) aerospikev1alpha2.AerospikeNamespaceBackup {
 	return aerospikev1alpha2.AerospikeNamespaceBackup{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: backupPrefix,
 		},
 		Spec: aerospikev1alpha2.AerospikeNamespaceBackupSpec{
@@ -79,7 +83,7 @@ func (tf *TestFramework) NewAerospikeNamespaceBackupGCSWithoutBackupStorageSpec(
 
 func (tf *TestFramework) NewAerospikeNamespaceRestoreGCS(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, backup *aerospikev1alpha2.AerospikeNamespaceBackup) aerospikev1alpha2.AerospikeNamespaceRestore {
 	return aerospikev1alpha2.AerospikeNamespaceRestore{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: backup.Name,
 		},
 		Spec: aerospikev1alpha2.AerospikeNamespaceRestoreSpec{
@@ -100,7 +104,7 @@ func (tf *TestFramework) NewAerospikeNamespaceRestoreGCS(cluster *aerospikev1alp
 
 func (tf *TestFramework) NewAerospikeNamespaceRestoreGCSWithoutBackupStorageSpec(cluster *aerospikev1alpha2.AerospikeCluster, namespace string, backup *aerospikev1alpha2.AerospikeNamespaceBackup) aerospikev1alpha2.AerospikeNamespaceRestore {
 	return aerospikev1alpha2.AerospikeNamespaceRestore{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: backup.Name,
 		},
 		Spec: aerospikev1alpha2.AerospikeNamespaceRestoreSpec{
@@ -113,34 +117,49 @@ func (tf *TestFramework) NewAerospikeNamespaceRestoreGCSWithoutBackupStorageSpec
 }
 
 func (tf *TestFramework) WaitForBackupRestoreCondition(obj aerospikev1alpha2.BackupRestoreObject, fn watch.ConditionFunc, timeout time.Duration) (err error) {
-	var w watch.Interface
+	var lw *cache.ListWatch
+	var lt runtime.Object
+	fs := selectors.ObjectByCoordinates(obj.GetNamespace(), obj.GetName())
 	switch obj.GetOperationType() {
 	case common.OperationTypeBackup:
-		w, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).Watch(listoptions.ObjectByName(obj.GetName()))
-	case common.OperationTypeRestore:
-		w, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).Watch(listoptions.ObjectByName(obj.GetName()))
-	}
-	if err != nil {
-		return err
-	}
-	start := time.Now()
-	last, err := watch.Until(timeout, w, fn)
-	if err != nil {
-		if err == watch.ErrWatchClosed {
-			if t := timeout - time.Since(start); t > 0 {
-				return tf.WaitForBackupRestoreCondition(obj, fn, t)
-			}
+		lw = &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				options.FieldSelector = fs.String()
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).List(options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
+				options.FieldSelector = fs.String()
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).Watch(options)
+			},
 		}
+		lt = &aerospikev1alpha2.AerospikeNamespaceBackup{}
+	case common.OperationTypeRestore:
+		lw = &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				options.FieldSelector = fs.String()
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).List(options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
+				options.FieldSelector = fs.String()
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).Watch(options)
+			},
+		}
+		lt = &aerospikev1alpha2.AerospikeNamespaceRestore{}
+	}
+	ctx, cfn := context.WithTimeout(context.Background(), timeout)
+	defer cfn()
+	last, err := watch.UntilWithSync(ctx, lw, lt, nil, fn)
+	if err != nil {
 		return err
 	}
 	if last == nil {
-		return fmt.Errorf("no events received for %s", meta.Key(obj))
+		return fmt.Errorf("no events received for object %q", meta.Key(obj))
 	}
 	return nil
 }
 
 func (tf *TestFramework) WaitForBackupRestoreCompleted(obj aerospikev1alpha2.BackupRestoreObject) error {
-	return tf.WaitForBackupRestoreCondition(obj, func(event watch.Event) (bool, error) {
+	return tf.WaitForBackupRestoreCondition(obj, func(event watchapi.Event) (bool, error) {
 		obj := event.Object.(aerospikev1alpha2.BackupRestoreObject)
 		conditions := obj.GetConditions()
 		if conditions != nil {

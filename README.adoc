@@ -18,7 +18,7 @@ WARNING: `aerospike-operator` is currently _alpha_, and is under active developm
 
 == Prerequisites
 
-* Kubernetes 1.11+
+* Kubernetes 1.13+.
 
 == Supported versions
 

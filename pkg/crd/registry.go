@@ -17,6 +17,7 @@ limitations under the License.
 package crd
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
@@ -25,13 +26,15 @@ import (
 	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	watchapi "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 	"github.com/travelaudience/aerospike-operator/pkg/logfields"
-	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
 const (
@@ -87,7 +90,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd is already registered")
 
 	// fetch the latest version of the crd
-	d, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.Name, v1.GetOptions{})
+	d, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.Name, metav1.GetOptions{})
 	if err != nil {
 		// we've failed to fetch the latest version of the crd
 		return nil
@@ -112,49 +115,51 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	return nil
 }
 
+func isCRDEstablished(crd *extsv1beta1.CustomResourceDefinition) bool {
+	for _, cond := range crd.Status.Conditions {
+		if cond.Type == extsv1beta1.Established {
+			if cond.Status == extsv1beta1.ConditionTrue {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition, timeout time.Duration) error {
-	start := time.Now()
-	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("waiting for crd to be established")
-	w, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(listoptions.ObjectByNameAndVersion(crd.Name, crd.ResourceVersion))
-	if err != nil {
-		return err
+	// Grab a ListerWatcher with which we can watch the CustomResourceDefinition resource.
+	lw := &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			options.FieldSelector = selectors.ObjectByCoordinates(crd.Namespace, crd.Name).String()
+			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(options)
+		},
+		WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
+			options.FieldSelector = selectors.ObjectByCoordinates(crd.Namespace, crd.Name).String()
+			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(options)
+		},
 	}
 
-	lastCRD := crd
-	last, err := watch.Until(timeout, w, func(event watch.Event) (bool, error) {
-		// grab the current crd object from the event
+	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("waiting for crd to become established")
+
+	// Watch for updates to the specified CustomResourceDefinition resource until it reaches the "Established" condition or until "waitCRDReadyTimeout" elapses.
+	ctx, fn := context.WithTimeout(context.Background(), watchTimeout)
+	defer fn()
+	last, err := watch.UntilWithSync(ctx, lw, &extsv1beta1.CustomResourceDefinition{}, nil, func(event watchapi.Event) (bool, error) {
+		// Grab the current resource from the event.
 		obj := event.Object.(*extsv1beta1.CustomResourceDefinition)
-		// search for Established in .Status.Conditions and make sure it is True
-		// https://github.com/kubernetes/apiextensions-apiserver/blob/kubernetes-1.11.3/pkg/apis/apiextensions/types.go#L130
-		for _, cond := range obj.Status.Conditions {
-			switch cond.Type {
-			case extsv1beta1.Established:
-				if cond.Status == extsv1beta1.ConditionTrue {
-					return true, nil
-				}
-			}
-		}
-		// otherwise return false
-		return false, nil
+		// Return true if and only if the CustomResourceDefinition resource has reached the "Established" condition.
+		return isCRDEstablished(obj), nil
 	})
 	if err != nil {
-		// ErrWatchClosed is returned when the watch channel is closed before timeout in Until
-		if err == watch.ErrWatchClosed {
-			// re-establish retry until we reach the timeout
-			if t := timeout - time.Since(start); t > 0 {
-				// use the resource object of the last event if it exists
-				if last != nil {
-					lastCRD = last.Object.(*extsv1beta1.CustomResourceDefinition)
-				}
-				return r.awaitCRD(lastCRD, t)
-			}
-		}
+		// We've got an error while watching the specified CustomResourceDefinition resource.
 		return err
 	}
 	if last == nil {
-		return fmt.Errorf("no events received for crd %s", meta.Key(crd))
+		// We've got no events for the CustomResourceDefinition resource, which represents an error.
+		return fmt.Errorf("no events received for crd %q", crd.Name)
 	}
 
-	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Info("crd established")
+	// At this point we are sure the CustomResourceDefinition resource has reached the "Established" condition, so we return.
+	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd established")
 	return nil
 }

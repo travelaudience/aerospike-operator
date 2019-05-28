@@ -1,4 +1,0 @@
-FROM alpine:3.7
-COPY bin/aerospike-operator-e2e /aerospike-operator-e2e
-COPY bin/aerospike-operator-e2e.sh /aerospike-operator-e2e.sh
-CMD ["/aerospike-operator-e2e.sh"]

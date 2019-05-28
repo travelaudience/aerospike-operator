@@ -17,18 +17,22 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/runtime"
+	watchapi "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
 	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 	"github.com/travelaudience/aerospike-operator/pkg/versioning"
 )
 
@@ -82,28 +86,31 @@ func (tf *TestFramework) NewAerospikeNamespaceWithFileStorage(name string, repli
 }
 
 func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, fn watch.ConditionFunc, timeout time.Duration) error {
-	w, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Watch(listoptions.ObjectByName(aerospikeCluster.Name))
-	if err != nil {
-		return err
+	fs := selectors.ObjectByCoordinates(aerospikeCluster.Namespace, aerospikeCluster.Name)
+	lw := &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			options.FieldSelector = fs.String()
+			return tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).List(options)
+		},
+		WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
+			options.FieldSelector = fs.String()
+			return tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Watch(options)
+		},
 	}
-	start := time.Now()
-	last, err := watch.Until(timeout, w, fn)
+	ctx, cfn := context.WithTimeout(context.Background(), timeout)
+	defer cfn()
+	last, err := watch.UntilWithSync(ctx, lw, &aerospikev1alpha2.AerospikeCluster{}, nil, fn)
 	if err != nil {
-		if err == watch.ErrWatchClosed {
-			if t := timeout - time.Since(start); t > 0 {
-				return tf.WaitForClusterCondition(aerospikeCluster, fn, t)
-			}
-		}
 		return err
 	}
 	if last == nil {
-		return fmt.Errorf("no events received for %s", meta.Key(aerospikeCluster))
+		return fmt.Errorf("no events received for aerospikecluster %q", meta.Key(aerospikeCluster))
 	}
 	return nil
 }
 
 func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32) error {
-	return tf.WaitForClusterCondition(aerospikeCluster, func(event watch.Event) (bool, error) {
+	return tf.WaitForClusterCondition(aerospikeCluster, func(event watchapi.Event) (bool, error) {
 		// grab the current cluster object from the event
 		obj := event.Object.(*aerospikev1alpha2.AerospikeCluster)
 		// search for the current node count

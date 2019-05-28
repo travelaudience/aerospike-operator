@@ -34,6 +34,7 @@ rules:
   verbs:
   - create
   - get
+  - list
   - update
   - watch
 - apiGroups:
@@ -43,6 +44,7 @@ rules:
   verbs:
   - create
   - get
+  - list
   - watch
 - apiGroups: 
   - aerospike.travelaudience.com
@@ -50,6 +52,7 @@ rules:
   - aerospikenamespacerestores
   verbs:
   - create
+  - list
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -81,6 +84,17 @@ metadata:
   namespace: aerospike-operator-e2e
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: aerospike-operator
+  name: aerospike-operator-e2e
+  namespace: aerospike-operator-e2e
+data:
+  key.json: |
+    __BASE64_ENCODED_STORAGE_ADMIN_KEY_JSON__
+---
+apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -90,7 +104,20 @@ metadata:
 spec:
   containers:
   - name: aerospike-operator-e2e
-    image: eu.gcr.io/<project-id>/aerospike-operator-e2e
+    image: gcr.io/__PROJECT_ID__/aerospike-operator-e2e
     imagePullPolicy: IfNotPresent
+    args:
+    - /aerospike-operator-e2e
+    - -ginkgo.flakeAttempts=3
+    - -ginkgo.focus=__FOCUS__
+    - -ginkgo.progress
+    - -ginkgo.skip=__SKIP__
+    - -ginkgo.v
+    - -gcs-bucket-name=__GCS_BUCKET_NAME__
+    - -gcs-secret-name=aerospike-operator-e2e
+    - -gcs-secret-namespace=aerospike-operator-e2e
+    - -gcs-secret-key=key.json
+    - -test.timeout=7200s
+    - -test.v
   restartPolicy: Never
   serviceAccountName: aerospike-operator-e2e

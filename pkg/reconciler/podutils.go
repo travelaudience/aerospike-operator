@@ -17,6 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,11 +25,14 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	watchapi "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 
 	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
 )
 
@@ -95,27 +99,25 @@ func isImageError(reason string) bool {
 }
 
 func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.ConditionFunc, timeout time.Duration) error {
-	start := time.Now()
-	w, err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(listoptions.ObjectByNameAndVersion(pod.Name, pod.ResourceVersion))
-	if err != nil {
-		return err
+	fs := selectors.ObjectByCoordinates(pod.Namespace, pod.Name)
+	lw := &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			options.FieldSelector = fs.String()
+			return r.kubeclientset.CoreV1().Pods(pod.Namespace).List(options)
+		},
+		WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
+			options.FieldSelector = fs.String()
+			return r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(options)
+		},
 	}
-
-	lastPod := pod
-	last, err := watch.Until(timeout, w, fn)
+	ctx, cfn := context.WithTimeout(context.Background(), timeout)
+	defer cfn()
+	last, err := watch.UntilWithSync(ctx, lw, &v1.Pod{}, nil, fn)
 	if err != nil {
-		if err == watch.ErrWatchClosed {
-			if t := timeout - time.Since(start); t > 0 {
-				if last != nil {
-					lastPod = last.Object.(*v1.Pod)
-				}
-				return r.waitForPodCondition(lastPod, fn, t)
-			}
-		}
 		return err
 	}
 	if last == nil {
-		return fmt.Errorf("no events received for %s", meta.Key(pod))
+		return fmt.Errorf("no events received for pod %s", meta.Key(pod))
 	}
 	return nil
 }

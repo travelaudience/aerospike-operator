@@ -1,0 +1,20 @@
+apiVersion: skaffold/v1beta10
+kind: Config
+build:
+  artifacts:
+  - image: "gcr.io/__PROJECT_ID__/aerospike-operator"
+    docker:
+      dockerfile: __TMP_DIR__/Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - __TMP_DIR__/00-prereqs.yml
+    - __TMP_DIR__/aerospike-operator.yaml
+profiles:
+- name: gke
+  build:
+    googleCloudBuild:
+      projectId: "__PROJECT_ID__"
+- name: minikube
+  build:
+    local: {}
