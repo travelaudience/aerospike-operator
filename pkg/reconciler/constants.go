@@ -100,6 +100,8 @@ const (
 	aspromPort          = 9145
 	aspromCpuRequest    = "10m"
 	aspromMemoryRequest = "32Mi"
+	aspromCpuLimit      = "10m"
+	aspromMemoryLimit   = "64Mi"
 
 	asReadinessInitialDelaySeconds = 3
 	asReadinessTimeoutSeconds      = 2

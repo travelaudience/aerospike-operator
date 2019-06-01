@@ -21,8 +21,9 @@ import (
 	"strings"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/admission"
@@ -33,7 +34,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
-func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *corev1.Namespace) {
 	// create the name of the cluster by appending as many 'a' runes as necessary in order to exceed the limit
 	var sb strings.Builder
 	for sb.Len() <= admission.AerospikeClusterNameMaxLength {
@@ -49,7 +50,7 @@ func testCreateAerospikeClusterWithLengthyName(tf *framework.TestFramework, ns *
 	Expect(status.ErrStatus.Message).To(MatchRegexp("the name of the cluster cannot exceed 61 characters"))
 }
 
-func testCreateAerospikeClusterWithLengthyNameAndNamespace(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithLengthyNameAndNamespace(tf *framework.TestFramework, ns *corev1.Namespace) {
 	// create the name of the cluster by appending as many 'a' runes as necessary in order to exceed the limit
 	var sb strings.Builder
 	for 2*(sb.Len()+2)+len(ns.Name) <= admission.AerospikeMeshSeedAddressMaxLength {
@@ -65,7 +66,7 @@ func testCreateAerospikeClusterWithLengthyNameAndNamespace(tf *framework.TestFra
 	Expect(status.ErrStatus.Message).To(MatchRegexp("the current combination of cluster and kubernetes namespace names cannot be used"))
 }
 
-func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = 0
 	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -74,7 +75,7 @@ func testCreateAerospikeClusterWithZeroNodes(tf *framework.TestFramework, ns *v1
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("spec.nodeCount.*should be greater than or equal to 1")))
 }
 
-func testCreateAerospikeClusterWithNineNodes(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithNineNodes(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = 9
 	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -82,7 +83,7 @@ func testCreateAerospikeClusterWithNineNodes(tf *framework.TestFramework, ns *v1
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("spec.nodeCount.*should be less than or equal to 8")))
 }
 
-func testCreateAerospikeClusterWithZeroNamespaces(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithZeroNamespaces(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{}
 	_, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -90,7 +91,7 @@ func testCreateAerospikeClusterWithZeroNamespaces(tf *framework.TestFramework, n
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("the number of namespaces in the cluster must be exactly one")))
 }
 
-func testCreateAerospikeClusterWithTwoNamespaces(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithTwoNamespaces(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", 1, 1, 0, 1),
@@ -101,7 +102,7 @@ func testCreateAerospikeClusterWithTwoNamespaces(tf *framework.TestFramework, ns
 	Expect(tf.ErrorCauses(err)).To(ContainElement(MatchRegexp("the number of namespaces in the cluster must be exactly one")))
 }
 
-func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Namespaces = []aerospikev1alpha2.AerospikeNamespaceSpec{
 		tf.NewAerospikeNamespaceWithFileStorage("aerospike-namespace-0", aerospikeCluster.Spec.NodeCount+1, 1, 0, 1),
@@ -114,7 +115,7 @@ func testCreateAerospikeClusterWithInvalidReplicationFactor(tf *framework.TestFr
 	Expect(status.ErrStatus.Message).To(MatchRegexp("replication factor of \\d+ requested for namespace .+ but the cluster has only \\d+ nodes"))
 }
 
-func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1.Namespace, nodeCount int32) {
+func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *corev1.Namespace, nodeCount int32) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = nodeCount
 	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
@@ -132,7 +133,60 @@ func testCreateAerospikeClusterWithNodeCount(tf *framework.TestFramework, ns *v1
 	Expect(int32(clusterSize)).To(Equal(nodeCount))
 }
 
-func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithResources(tf *framework.TestFramework, ns *corev1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.Resources = &corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("500m"),
+			corev1.ResourceMemory: resource.MustParse("1212Mi"),
+		},
+		Limits: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("1500m"),
+			corev1.ResourceMemory: resource.MustParse("1512Mi"),
+		},
+	}
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, 1)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(len(pods.Items))).To(Equal(int32(1)))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Cpu()).To(Equal(aerospikeCluster.Spec.Resources.Requests.Cpu()))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Memory()).To(Equal(aerospikeCluster.Spec.Resources.Requests.Memory()))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Limits.Cpu()).To(Equal(aerospikeCluster.Spec.Resources.Limits.Cpu()))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Limits.Memory()).To(Equal(aerospikeCluster.Spec.Resources.Limits.Memory()))
+
+	clusterSize, err := asutils.GetClusterSize(fmt.Sprintf("%s.%s", res.Name, res.Namespace), 3000)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(clusterSize)).To(Equal(int32(1)))
+}
+
+func testCreateAerospikeWithComputedResources(tf *framework.TestFramework, ns *corev1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.Resources = &corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("212Mi"),
+		},
+	}
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, 1)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(len(pods.Items))).To(Equal(int32(1)))
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Cpu()).NotTo(BeNil())
+	Expect(pods.Items[0].Spec.Containers[0].Resources.Requests.Memory()).NotTo(Equal(aerospikeCluster.Spec.Resources.Requests.Memory()))
+}
+
+func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
@@ -145,13 +199,13 @@ func testConnectToAerospikeCluster(tf *framework.TestFramework, ns *v1.Namespace
 	Expect(asc.IsConnected()).To(BeTrue())
 }
 
-func testCreateAerospikeClusterWithV1alpha1(tf *framework.TestFramework, ns *v1.Namespace) {
+func testCreateAerospikeClusterWithV1alpha1(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewV1alpha1AerospikeClusterWithDefaults()
 	_, err := tf.AerospikeClient.AerospikeV1alpha1().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func testDataInMemory(tf *framework.TestFramework, ns *v1.Namespace) {
+func testDataInMemory(tf *framework.TestFramework, ns *corev1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.Namespaces[0].Storage.DataInMemory = pointers.NewBool(true)
 	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)

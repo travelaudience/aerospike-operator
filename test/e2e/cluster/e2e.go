@@ -73,6 +73,12 @@ var _ = Describe("AerospikeCluster", func() {
 		It("is created with the provided spec.nodeCount", func() {
 			testCreateAerospikeClusterWithNodeCount(tf, ns, 2)
 		})
+		It("is created with the provided spec.resources", func() {
+			testCreateAerospikeClusterWithResources(tf, ns)
+		})
+		It("is created with the provided computed spec.resources", func() {
+			testCreateAerospikeWithComputedResources(tf, ns)
+		})
 		It("accepts connections on the service port", func() {
 			testConnectToAerospikeCluster(tf, ns)
 		})
