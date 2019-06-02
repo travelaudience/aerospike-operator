@@ -1,11 +1,12 @@
 FROM golang:1.12.5 AS builder
-RUN go get -u github.com/golang/dep/cmd/dep
-WORKDIR $GOPATH/src/github.com/travelaudience/aerospike-operator/
+WORKDIR /src/aerospike-operator/
+COPY go.mod go.sum ./
+RUN go mod download
+COPY hack/tools/go.mod hack/tools/go.sum ./hack/tools/
+RUN cd ./hack/tools/ && go mod download
 COPY . .
 RUN make build BIN=operator OUT=/aerospike-operator
 
-FROM alpine:3.9
-
-RUN apk add -U ca-certificates
+FROM gcr.io/distroless/static
 COPY --from=builder /aerospike-operator /usr/local/bin/aerospike-operator
 CMD ["aerospike-operator", "-h"]

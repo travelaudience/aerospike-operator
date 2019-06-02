@@ -15,20 +15,8 @@ endif::[]
 
 === Kubernetes
 
-`aerospike-operator` requires Kubernetes 1.11+. Running `aerospike-operator` in older Kubernetes versions is not supported.
-
-=== Google Kubernetes Engine
-
-Due to a https://cloud.google.com/container-engine/docs/role-based-access-control#defining_permissions_in_a_role[known issue with RBAC on Google Kubernetes Engine], one must grant themselves the `cluster-admin` role *manually* before proceeding to install `aerospike-operator`. In order to do so, one must run
-
-[source,bash]
-----
-$ MY_GCLOUD_USER=$(gcloud info | grep Account | awk -F'[][]' '{print $2}')
-$ kubectl create clusterrolebinding \
-    <cluster-role-binding-name> --clusterrole=cluster-admin --user=${MY_GCLOUD_USER}
-----
-
-One must replace the `<cluster-role-binding-name>` placeholder above with a unique, meaningful name.
+`aerospike-operator` requires Kubernetes 1.13+.
+Running `aerospike-operator` in older Kubernetes versions may be possible, but it is not supported and not all features will be usable.
 
 [[installing]]
 == Installing `aerospike-operator`

@@ -42,6 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/keyutil"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike"
 	aerospikev1alpha1 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha1"
@@ -198,7 +199,7 @@ func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*v1.Secret, error) {
 	}
 	// pem-encode the private key
 	keyBytes := pem.EncodeToMemory(&pem.Block{
-		Type:  cert.RSAPrivateKeyBlockType,
+		Type:  keyutil.RSAPrivateKeyBlockType,
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	})
 	// self-sign the generated certificate using the private key

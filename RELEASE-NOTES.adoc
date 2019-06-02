@@ -10,6 +10,13 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
+== Changes in `HEAD`
+
+=== Breaking changes
+
+* Added support for Kubernetes 1.13+, and dropped support for previous versions.
+* Docker images are now based off of `gcr.io/distroless/static` instead of Alpine whenever possible.
+
 == Changes in `0.10.1`
 
 === Deprecations

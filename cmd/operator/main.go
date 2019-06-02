@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"sync"
@@ -134,25 +135,26 @@ func main() {
 		namespace,
 		"aerospike-operator",
 		kubeClient.CoreV1(),
+		kubeClient.CoordinationV1(),
 		resourcelock.ResourceLockConfig{
 			Identity:      hostname,
 			EventRecorder: createRecorder(kubeClient, name, namespace),
 		},
 	)
 	// run leader election
-	leaderelection.RunOrDie(leaderelection.LeaderElectionConfig{
+	leaderelection.RunOrDie(context.Background(), leaderelection.LeaderElectionConfig{
 		Lock:          rl,
 		LeaseDuration: 15 * time.Second,
 		RenewDeadline: 10 * time.Second,
 		RetryPeriod:   2 * time.Second,
 		Callbacks: leaderelection.LeaderCallbacks{
-			OnStartedLeading: func(leCh <-chan struct{}) {
+			OnStartedLeading: func(ctx context.Context) {
 				log.Info("started leading")
 				// stop the controllers when either leCh or shCh are closed
 				stopCh := make(chan struct{})
 				go func() {
 					select {
-					case <-leCh:
+					case <-ctx.Done():
 						close(stopCh)
 					case <-shCh:
 						close(stopCh)

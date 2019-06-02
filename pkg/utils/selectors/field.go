@@ -27,3 +27,11 @@ func ObjectByName(name string) fields.Selector {
 	}
 	return fields.SelectorFromSet(set)
 }
+
+// ObjectByCoordinates returns a selector that matches an object by its namespace and name.
+func ObjectByCoordinates(namespace, name string) fields.Selector {
+	return fields.SelectorFromSet(map[string]string{
+		"metadata.namespace": namespace,
+		"metadata.name":      name,
+	})
+}

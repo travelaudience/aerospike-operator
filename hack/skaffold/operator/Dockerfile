@@ -1,4 +1,3 @@
-FROM alpine:3.9
-RUN apk add -U ca-certificates
+FROM gcr.io/distroless/static
 COPY bin/aerospike-operator /aerospike-operator
 CMD ["/aerospike-operator", "-debug"]
