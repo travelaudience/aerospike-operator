@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
+	aerospikeclientset "github.com/travelaudience/aerospike-operator/internal/client/clientset/versioned"
 )
 
 const (

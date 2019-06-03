@@ -22,10 +22,10 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
-	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
-	"github.com/travelaudience/aerospike-operator/pkg/asutils"
-	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/asutils"
+	"github.com/travelaudience/aerospike-operator/internal/reconciler"
 )
 
 type AerospikeClient struct {

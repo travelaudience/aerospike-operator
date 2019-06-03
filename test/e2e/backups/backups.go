@@ -18,10 +18,9 @@ package backups
 
 import (
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

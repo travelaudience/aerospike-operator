@@ -44,7 +44,7 @@ export GOPATH="${FAKE_GOPATH}"
 cd "${FAKE_REPOPATH}"
 
 BASE_PACKAGE="github.com/travelaudience/aerospike-operator"
-CODEGEN_PACKAGES="${BASE_PACKAGE}/pkg/apis/aerospike/v1alpha1,${BASE_PACKAGE}/pkg/apis/aerospike/v1alpha2"
+CODEGEN_PACKAGES="${BASE_PACKAGE}/internal/apis/aerospike/v1alpha1,${BASE_PACKAGE}/internal/apis/aerospike/v1alpha2"
 
 "${BINDIR}/deepcopy-gen" \
     --input-dirs ${CODEGEN_PACKAGES} \

@@ -28,9 +28,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
-	"github.com/travelaudience/aerospike-operator/pkg/backuprestore"
-	"github.com/travelaudience/aerospike-operator/pkg/backuprestore/gcs"
-	flagutils "github.com/travelaudience/aerospike-operator/pkg/utils/flags"
+	"github.com/travelaudience/aerospike-operator/internal/backuprestore"
+	"github.com/travelaudience/aerospike-operator/internal/backuprestore/gcs"
+	flagutils "github.com/travelaudience/aerospike-operator/internal/utils/flags"
 )
 
 const (

@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
+	"github.com/travelaudience/aerospike-operator/internal/reconciler"
 
 	log "github.com/sirupsen/logrus"
 )

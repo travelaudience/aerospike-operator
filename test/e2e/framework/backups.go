@@ -27,10 +27,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
-	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
-	"github.com/travelaudience/aerospike-operator/pkg/meta"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/selectors"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/meta"
+	"github.com/travelaudience/aerospike-operator/internal/utils/selectors"
 )
 
 const (

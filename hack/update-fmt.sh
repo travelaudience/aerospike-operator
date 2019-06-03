@@ -22,7 +22,7 @@ set -o pipefail
 FILES=$(find . -type f \
     -name "*.go" \
     -not -path "./vendor/*" \
-    -not -path "./pkg/client/*" \
+    -not -path "./internal/client/*" \
     -not -name "zz_generated*")
 # gofmt the target files
 gofmt -w -s ${FILES}
