@@ -23,10 +23,10 @@ import (
 	"github.com/go-openapi/spec"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/internal/runtime"
-	"k8s.io/apimachinery/internal/runtime/serializer"
-	utilruntime "k8s.io/apimachinery/internal/util/runtime"
-	"k8s.io/kube-openapi/internal/common"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/kube-openapi/pkg/common"
 
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/internal/crd"
