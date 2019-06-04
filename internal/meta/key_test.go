@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,8 +29,8 @@ func TestKey(t *testing.T) {
 		obj interface{}
 		key string
 	}{
-		{&v1.Node{ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "foo"}}, "foo"},
-		{&v1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "foo", Name: "bar"}}, "foo/bar"},
+		{&corev1.Node{ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "foo"}}, "foo"},
+		{&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "foo", Name: "bar"}}, "foo/bar"},
 		{"foo", "(unknown)"},
 		{1, "(unknown)"},
 	}
