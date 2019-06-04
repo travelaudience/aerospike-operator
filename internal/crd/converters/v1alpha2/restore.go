@@ -19,8 +19,7 @@ package v1alpha2
 import (
 	log "github.com/sirupsen/logrus"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/internal/client/clientset/versioned"
@@ -30,7 +29,7 @@ import (
 
 func convertAerospikeNamespaceRestores(extsClient *extsclientset.Clientset, aerospikeClient *aerospikeclientset.Clientset) error {
 	// fetch the aerospikenamespacerestore crd so we can understand if v1alpha1 is still being used as a storage version
-	asnrcrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.AerospikeNamespaceRestoreCRDName, v1.GetOptions{})
+	asnrcrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.AerospikeNamespaceRestoreCRDName, metav1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -48,7 +47,7 @@ func convertAerospikeNamespaceRestores(extsClient *extsclientset.Clientset, aero
 	}
 
 	// list all existing v1alpha1 aerospikenamespacerestore resources across all namespaces
-	asnr, err := aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(v1.NamespaceAll).List(v1.ListOptions{})
+	asnr, err := aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil
 	}

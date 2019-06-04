@@ -784,7 +784,7 @@ func computeMemoryRequest(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) 
 		} else {
 			log.WithFields(log.Fields{
 				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-			}).Warn("failed to parse memory size for namespace %s: %v", err)
+			}).Warnf("failed to parse memory size for namespace %s: %s", ns.Name, err)
 			// ns.MemorySize has been validated before, so it is highly unlikely
 			// than an error occurs at this point. however, if it does occur, we
 			// must return something, and so we pick the default memory request.

@@ -64,7 +64,7 @@ gen:
 
 .PHONY: test.unit
 test.unit:
-	go test -v ./cmd/... ./pkg/...
+	go test -v ./cmd/... ./internal/...
 
 .PHONY: test.e2e.build
 test.e2e.build:

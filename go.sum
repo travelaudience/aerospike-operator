@@ -208,10 +208,14 @@ gopkg.in/yaml.v2 v2.0.0-20170812160011-eb3733d160e7/go.mod h1:JAlM8MvJe8wmxCU4Bl
 gopkg.in/yaml.v2 v2.2.1 h1:mUhvW9EsL+naU5Q3cakzfE91YhliOondGd6ZrsDBHQE=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
+k8s.io/api v0.0.0-20190516230258-a675ac48af67 h1:BKg03K4me3EdM340RB08XB3MRlJ57KY+0f5PfI6wPZY=
 k8s.io/api v0.0.0-20190516230258-a675ac48af67/go.mod h1:iuAfoD4hCxJ8Onx9kaTIt30j7jUFS00AXQi6QMi99vA=
+k8s.io/apiextensions-apiserver v0.0.0-20190516231611-bf6753f2aa24 h1:SwpU8lyfh7Orv1XmveHiN6AD2LxffLHLePQ2gcav4sk=
 k8s.io/apiextensions-apiserver v0.0.0-20190516231611-bf6753f2aa24/go.mod h1:IxkesAMoaCRoLrPJdZNZUQp9NfZnzqaVzLhb2VEQzXE=
+k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d h1:Jmdtdt1ZnoGfWWIIik61Z7nKYgO3J+swQJtPYsP9wHA=
 k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d/go.mod h1:ccL7Eh7zubPUSh9A3USN90/OzHNSVN6zxzde07TDCL0=
 k8s.io/apiserver v0.0.0-20190516230822-f89599b3f645/go.mod h1:6bqaTSOSJavUIXUtfaR9Os9JtTCm8ZqH2SUl2S60C4w=
+k8s.io/client-go v11.0.1-0.20190516230509-ae8359b20417+incompatible h1:bK03DJulJi9j05gwnXUufcs2j7h4M85YFvJ0dIlQ9k4=
 k8s.io/client-go v11.0.1-0.20190516230509-ae8359b20417+incompatible/go.mod h1:7vJpHMYJwNQCWgzmNV+VYUl1zCObLyodBc8nIyt8L5s=
 k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 h1:TOebDR8jh/AcqOEWnotJ+DYVUNcMA1GT86TR4Bg70KQ=
 k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4/go.mod h1:pKRi1i5IQdJDpK1LItot8oy27Bc3zL/hQiy9T171rvE=

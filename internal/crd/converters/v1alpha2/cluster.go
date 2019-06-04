@@ -19,8 +19,7 @@ package v1alpha2
 import (
 	log "github.com/sirupsen/logrus"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
 	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"
@@ -36,7 +35,7 @@ var (
 
 func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClient *aerospikeclientset.Clientset) error {
 	// fetch the aerospikecluster crd so we can understand if v1alpha1 is still being used as a storage version
-	asccrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.AerospikeClusterCRDName, v1.GetOptions{})
+	asccrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.AerospikeClusterCRDName, metav1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -54,7 +53,7 @@ func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClie
 	}
 
 	// list all existing v1alpha1 aerospikecluster resources across all namespaces
-	ascs, err := aerospikeClient.AerospikeV1alpha1().AerospikeClusters(v1.NamespaceAll).List(v1.ListOptions{})
+	ascs, err := aerospikeClient.AerospikeV1alpha1().AerospikeClusters(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return nil
 	}
