@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
 )
@@ -27,7 +28,7 @@ type BackupRestoreObject interface {
 	GetKind() string
 	GetName() string
 	GetNamespace() string
-	GetObjectMeta() *v1.ObjectMeta
+	GetObjectMeta() *metav1.ObjectMeta
 	GetStorage() *BackupStorageSpec
 	SetStorage(*BackupStorageSpec)
 	GetTarget() *TargetNamespace

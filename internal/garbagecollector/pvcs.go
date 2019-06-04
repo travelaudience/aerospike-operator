@@ -21,6 +21,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -49,7 +50,7 @@ func NewPVCsGCHandler(kubeclientset kubernetes.Interface,
 	}
 }
 
-func (h *PVCsHandler) Handle(pvc *v1.PersistentVolumeClaim) error {
+func (h *PVCsHandler) Handle(pvc *corev1.PersistentVolumeClaim) error {
 	log.WithFields(log.Fields{
 		logfields.Key: meta.Key(pvc),
 	}).Debug("checking whether pvc has expired")

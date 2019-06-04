@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -35,7 +36,7 @@ import (
 	asstrings "github.com/travelaudience/aerospike-operator/internal/utils/strings"
 )
 
-func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*v1.ConfigMap, error) {
+func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*corev1.ConfigMap, error) {
 	// grab the desired configmap object
 	desiredConfigMap := buildConfigMap(aerospikeCluster)
 	// try to actually create the configmap resource
@@ -56,7 +57,7 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 	}
 }
 
-func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, desiredConfigMap *v1.ConfigMap) (*v1.ConfigMap, error) {
+func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, desiredConfigMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	// get the current configmap resource
 	currentConfigMap, err := r.configMapsLister.ConfigMaps(aerospikeCluster.Namespace).Get(desiredConfigMap.Name)
 	if err != nil {
@@ -105,11 +106,11 @@ func buildConfig(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) string {
 	return configMapBuffer.String()
 }
 
-func buildConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) *v1.ConfigMap {
+func buildConfigMap(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) *corev1.ConfigMap {
 	// build the aerospike config file based on the current spec
 	aerospikeConfig := buildConfig(aerospikeCluster)
 	// return a configmap object containing aerospikeConfig
-	return &v1.ConfigMap{
+	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeCluster.Name,
 			Labels: map[string]string{

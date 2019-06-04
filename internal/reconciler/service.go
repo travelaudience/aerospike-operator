@@ -18,6 +18,7 @@ package reconciler
 
 import (
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -31,7 +32,7 @@ import (
 )
 
 func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) error {
-	service := &v1.Service{
+	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeCluster.Name,
 			Labels: map[string]string{
@@ -50,12 +51,12 @@ func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1
 				},
 			},
 		},
-		Spec: v1.ServiceSpec{
+		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
 				selectors.LabelAppKey:     selectors.LabelAppVal,
 				selectors.LabelClusterKey: aerospikeCluster.Name,
 			},
-			Ports: []v1.ServicePort{
+			Ports: []corev1.ServicePort{
 				{
 					Name:       servicePortName,
 					Port:       ServicePort,
@@ -72,7 +73,7 @@ func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1
 					TargetPort: intstr.IntOrString{StrVal: aspromPortName},
 				},
 			},
-			ClusterIP: v1.ClusterIPNone,
+			ClusterIP: corev1.ClusterIPNone,
 		},
 	}
 

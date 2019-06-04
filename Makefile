@@ -8,7 +8,7 @@ build: GOARCH?=amd64
 build: gen
 	@GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build \
 		-v \
-		-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/pkg/versioning.OperatorVersion=$(VERSION)" \
+		-ldflags="-d -s -w -X github.com/travelaudience/aerospike-operator/internal/versioning.OperatorVersion=$(VERSION)" \
 		-tags=netgo \
 		-installsuffix=netgo \
 		-o=$(OUT) ./cmd/$(BIN)/main.go

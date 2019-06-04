@@ -23,6 +23,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,13 +40,13 @@ import (
 )
 
 var (
-	volumeModeMap = map[string]v1.PersistentVolumeMode{
-		common.StorageTypeDevice: v1.PersistentVolumeBlock,
-		common.StorageTypeFile:   v1.PersistentVolumeFilesystem,
+	volumeModeMap = map[string]corev1.PersistentVolumeMode{
+		common.StorageTypeDevice: corev1.PersistentVolumeBlock,
+		common.StorageTypeFile:   corev1.PersistentVolumeFilesystem,
 	}
 )
 
-type fromMostRecent []*v1.PersistentVolumeClaim
+type fromMostRecent []*corev1.PersistentVolumeClaim
 
 func (pvcs fromMostRecent) Len() int {
 	return len(pvcs)
@@ -59,7 +60,7 @@ func (pvcs fromMostRecent) Less(i, j int) bool {
 	return pvcs[j].CreationTimestamp.Before(&pvcs[i].CreationTimestamp)
 }
 
-func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *v1.Pod) (*v1.PersistentVolumeClaim, error) {
+func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *corev1.Pod) (*corev1.PersistentVolumeClaim, error) {
 	// get all the pvcs owned by the aerospikecluster
 	pvcs, err := r.pvcsLister.PersistentVolumeClaims(aerospikeCluster.Namespace).List(selectors.ResourcesByClusterName(aerospikeCluster.Name))
 	if err != nil {
@@ -70,7 +71,7 @@ func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *
 	}
 
 	// filter the ones associated with the pod
-	var podPVCs []*v1.PersistentVolumeClaim
+	var podPVCs []*corev1.PersistentVolumeClaim
 	for _, pvc := range pvcs {
 		// skip pvc if it does not belong to the right pod
 		podName, ok := pvc.Annotations[PodAnnotation]
@@ -117,7 +118,7 @@ func (r *AerospikeClusterReconciler) getPersistentVolumeClaim(aerospikeCluster *
 	return podPVCs[0], nil
 }
 
-func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *v1.Pod, namespace *aerospikev1alpha2.AerospikeNamespaceSpec) (*v1.PersistentVolumeClaim, error) {
+func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, pod *corev1.Pod, namespace *aerospikev1alpha2.AerospikeNamespaceSpec) (*corev1.PersistentVolumeClaim, error) {
 	storageSize, err := resource.ParseQuantity(namespace.Storage.Size)
 	if err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluste
 		persistentVolumeClaimTTL = *namespace.Storage.PersistentVolumeClaimTTL
 	}
 
-	claim := &v1.PersistentVolumeClaim{
+	claim := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-%s-", pod.Name, namespace.Name),
 			Labels: map[string]string{
@@ -155,13 +156,13 @@ func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluste
 				PVCTTLAnnotation: persistentVolumeClaimTTL,
 			},
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{
-				v1.ReadWriteOnce,
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
 			},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: storageSize,
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: storageSize,
 				},
 			},
 			VolumeMode: &volumeMode,
@@ -195,13 +196,13 @@ func getIndexBasedDevicePath(index int) string {
 	return fmt.Sprintf("%s%s", defaultDevicePathPrefix, string('a'+index))
 }
 
-func (r *AerospikeClusterReconciler) signalMounted(pvc *v1.PersistentVolumeClaim) error {
+func (r *AerospikeClusterReconciler) signalMounted(pvc *corev1.PersistentVolumeClaim) error {
 	oldPVC := pvc.DeepCopy()
 	removePVCAnnotation(pvc, LastUnmountedOnAnnotation)
 	return r.patchPVC(oldPVC, pvc)
 }
 
-func (r *AerospikeClusterReconciler) signalUnmounted(pvc *v1.PersistentVolumeClaim) error {
+func (r *AerospikeClusterReconciler) signalUnmounted(pvc *corev1.PersistentVolumeClaim) error {
 	oldPVC := pvc.DeepCopy()
 	setPVCAnnotation(pvc, LastUnmountedOnAnnotation, time.Now().Format(time.RFC3339))
 	return r.patchPVC(oldPVC, pvc)
@@ -209,7 +210,7 @@ func (r *AerospikeClusterReconciler) signalUnmounted(pvc *v1.PersistentVolumeCla
 
 // setPVCAnnotation sets an annotation with the specified key and value in the
 // aerospikeCluster object
-func setPVCAnnotation(pvc *v1.PersistentVolumeClaim, key, value string) {
+func setPVCAnnotation(pvc *corev1.PersistentVolumeClaim, key, value string) {
 	if pvc.ObjectMeta.Annotations == nil {
 		pvc.ObjectMeta.Annotations = make(map[string]string)
 	}
@@ -218,12 +219,12 @@ func setPVCAnnotation(pvc *v1.PersistentVolumeClaim, key, value string) {
 
 // removePVCAnnotation removes the annotation with the specified key from the
 // aerospikeCluster object
-func removePVCAnnotation(pvc *v1.PersistentVolumeClaim, key string) {
+func removePVCAnnotation(pvc *corev1.PersistentVolumeClaim, key string) {
 	delete(pvc.ObjectMeta.Annotations, key)
 }
 
 // patchCluster updates the status field of the aerospikeCluster
-func (r *AerospikeClusterReconciler) patchPVC(old, new *v1.PersistentVolumeClaim) error {
+func (r *AerospikeClusterReconciler) patchPVC(old, new *corev1.PersistentVolumeClaim) error {
 	oldBytes, err := json.Marshal(old)
 	if err != nil {
 		return err
@@ -232,7 +233,7 @@ func (r *AerospikeClusterReconciler) patchPVC(old, new *v1.PersistentVolumeClaim
 	if err != nil {
 		return err
 	}
-	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &v1.PersistentVolumeClaim{})
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldBytes, newBytes, &corev1.PersistentVolumeClaim{})
 	if err != nil {
 		return err
 	}

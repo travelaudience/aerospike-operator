@@ -24,6 +24,7 @@ import (
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	watchapi "k8s.io/apimachinery/pkg/watch"
@@ -35,7 +36,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/internal/utils/selectors"
 )
 
-type byIndex []*v1.Pod
+type byIndex []*corev1.Pod
 
 func (p byIndex) Len() int {
 	return len(p)
@@ -51,7 +52,7 @@ func (p byIndex) Less(i, j int) bool {
 	return idx1 < idx2
 }
 
-func podIndex(pod *v1.Pod) int {
+func podIndex(pod *corev1.Pod) int {
 	res, err := strconv.Atoi(strings.TrimPrefix(pod.Name, fmt.Sprintf("%s-", pod.ObjectMeta.Labels[selectors.LabelClusterKey])))
 	if err != nil {
 		return -1
@@ -59,15 +60,15 @@ func podIndex(pod *v1.Pod) int {
 	return res
 }
 
-func isPodRunningAndReady(pod *v1.Pod) bool {
-	return pod.Status.Phase == v1.PodRunning && podutil.IsPodReady(pod)
+func isPodRunningAndReady(pod *corev1.Pod) bool {
+	return pod.Status.Phase == corev1.PodRunning && podutil.IsPodReady(pod)
 }
 
 // isPodInFailureState attempts to checks if the specified pod has reached an error condition from which it is not
 // expected to recover.
-func isPodInFailureState(pod *v1.Pod) bool {
+func isPodInFailureState(pod *corev1.Pod) bool {
 	// if the value of ".status.phase" is "Failed", trhe pod is trivially in a failure state
-	if pod.Status.Phase == v1.PodFailed {
+	if pod.Status.Phase == corev1.PodFailed {
 		return true
 	}
 
@@ -97,7 +98,7 @@ func isImageError(reason string) bool {
 	return reason == ReasonErrImagePull || reason == ReasonImageInspectError || reason == ReasonImagePullBackOff || reason == ReasonRegistryUnavailable
 }
 
-func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.ConditionFunc, timeout time.Duration) error {
+func (r *AerospikeClusterReconciler) waitForPodCondition(pod *corev1.Pod, fn watch.ConditionFunc, timeout time.Duration) error {
 	fs := selectors.ObjectByCoordinates(pod.Namespace, pod.Name)
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -111,7 +112,7 @@ func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.C
 	}
 	ctx, cfn := context.WithTimeout(context.Background(), timeout)
 	defer cfn()
-	last, err := watch.UntilWithSync(ctx, lw, &v1.Pod{}, nil, fn)
+	last, err := watch.UntilWithSync(ctx, lw, &corev1.Pod{}, nil, fn)
 	if err != nil {
 		return err
 	}
@@ -121,7 +122,7 @@ func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.C
 	return nil
 }
 
-func podHasMigrationsInProgress(pod *v1.Pod) (bool, error) {
+func podHasMigrationsInProgress(pod *corev1.Pod) (bool, error) {
 	client, err := as.NewClient(pod.Status.PodIP, ServicePort)
 	if err != nil {
 		return false, err
@@ -137,7 +138,7 @@ func podHasMigrationsInProgress(pod *v1.Pod) (bool, error) {
 	return false, fmt.Errorf("failed to find node %s in the cluster", pod.Annotations[nodeIdAnnotation])
 }
 
-func waitForMigrationsToFinishOnPod(pod *v1.Pod) error {
+func waitForMigrationsToFinishOnPod(pod *corev1.Pod) error {
 	client, err := as.NewClient(pod.Status.PodIP, ServicePort)
 	if err != nil {
 		return err
@@ -153,7 +154,7 @@ func waitForMigrationsToFinishOnPod(pod *v1.Pod) error {
 	return fmt.Errorf("failed to find node %s in the cluster", pod.Annotations[nodeIdAnnotation])
 }
 
-func runInfoCommandOnPod(pod *v1.Pod, command string) (map[string]string, error) {
+func runInfoCommandOnPod(pod *corev1.Pod, command string) (map[string]string, error) {
 	addr := fmt.Sprintf("%s:%d", pod.Status.PodIP, ServicePort)
 	conn, err := as.NewConnection(addr, aerospikeClientTimeout)
 	if err != nil {
@@ -163,7 +164,7 @@ func runInfoCommandOnPod(pod *v1.Pod, command string) (map[string]string, error)
 	return as.RequestInfo(conn, command)
 }
 
-func getAerospikeServerVersionFromPod(pod *v1.Pod) (string, error) {
+func getAerospikeServerVersionFromPod(pod *corev1.Pod) (string, error) {
 	res, err := runInfoCommandOnPod(pod, "build")
 	if err != nil {
 		return "", err
@@ -176,12 +177,12 @@ func getAerospikeServerVersionFromPod(pod *v1.Pod) (string, error) {
 	return version, nil
 }
 
-func tipClearHostname(pod *v1.Pod, address string) error {
+func tipClearHostname(pod *corev1.Pod, address string) error {
 	_, err := runInfoCommandOnPod(pod, fmt.Sprintf("tip-clear:host-port-list=%s:%d", address, HeartbeatPort))
 	return err
 }
 
-func alumniReset(pod *v1.Pod) error {
+func alumniReset(pod *corev1.Pod) error {
 	_, err := runInfoCommandOnPod(pod, "services-alumni-reset")
 	return err
 }

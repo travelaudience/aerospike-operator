@@ -18,10 +18,10 @@ package reconciler
 
 import (
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
@@ -33,8 +33,8 @@ import (
 )
 
 var (
-	protocolTCP = v1.ProtocolTCP
-	protocolUDP = v1.ProtocolUDP
+	protocolTCP = corev1.ProtocolTCP
+	protocolUDP = corev1.ProtocolUDP
 )
 
 func (r *AerospikeClusterReconciler) ensureNetworkPolicy(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) error {

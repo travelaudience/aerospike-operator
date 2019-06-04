@@ -20,6 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
 	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha1"

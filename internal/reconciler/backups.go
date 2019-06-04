@@ -55,7 +55,7 @@ func (r *AerospikeClusterReconciler) isClusterBackupFinished(aerospikeCluster *a
 
 func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, ns string) error {
 	backup := aerospikev1alpha2.AerospikeNamespaceBackup{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: GetBackupName(ns, aerospikeCluster.Status.Version, aerospikeCluster.Spec.Version),
 			Labels: map[string]string{
 				selectors.LabelAppKey:       selectors.LabelAppVal,

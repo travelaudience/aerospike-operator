@@ -21,6 +21,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -32,7 +33,7 @@ import (
 	"github.com/travelaudience/aerospike-operator/internal/versioning"
 )
 
-func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *v1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*v1.Pod, error) {
+func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *corev1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*corev1.Pod, error) {
 	// check whether a pod with the specified index exists
 	pod, err := r.getPodWithIndex(aerospikeCluster, index)
 	if err != nil {
@@ -56,7 +57,7 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 	}).Debugf("upgrading pod %s to version %s", meta.Key(pod), aerospikeCluster.Spec.Version)
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeUpgradeStarted,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonNodeUpgradeStarted,
 		"upgrading pod %s to version %s",
 		meta.Key(pod), aerospikeCluster.Spec.Version)
 
@@ -71,7 +72,7 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 		return nil, err
 	}
 	if version != aerospikeCluster.Spec.Version {
-		r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeUpgradeFailed,
+		r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonNodeUpgradeFailed,
 			"failed to upgrade pod %s to version %s",
 			meta.Key(pod), aerospikeCluster.Spec.Version)
 		return nil, fmt.Errorf("failed to upgrade pod %s to version %s", meta.Key(newPod), aerospikeCluster.Spec.Version)
@@ -80,7 +81,7 @@ func (r *AerospikeClusterReconciler) maybeUpgradePodWithIndex(aerospikeCluster *
 	log.WithFields(log.Fields{
 		logfields.AerospikeCluster: meta.Key(aerospikeCluster),
 	}).Debugf("upgraded pod %s to version %s", meta.Key(pod), aerospikeCluster.Spec.Version)
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonNodeUpgradeFinished,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonNodeUpgradeFinished,
 		"upgraded pod %s to version %s",
 		meta.Key(pod), aerospikeCluster.Spec.Version)
 
@@ -105,7 +106,7 @@ func (r *AerospikeClusterReconciler) signalBackupStarted(aerospikeCluster *aeros
 		return nil, err
 	}
 
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterAutoBackupStarted,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonClusterAutoBackupStarted,
 		"cluster backup started")
 
 	log.WithFields(log.Fields{
@@ -132,7 +133,7 @@ func (r *AerospikeClusterReconciler) signalBackupFinished(aerospikeCluster *aero
 		return nil, err
 	}
 
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterAutoBackupFinished,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonClusterAutoBackupFinished,
 		"cluster backup finished")
 
 	log.WithFields(log.Fields{
@@ -159,7 +160,7 @@ func (r *AerospikeClusterReconciler) signalBackupFailed(aerospikeCluster *aerosp
 		return nil, err
 	}
 
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterAutoBackupFailed,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonClusterAutoBackupFailed,
 		"cluster backup failed")
 
 	log.WithFields(log.Fields{
@@ -187,7 +188,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeStarted(aerospikeCluster *aero
 		return nil, err
 	}
 
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterUpgradeStarted,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonClusterUpgradeStarted,
 		"upgrade from version %s to %s started", upgrade.Source, upgrade.Target)
 
 	log.WithFields(log.Fields{
@@ -215,7 +216,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeFailed(aerospikeCluster *aeros
 		return nil, err
 	}
 
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonClusterUpgradeFailed,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeWarning, events.ReasonClusterUpgradeFailed,
 		"upgrade from version %s to %s failed",
 		upgrade.Source, upgrade.Target)
 
@@ -244,7 +245,7 @@ func (r *AerospikeClusterReconciler) signalUpgradeFinished(aerospikeCluster *aer
 		return nil, err
 	}
 
-	r.recorder.Eventf(aerospikeCluster, v1.EventTypeNormal, events.ReasonClusterUpgradeFinished,
+	r.recorder.Eventf(aerospikeCluster, corev1.EventTypeNormal, events.ReasonClusterUpgradeFinished,
 		"finished upgrade from version %s to %s", upgrade.Source, upgrade.Target)
 
 	log.WithFields(log.Fields{

@@ -22,6 +22,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	batch "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,7 +126,7 @@ func (h *AerospikeBackupRestoreHandler) Handle(obj aerospikev1alpha2.BackupResto
 
 // launchJob performs a number of checks and launches the job associated with
 // obj.
-func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha2.BackupRestoreObject, secret *v1.Secret) error {
+func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha2.BackupRestoreObject, secret *corev1.Secret) error {
 	// create the backup/restore job
 	job, err := h.createJob(obj, secret)
 	if err != nil {
@@ -139,7 +140,7 @@ func (h *AerospikeBackupRestoreHandler) launchJob(obj aerospikev1alpha2.BackupRe
 	}).Debugf("%s job created as %s", obj.GetOperationType(), meta.Key(job))
 	// record an event indicating the current status
 	h.recorder.Eventf(obj.(runtime.Object),
-		v1.EventTypeNormal, events.ReasonJobCreated,
+		corev1.EventTypeNormal, events.ReasonJobCreated,
 		"%s job created as %s", obj.GetOperationType(), meta.Key(job))
 	// append a condition to the resource indicating the current status
 	condition := apiextensions.CustomResourceDefinitionCondition{
@@ -159,11 +160,11 @@ func (h *AerospikeBackupRestoreHandler) maybeSetConditions(obj aerospikev1alpha2
 
 	// look for the complete or failed condition in the associated job
 	for _, c := range job.Status.Conditions {
-		if c.Type == batch.JobComplete && c.Status == v1.ConditionTrue {
+		if c.Type == batch.JobComplete && c.Status == corev1.ConditionTrue {
 			jobCondition = batch.JobComplete
 			break
 		}
-		if c.Type == batch.JobFailed && c.Status == v1.ConditionTrue {
+		if c.Type == batch.JobFailed && c.Status == corev1.ConditionTrue {
 			jobCondition = batch.JobFailed
 			break
 		}
@@ -178,7 +179,7 @@ func (h *AerospikeBackupRestoreHandler) maybeSetConditions(obj aerospikev1alpha2
 			logfields.Key:  meta.Key(obj),
 		}).Debugf("%s job has finished", obj.GetOperationType())
 		// record an event indicating success
-		h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeNormal, events.ReasonJobFinished,
+		h.recorder.Eventf(obj.(runtime.Object), corev1.EventTypeNormal, events.ReasonJobFinished,
 			"%s job has finished", obj.GetOperationType())
 		// append a jobCondition to the resource's status indicating success
 		obj.SetConditions(append(obj.GetConditions(), apiextensions.CustomResourceDefinitionCondition{
@@ -194,7 +195,7 @@ func (h *AerospikeBackupRestoreHandler) maybeSetConditions(obj aerospikev1alpha2
 			logfields.Key:  meta.Key(obj),
 		}).Debugf("%s job failed %d times", obj.GetOperationType(), job.Status.Failed)
 		// record an event indicating failure
-		h.recorder.Eventf(obj.(runtime.Object), v1.EventTypeWarning, events.ReasonJobFailed,
+		h.recorder.Eventf(obj.(runtime.Object), corev1.EventTypeWarning, events.ReasonJobFailed,
 			"%s job failed %d times", obj.GetOperationType(), job.Status.Failed)
 		// append a jobCondition to the resource's status indicating failure
 		obj.SetConditions(append(obj.GetConditions(), apiextensions.CustomResourceDefinitionCondition{

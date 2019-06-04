@@ -35,6 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -111,7 +112,7 @@ func (s *ValidatingAdmissionWebhook) Register() error {
 		return err
 	}
 	// parse the pem-encoded tls artifacts contained in the secret
-	cert, err := tls.X509KeyPair(sec.Data[v1.TLSCertKey], sec.Data[v1.TLSPrivateKeyKey])
+	cert, err := tls.X509KeyPair(sec.Data[corev1.TLSCertKey], sec.Data[corev1.TLSPrivateKeyKey])
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (s *ValidatingAdmissionWebhook) Register() error {
 
 	// if the admission webhook is enable, ensure it is correctly registered
 	if Enabled {
-		return s.ensureWebhookConfig(sec.Data[v1.TLSCertKey])
+		return s.ensureWebhookConfig(sec.Data[corev1.TLSCertKey])
 	}
 
 	// at this point we know the admission webhook is disabled, so we should
@@ -176,7 +177,7 @@ func (s *ValidatingAdmissionWebhook) handleAerospikeNamespaceRestore(res http.Re
 // ensureTLSSecret generates a certificate and private key to be used for registering and serving the webhook, and
 // creates a kubernetes secret containing them so they can be used by all running instances of aerospike-operator.
 // in case such secret already exists, it is read and returned.
-func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*v1.Secret, error) {
+func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*corev1.Secret, error) {
 	// generate the certificate to use when registering and serving the webhook
 	svc := fmt.Sprintf("%s.%s.svc", serviceName, s.namespace)
 	now := time.Now()
@@ -212,7 +213,7 @@ func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*v1.Secret, error) {
 		Bytes: sig,
 	})
 	// create a kubernetes secret holding the certificate and private key
-	sec, err := s.kubeClient.CoreV1().Secrets(s.namespace).Create(&v1.Secret{
+	sec, err := s.kubeClient.CoreV1().Secrets(s.namespace).Create(&corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: tlsSecretName,
 			Labels: map[string]string{
@@ -220,10 +221,10 @@ func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*v1.Secret, error) {
 			},
 			Namespace: s.namespace,
 		},
-		Type: v1.SecretTypeTLS,
+		Type: corev1.SecretTypeTLS,
 		Data: map[string][]byte{
-			v1.TLSCertKey:       sigBytes,
-			v1.TLSPrivateKeyKey: keyBytes,
+			corev1.TLSCertKey:       sigBytes,
+			corev1.TLSPrivateKeyKey: keyBytes,
 		},
 	})
 	// if creation was successful, return the created secret

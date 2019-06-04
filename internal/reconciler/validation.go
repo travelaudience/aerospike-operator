@@ -17,6 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
@@ -36,7 +37,7 @@ func (r *AerospikeClusterReconciler) validate(aerospikeCluster *aerospikev1alpha
 func (r *AerospikeClusterReconciler) validateReplicationFactor(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) bool {
 	for _, ns := range aerospikeCluster.Spec.Namespaces {
 		if ns.ReplicationFactor != nil && *ns.ReplicationFactor > aerospikeCluster.Spec.NodeCount {
-			r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonValidationError,
+			r.recorder.Eventf(aerospikeCluster, corev1.EventTypeWarning, events.ReasonValidationError,
 				"replication factor of %d requested for namespace %s but the cluster has only %d nodes",
 				ns.ReplicationFactor,
 				ns.Name,
@@ -53,12 +54,12 @@ func (r *AerospikeClusterReconciler) validateStorageClass(aerospikeCluster *aero
 		if ns.Storage.StorageClassName != nil && *ns.Storage.StorageClassName != "" {
 			if _, err := r.scsLister.Get(*ns.Storage.StorageClassName); err != nil {
 				if errors.IsNotFound(err) {
-					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonValidationError,
+					r.recorder.Eventf(aerospikeCluster, corev1.EventTypeWarning, events.ReasonValidationError,
 						"storage class %q does not exist",
 						ns.Storage.StorageClassName,
 					)
 				} else {
-					r.recorder.Eventf(aerospikeCluster, v1.EventTypeWarning, events.ReasonValidationError,
+					r.recorder.Eventf(aerospikeCluster, corev1.EventTypeWarning, events.ReasonValidationError,
 						"failed to get storage class %q: %v",
 						ns.Storage.StorageClassName,
 						err,

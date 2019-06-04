@@ -76,7 +76,7 @@ require (
 	k8s.io/apiserver v0.0.0-20180910083620-386115dd78fd // indirect
 	k8s.io/client-go v0.0.0-20180910083459-2cefa64ff137
 	k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 // indirect
-	k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22
+	k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22 // indirect
 	k8s.io/kubernetes v1.14.2
 	k8s.io/utils v0.0.0-20190520173318-324c5df7d3f0 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect

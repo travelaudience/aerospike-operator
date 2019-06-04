@@ -23,6 +23,7 @@ import (
 	av1beta1 "k8s.io/api/admission/v1beta1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/internal/versioning"
@@ -129,7 +130,7 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 	if aerospikeCluster.Spec.BackupSpec != nil {
 		secretNamespace := aerospikeCluster.Spec.BackupSpec.Storage.GetSecretNamespace(aerospikeCluster.Namespace)
 		secretName := aerospikeCluster.Spec.BackupSpec.Storage.GetSecret()
-		secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(secretName, v1.GetOptions{})
+		secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(secretName, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
 				return fmt.Errorf("secret %q not found in namespace %q", secretName, secretNamespace)
