@@ -10,12 +10,23 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
-== Changes in `HEAD`
+== Changes in `0.11.0`
 
-=== Breaking changes
+=== Deprecations
+
+* Added support for Kubernetes 1.13+, and dropped support for previous versions.
+
+=== Improvements
 
 * Added support for Kubernetes 1.13+, and dropped support for previous versions.
 * Docker images are now based off of `gcr.io/distroless/static` instead of Alpine whenever possible.
+* Added support for defining Aerospike server resource limits.
+* Miscellaneous improvements to build and runtime, including bump to Go 1.12.5 and adopt Go modules.
+
+
+=== Bug Fixes
+
+* None
 
 == Changes in `0.10.1`
 
