@@ -21,11 +21,11 @@ import (
 	"math"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
-	"github.com/travelaudience/aerospike-operator/pkg/asutils"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/asutils"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

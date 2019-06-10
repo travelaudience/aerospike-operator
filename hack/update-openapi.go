@@ -28,8 +28,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/kube-openapi/pkg/common"
 
-	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
-	"github.com/travelaudience/aerospike-operator/pkg/crd"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/crd"
 )
 
 func main() {

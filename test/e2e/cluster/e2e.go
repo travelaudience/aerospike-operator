@@ -19,7 +19,7 @@ package cluster
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )

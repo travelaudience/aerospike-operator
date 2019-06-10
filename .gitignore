@@ -3,7 +3,7 @@ apiserver.local.config/
 bin/
 key.json
 openapi_generated.go
-pkg/client/
+internal/client/
 tmp/
 vendor/
 zz_generated.deepcopy.go

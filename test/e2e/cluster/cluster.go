@@ -26,11 +26,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/admission"
-	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
-	"github.com/travelaudience/aerospike-operator/pkg/asutils"
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/internal/admission"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/asutils"
+	"github.com/travelaudience/aerospike-operator/internal/pointers"
+	"github.com/travelaudience/aerospike-operator/internal/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

@@ -20,10 +20,10 @@ import (
 	"fmt"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/asutils"
+	"github.com/travelaudience/aerospike-operator/internal/asutils"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

@@ -20,16 +20,16 @@ import (
 	"fmt"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
-	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
-	"github.com/travelaudience/aerospike-operator/pkg/asutils"
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	"github.com/travelaudience/aerospike-operator/pkg/reconciler"
-	"github.com/travelaudience/aerospike-operator/pkg/utils/listoptions"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
+	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/internal/apis/aerospike/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/asutils"
+	"github.com/travelaudience/aerospike-operator/internal/pointers"
+	"github.com/travelaudience/aerospike-operator/internal/reconciler"
+	"github.com/travelaudience/aerospike-operator/internal/utils/listoptions"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

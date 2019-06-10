@@ -24,7 +24,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -37,17 +37,17 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/travelaudience/aerospike-operator/pkg/admission"
-	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
-	aerospikescheme "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned/scheme"
-	aerospikeinformers "github.com/travelaudience/aerospike-operator/pkg/client/informers/externalversions"
-	"github.com/travelaudience/aerospike-operator/pkg/controller"
-	"github.com/travelaudience/aerospike-operator/pkg/crd"
-	v1alpha2converters "github.com/travelaudience/aerospike-operator/pkg/crd/converters/v1alpha2"
-	"github.com/travelaudience/aerospike-operator/pkg/debug"
-	"github.com/travelaudience/aerospike-operator/pkg/signals"
-	flagutils "github.com/travelaudience/aerospike-operator/pkg/utils/flags"
-	"github.com/travelaudience/aerospike-operator/pkg/versioning"
+	"github.com/travelaudience/aerospike-operator/internal/admission"
+	aerospikeclientset "github.com/travelaudience/aerospike-operator/internal/client/clientset/versioned"
+	aerospikescheme "github.com/travelaudience/aerospike-operator/internal/client/clientset/versioned/scheme"
+	aerospikeinformers "github.com/travelaudience/aerospike-operator/internal/client/informers/externalversions"
+	"github.com/travelaudience/aerospike-operator/internal/controller"
+	"github.com/travelaudience/aerospike-operator/internal/crd"
+	v1alpha2converters "github.com/travelaudience/aerospike-operator/internal/crd/converters/v1alpha2"
+	"github.com/travelaudience/aerospike-operator/internal/debug"
+	"github.com/travelaudience/aerospike-operator/internal/signals"
+	flagutils "github.com/travelaudience/aerospike-operator/internal/utils/flags"
+	"github.com/travelaudience/aerospike-operator/internal/versioning"
 )
 
 const (

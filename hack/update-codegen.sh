@@ -44,31 +44,31 @@ export GOPATH="${FAKE_GOPATH}"
 cd "${FAKE_REPOPATH}"
 
 BASE_PACKAGE="github.com/travelaudience/aerospike-operator"
-CODEGEN_PACKAGES="${BASE_PACKAGE}/pkg/apis/aerospike/v1alpha1,${BASE_PACKAGE}/pkg/apis/aerospike/v1alpha2"
+CODEGEN_PACKAGES="${BASE_PACKAGE}/internal/apis/aerospike/v1alpha1,${BASE_PACKAGE}/internal/apis/aerospike/v1alpha2"
 
 "${BINDIR}/deepcopy-gen" \
     --input-dirs ${CODEGEN_PACKAGES} \
     -O zz_generated.deepcopy \
-    --bounding-dirs ${BASE_PACKAGE}/pkg/apis \
+    --bounding-dirs ${BASE_PACKAGE}/internal/apis \
     --go-header-file "${FAKE_REPOPATH}/hack/custom-boilerplate.go.txt"
 
 "${BINDIR}/client-gen" \
     --clientset-name versioned \
     --input-base '' \
     --input ${CODEGEN_PACKAGES} \
-    --output-package ${BASE_PACKAGE}/pkg/client/clientset \
+    --output-package ${BASE_PACKAGE}/internal/client/clientset \
     --go-header-file "${FAKE_REPOPATH}/hack/custom-boilerplate.go.txt"
 
 "${BINDIR}/lister-gen" \
     --input-dirs ${CODEGEN_PACKAGES} \
-    --output-package ${BASE_PACKAGE}/pkg/client/listers \
+    --output-package ${BASE_PACKAGE}/internal/client/listers \
     --go-header-file "${FAKE_REPOPATH}/hack/custom-boilerplate.go.txt"
 
 "${BINDIR}/informer-gen" \
     --input-dirs ${CODEGEN_PACKAGES} \
-    --versioned-clientset-package ${BASE_PACKAGE}/pkg/client/clientset/versioned \
-    --listers-package ${BASE_PACKAGE}/pkg/client/listers \
-    --output-package ${BASE_PACKAGE}/pkg/client/informers \
+    --versioned-clientset-package ${BASE_PACKAGE}/internal/client/clientset/versioned \
+    --listers-package ${BASE_PACKAGE}/internal/client/listers \
+    --output-package ${BASE_PACKAGE}/internal/client/informers \
     --go-header-file "${FAKE_REPOPATH}/hack/custom-boilerplate.go.txt"
 
 export GO111MODULE="on"

@@ -20,10 +20,10 @@ import (
 	"flag"
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
+	"github.com/travelaudience/aerospike-operator/internal/apis/aerospike/common"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 

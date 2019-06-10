@@ -21,12 +21,12 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/travelaudience/aerospike-operator/pkg/pointers"
-	astime "github.com/travelaudience/aerospike-operator/pkg/utils/time"
+	"github.com/travelaudience/aerospike-operator/internal/pointers"
+	astime "github.com/travelaudience/aerospike-operator/internal/utils/time"
 	"github.com/travelaudience/aerospike-operator/test/e2e/framework"
 )
 
