@@ -109,13 +109,17 @@ func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1al
 	return nil
 }
 
-func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32) error {
+func (tf *TestFramework) WaitForClusterNodeCountOrTimeout(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32, timeout time.Duration) error {
 	return tf.WaitForClusterCondition(aerospikeCluster, func(event watchapi.Event) (bool, error) {
 		// grab the current cluster object from the event
 		obj := event.Object.(*aerospikev1alpha2.AerospikeCluster)
 		// search for the current node count
 		return obj.Status.NodeCount == nodeCount, nil
-	}, watchTimeout)
+	}, timeout)
+}
+
+func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32) error {
+	return tf.WaitForClusterNodeCountOrTimeout(aerospikeCluster, nodeCount, watchTimeout)
 }
 
 func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32) error {

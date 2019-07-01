@@ -19,13 +19,13 @@ package cluster
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/travelaudience/aerospike-operator/pkg/admission"
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
 	"github.com/travelaudience/aerospike-operator/pkg/asutils"
@@ -220,4 +220,38 @@ func testDataInMemory(tf *framework.TestFramework, ns *corev1.Namespace) {
 	dataInMemoryEnabled, err := c.IsDataInMemoryEnabled(aerospikeCluster.Spec.Namespaces[0].Name)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(dataInMemoryEnabled).To(Equal(true))
+}
+
+func testCreateAerospikeWithNodeSelector(tf *framework.TestFramework, ns *corev1.Namespace) {
+
+	nodes, err := tf.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
+
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeSelector = nodes.Items[0].Labels
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, 1)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(len(pods.Items))).To(Equal(int32(1)))
+}
+
+func testCreateAerospikeWithInvalidNodeSelector(tf *framework.TestFramework, ns *corev1.Namespace) {
+
+	randomLabels := map[string]string{
+		"random": "label",
+	}
+
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeSelector = randomLabels
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCountOrTimeout(res, 1, time.Minute)
+	Expect(err).To(HaveOccurred())
 }
