@@ -53,6 +53,8 @@ type AerospikeClusterSpec struct {
 	BackupSpec *AerospikeClusterBackupSpec `json:"backupSpec,omitempty"`
 	// Define resources requests and limits for Aerospike Server Container.
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	// Define which Nodes the Pods are scheduled on.
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 }
 
 // AerospikeClusterStatus represents the current state of an Aerospike cluster.
