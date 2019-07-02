@@ -255,3 +255,23 @@ func testCreateAerospikeWithInvalidNodeSelector(tf *framework.TestFramework, ns 
 	err = tf.WaitForClusterNodeCountOrTimeout(res, 1, time.Minute)
 	Expect(err).To(HaveOccurred())
 }
+
+func testCreateAerospikeWithTolerations(tf *framework.TestFramework, ns *corev1.Namespace) {
+
+	tolerations := []corev1.Toleration{{Key: "nodetype", Operator: corev1.TolerationOpExists, Effect: corev1.TaintEffectNoSchedule}}
+
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.Tolerations = tolerations
+
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = tf.WaitForClusterNodeCount(res, 1)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(int32(len(pods.Items))).To(Equal(int32(1)))
+	Expect(pods.Items[0].Spec.Tolerations).To(ContainElement(tolerations[0]))
+
+}
