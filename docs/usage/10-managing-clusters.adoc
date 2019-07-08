@@ -320,3 +320,33 @@ spec:
 EOF
 aerospikecluster.aerospike.travelaudience.com "as-cluster-0" created
 ----
+
+== Defining tolerations for an Aerospike cluster
+
+To define tolerations for an Aerospike cluster one needs to add `tolerations` property to `AerospikeCluster` custom resource:
+
+[source,bash]
+----
+$ kubectl create -f - <<EOF
+apiVersion: aerospike.travelaudience.com/v1alpha2
+kind: AerospikeCluster
+metadata:
+  name: as-cluster-0
+spec:
+  version: "4.2.0.10"
+  nodeCount: 2
+  tolerations:
+  - key: "node.kubernetes.io/memory-pressure"
+    operator: "Exists"
+    effect: "NoSchedule"
+  namespaces:
+  - name: as-namespace-0
+    replicationFactor: 2
+    memorySize: 1G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 1G
+EOF
+aerospikecluster.aerospike.travelaudience.com "as-cluster-0" created
+----
