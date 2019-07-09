@@ -282,3 +282,41 @@ IMPORTANT: Deleting an `AerospikeCluster` custom resource will cause all nodes a
 IMPORTANT: When deleting an `AerospikeCluster` using `kubectl delete` one **MUST** make sure that the value of the `--cascade` flag is set to `true`. This is the default value for this command, and **MUST NOT** be changed. Running `kubectl delete --cascade=false` against an `AerospikeCluster`  resource will cause existing dependent resources (pods, services, etc...) to be left untouched (i.e. _orphaned_), requiring manual cleanup by an operator to be deleted from the Kubernetes cluster.
 
 IMPORTANT: When deleting and recreating an `AerospikeCluster` using `kubectl replace --force` one **MUST** make sure that the value of the `--cascade` flag is set to `true`. This is **NOT** the default value for this command, and **MUST be explicitly set**. Running `kubectl replace --force` without `--cascade=true` against an `AerospikeCluster` resource will cause existing dependent resources (pods, services, etc...) to be left untouched (i.e. _orphaned_), requiring manual cleanup by an operator to be deleted from the Kubernetes cluster.
+
+== Defining node selector for an Aerospike cluster
+
+One may need to make sure that pods in an Aerospike cluster are scheduled onto specific Kubernetes nodes. For addressing that, node selectors are available.
+
+In order to use node selectors, one needs to label at least one of the Kubernetes nodes in one's cluster:
+
+[source,bash]
+----
+$ kubectl label nodes <node-name> app=aerospike
+node "<node-name>" labeled
+----
+
+In order to define a node selector for an Aerospike cluster, one sets `AerospikeCluster.spec.nodeSelector` property to match the node label set before:
+
+[source,bash]
+----
+$ kubectl create -f - <<EOF
+apiVersion: aerospike.travelaudience.com/v1alpha2
+kind: AerospikeCluster
+metadata:
+  name: as-cluster-0
+spec:
+  version: "4.2.0.10"
+  nodeCount: 1
+  nodeSelector:
+    app: aerospike
+  namespaces:
+  - name: as-namespace-0
+    replicationFactor: 1
+    memorySize: 1G
+    defaultTTL: 0s
+    storage:
+      type: file
+      size: 1G
+EOF
+aerospikecluster.aerospike.travelaudience.com "as-cluster-0" created
+----

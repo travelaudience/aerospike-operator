@@ -378,6 +378,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			Hostname: podName,
 			// use the cluster's name as the subdomain
 			Subdomain: aerospikeCluster.Name,
+			NodeSelector: aerospikeCluster.Spec.NodeSelector,
 		},
 	}
 

@@ -100,6 +100,7 @@ The AerospikeClusterSpec type specifies the desired state of an Aerospike cluste
 | namespaces | The specification of the Aerospike namespaces in the cluster. Must have exactly one element footnote:[Even though the `.spec.namespaces` field must have exactly one element, it was decided to make it an array in order to allow extensibility of the API in the future.]. | <<aerospikenamespacespec,[]AerospikeNamespaceSpec>> | true
 | backupSpec | The specification of how Aerospike namespace backups made by aerospike-operator should be performed and stored. It is only required to be present if one wants to perform version upgrades on the Aerospike cluster. | <<aerospikebackupspec,AerospikeBackupSpec>> | false
 | resources | Standard requests and limits for Server Aerospike Container. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#resourcerequirements-v1-core[v1.ResourceRequirements] | false
+| nodeSelector | Standard node selectors for Server Aerospike Pods. | https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#nodeselector-v1-core[v1.NodeSelector] | false
 |===
 
 ==== Validations

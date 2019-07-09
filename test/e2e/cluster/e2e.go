@@ -145,5 +145,11 @@ var _ = Describe("AerospikeCluster", func() {
 		It("supports setting data-in-memory for a namespace", func() {
 			testDataInMemory(tf, ns)
 		})
+		It("create with node selector", func() {
+			testCreateAerospikeWithNodeSelector(tf, ns)
+		})
+		It("create with invalid node selector", func() {
+			testCreateAerospikeWithInvalidNodeSelector(tf, ns)
+		})
 	})
 })
