@@ -151,5 +151,8 @@ var _ = Describe("AerospikeCluster", func() {
 		It("create with invalid node selector", func() {
 			testCreateAerospikeWithInvalidNodeSelector(tf, ns)
 		})
+		It("support setting up tolerations for pods", func() {
+			testCreateAerospikeWithTolerations(tf, ns)
+		})
 	})
 })

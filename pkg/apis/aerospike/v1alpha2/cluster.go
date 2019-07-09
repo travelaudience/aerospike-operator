@@ -55,6 +55,8 @@ type AerospikeClusterSpec struct {
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 	// Define which Nodes the Pods are scheduled on.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// If specified, the pod's tolerations.
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 // AerospikeClusterStatus represents the current state of an Aerospike cluster.
