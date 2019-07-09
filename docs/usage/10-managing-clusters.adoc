@@ -323,7 +323,7 @@ aerospikecluster.aerospike.travelaudience.com "as-cluster-0" created
 
 == Defining tolerations for an Aerospike cluster
 
-To define tolerations for an Aerospike cluster one needs to add `tolerations` property to `AerospikeCluster` custom resource:
+In order to define tolerations for an Aerospike cluster, one sets `AerospikeCluster.spec.tolerations` property:
 
 [source,bash]
 ----
