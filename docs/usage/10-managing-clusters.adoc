@@ -285,7 +285,7 @@ IMPORTANT: When deleting and recreating an `AerospikeCluster` using `kubectl rep
 
 == Defining node selector for an Aerospike cluster
 
-One may need to make sure that pods in an Aerospike cluster are scheduled in specific k8s nodes, for that node selectors are available.
+One may need to make sure that pods in an Aerospike cluster are scheduled onto specific Kubernetes nodes. For addressing that, node selectors are available.
 
 To test node selectors one needs to add a label to one of the kubernetes nodes:
 
