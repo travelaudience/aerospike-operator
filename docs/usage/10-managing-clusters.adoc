@@ -295,7 +295,7 @@ $ kubectl label nodes <node-name> app=aerospike
 node "<node-name>" labeled
 ----
 
-To define a node selector for an Aerospike cluster one needs to add `node selector` property to `AerospikeCluster` custom resource:
+In order to define a node selector for an Aerospike cluster, one sets `AerospikeCluster.spec.nodeSelector` property to match the node label set before:
 
 [source,bash]
 ----
