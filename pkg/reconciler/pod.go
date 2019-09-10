@@ -87,12 +87,6 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 		// attempt to grab the pod with the specified index
 		pod, err := r.getPodWithIndex(aerospikeCluster, i)
 		if err != nil {
-			// we've failed to get the pod with the specified index
-			log.WithFields(log.Fields{
-				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-				logfields.PodIndex:         i,
-			}).Errorf("failed to get pod: %v", err)
-			// propagate the error
 			return err
 		}
 
@@ -143,6 +137,15 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 			}
 		}
 
+	}
+
+	// restart existing pods based on cluster state
+	for i := 0; i < desiredSize; i++ {
+		// attempt to grab the pod with the specified index
+		pod, err := r.getPodWithIndex(aerospikeCluster, i)
+		if err != nil {
+			return err
+		}
 		// ensure aerospike is reachable and reports the correct clusterSize
 		if err := r.ensureClusterSize(aerospikeCluster, pod); err != nil {
 			return err
@@ -590,6 +593,11 @@ func (r *AerospikeClusterReconciler) getPodWithIndex(aerospikeCluster *aerospike
 	p, err := r.podsLister.Pods(aerospikeCluster.Namespace).Get(fmt.Sprintf("%s-%d", aerospikeCluster.Name, index))
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			// we've failed to get the pod with the specified index
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+				logfields.PodIndex:         index,
+			}).Errorf("failed to get pod: %v", err)
 			// the pod may exist but we couldn't list it
 			return nil, err
 		}
