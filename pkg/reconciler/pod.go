@@ -135,21 +135,13 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to restart pod: %v", err)
 				return err
 			}
+		default:
+			// ensure aerospike is reachable and reports the correct clusterSize
+			if err := r.ensureClusterSize(aerospikeCluster, pod); err != nil {
+				return err
+			}
 		}
 
-	}
-
-	// restart existing pods based on cluster state
-	for i := 0; i < desiredSize; i++ {
-		// attempt to grab the pod with the specified index
-		pod, err := r.getPodWithIndex(aerospikeCluster, i)
-		if err != nil {
-			return err
-		}
-		// ensure aerospike is reachable and reports the correct clusterSize
-		if err := r.ensureClusterSize(aerospikeCluster, pod); err != nil {
-			return err
-		}
 	}
 
 	// signal that we're good and return
@@ -380,9 +372,9 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			// use the pod's (stable) name as the hostname
 			Hostname: podName,
 			// use the cluster's name as the subdomain
-			Subdomain: aerospikeCluster.Name,
+			Subdomain:    aerospikeCluster.Name,
 			NodeSelector: aerospikeCluster.Spec.NodeSelector,
-			Tolerations: aerospikeCluster.Spec.Tolerations,
+			Tolerations:  aerospikeCluster.Spec.Tolerations,
 		},
 	}
 
