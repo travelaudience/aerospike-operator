@@ -164,6 +164,25 @@ func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospike
 	return pods, nil
 }
 
+func (r *AerospikeClusterReconciler) listClusterRunningPods(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) ([]*corev1.Pod, error) {
+	// read the list of pods from the lister
+	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(selectors.ResourcesByClusterName(aerospikeCluster.Name))
+	if err != nil {
+		return nil, err
+	}
+
+	runningPods := make([]*corev1.Pod, 0)
+	for _, pod := range pods {
+		if !isPodInFailureState(pod) {
+			runningPods = append(runningPods, pod)
+		}
+	}
+	// sort the pods by index
+	sort.Sort(byIndex(pods))
+	// return the list of running pods
+	return runningPods, nil
+}
+
 func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *corev1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*corev1.Pod, error) {
 	// initialConfigFilePath contains the path to the aerospike.conf file that
 	// will be created as a result of mounting the configmap (i.e. before
@@ -734,7 +753,7 @@ func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospi
 		select {
 		case <-ticker.C:
 			// get the current list of pods
-			pods, err := r.listClusterPods(aerospikeCluster)
+			pods, err := r.listClusterRunningPods(aerospikeCluster)
 			if err != nil {
 				return err
 			}
@@ -744,7 +763,8 @@ func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospi
 				return err
 			}
 			// if the cluster size is the expected, return
-			if clusterSize == len(pods) {
+			// asprom can be down but cluster still healthy
+			if clusterSize >= len(pods) {
 				return nil
 			}
 		case <-timer.C:
