@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 
 	aerospikeclientset "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned"
 )
@@ -32,6 +33,7 @@ const (
 type TestFramework struct {
 	AerospikeClient *aerospikeclientset.Clientset
 	KubeClient      *kubernetes.Clientset
+	RestConfig      *rest.Config
 }
 
 func NewTestFramework(kubeconfigPath string) (*TestFramework, error) {
@@ -50,5 +52,6 @@ func NewTestFramework(kubeconfigPath string) (*TestFramework, error) {
 	return &TestFramework{
 		AerospikeClient: aerospikeClient,
 		KubeClient:      kubeClient,
+		RestConfig:		 cfg,
 	}, nil
 }
