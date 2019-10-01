@@ -18,12 +18,12 @@ endif::[]
 
 === Improvements
 
-* Added support to define tolerations
-* Added support to define node selectors
+* link:https://github.com/travelaudience/aerospike-operator/pull/11[PR-11] Added support to define tolerations
+* link:https://github.com/travelaudience/aerospike-operator/pull/10[PR-10] Added support to define node selectors
 
 === Bug Fixes
 
-* Fixed bug to properly handle pods in error state after initialisation
+* link:https://github.com/travelaudience/aerospike-operator/pull/13[PR-13] Fixed bug to properly handle pods in error state after initialisation
 
 == Changes in `0.11.0`
 
