@@ -10,6 +10,21 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
+== Changes in `0.12.0`
+
+=== Deprecations
+
+* None
+
+=== Improvements
+
+* Added support to define tolerations
+* Added support to define node selectors
+
+=== Bug Fixes
+
+* Fixed bug to properly handle pods in error state after initialisation
+
 == Changes in `0.11.0`
 
 === Deprecations
