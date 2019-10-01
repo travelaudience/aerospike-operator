@@ -273,5 +273,26 @@ func testCreateAerospikeWithTolerations(tf *framework.TestFramework, ns *corev1.
 	Expect(err).NotTo(HaveOccurred())
 	Expect(int32(len(pods.Items))).To(Equal(int32(1)))
 	Expect(pods.Items[0].Spec.Tolerations).To(ContainElement(tolerations[0]))
-
 }
+
+func testAerospikeNodeFail(tf *framework.TestFramework, ns *corev1.Namespace) {
+	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
+	aerospikeCluster.Spec.NodeCount = 3
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	tf.WaitForClusterNodeCount(res, 3)
+	Expect(err).NotTo(HaveOccurred())
+
+	pods, err := tf.KubeClient.CoreV1().Pods(ns.Name).List(listoptions.ResourcesByClusterName(res.Name))
+	command := []string{"/bin/sh", "-c", "kill 1"}
+	pod := pods.Items[2]
+	tf.ExecInContainer(pod, ns, command, "asprom")
+
+	err = tf.WaitForClusterNodeCountOrTimeout(res, 3, time.Minute)
+	Expect(err).NotTo(HaveOccurred())
+
+	podState, err := tf.KubeClient.CoreV1().Pods(ns.Name).Get(pod.Name, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(podState.Status).NotTo(Equal(metav1.StatusFailure))
+	Expect(podState.Status.Phase).To(Equal(corev1.PodRunning))
+}
+

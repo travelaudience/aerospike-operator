@@ -87,12 +87,6 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 		// attempt to grab the pod with the specified index
 		pod, err := r.getPodWithIndex(aerospikeCluster, i)
 		if err != nil {
-			// we've failed to get the pod with the specified index
-			log.WithFields(log.Fields{
-				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
-				logfields.PodIndex:         i,
-			}).Errorf("failed to get pod: %v", err)
-			// propagate the error
 			return err
 		}
 
@@ -141,12 +135,13 @@ func (r *AerospikeClusterReconciler) ensurePods(aerospikeCluster *aerospikev1alp
 				}).Errorf("failed to restart pod: %v", err)
 				return err
 			}
+		default:
+			// ensure aerospike is reachable and reports the correct clusterSize
+			if err := r.ensureClusterSize(aerospikeCluster, pod); err != nil {
+				return err
+			}
 		}
 
-		// ensure aerospike is reachable and reports the correct clusterSize
-		if err := r.ensureClusterSize(aerospikeCluster, pod); err != nil {
-			return err
-		}
 	}
 
 	// signal that we're good and return
@@ -167,6 +162,25 @@ func (r *AerospikeClusterReconciler) listClusterPods(aerospikeCluster *aerospike
 	sort.Sort(byIndex(pods))
 	// return the list of pods
 	return pods, nil
+}
+
+func (r *AerospikeClusterReconciler) listClusterRunningPods(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) ([]*corev1.Pod, error) {
+	// read the list of pods from the lister
+	pods, err := r.podsLister.Pods(aerospikeCluster.Namespace).List(selectors.ResourcesByClusterName(aerospikeCluster.Name))
+	if err != nil {
+		return nil, err
+	}
+
+	runningPods := make([]*corev1.Pod, 0)
+	for _, pod := range pods {
+		if !isPodInFailureState(pod) {
+			runningPods = append(runningPods, pod)
+		}
+	}
+	// sort the pods by index
+	sort.Sort(byIndex(pods))
+	// return the list of running pods
+	return runningPods, nil
 }
 
 func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, configMap *corev1.ConfigMap, index int, upgrade *versioning.VersionUpgrade) (*corev1.Pod, error) {
@@ -377,9 +391,9 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			// use the pod's (stable) name as the hostname
 			Hostname: podName,
 			// use the cluster's name as the subdomain
-			Subdomain: aerospikeCluster.Name,
+			Subdomain:    aerospikeCluster.Name,
 			NodeSelector: aerospikeCluster.Spec.NodeSelector,
-			Tolerations: aerospikeCluster.Spec.Tolerations,
+			Tolerations:  aerospikeCluster.Spec.Tolerations,
 		},
 	}
 
@@ -590,6 +604,11 @@ func (r *AerospikeClusterReconciler) getPodWithIndex(aerospikeCluster *aerospike
 	p, err := r.podsLister.Pods(aerospikeCluster.Namespace).Get(fmt.Sprintf("%s-%d", aerospikeCluster.Name, index))
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			// we've failed to get the pod with the specified index
+			log.WithFields(log.Fields{
+				logfields.AerospikeCluster: meta.Key(aerospikeCluster),
+				logfields.PodIndex:         index,
+			}).Errorf("failed to get pod: %v", err)
 			// the pod may exist but we couldn't list it
 			return nil, err
 		}
@@ -734,7 +753,7 @@ func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospi
 		select {
 		case <-ticker.C:
 			// get the current list of pods
-			pods, err := r.listClusterPods(aerospikeCluster)
+			pods, err := r.listClusterRunningPods(aerospikeCluster)
 			if err != nil {
 				return err
 			}
@@ -744,7 +763,8 @@ func (r *AerospikeClusterReconciler) ensureClusterSize(aerospikeCluster *aerospi
 				return err
 			}
 			// if the cluster size is the expected, return
-			if clusterSize == len(pods) {
+			// asprom can be down but cluster still healthy
+			if clusterSize >= len(pods) {
 				return nil
 			}
 		case <-timer.C:

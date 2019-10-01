@@ -154,5 +154,8 @@ var _ = Describe("AerospikeCluster", func() {
 		It("support setting up tolerations for pods", func() {
 			testCreateAerospikeWithTolerations(tf, ns)
 		})
+		It("should recover after pod failure", func() {
+			testAerospikeNodeFail(tf, ns)
+		})
 	})
 })
