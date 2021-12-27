@@ -9,4 +9,5 @@ RUN make build BIN=operator OUT=/aerospike-operator
 
 FROM gcr.io/distroless/static
 COPY --from=builder /aerospike-operator /usr/local/bin/aerospike-operator
+USER 65532:65532
 CMD ["aerospike-operator", "-h"]
