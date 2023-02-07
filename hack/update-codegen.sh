@@ -22,8 +22,6 @@ ROOT="${ROOT:-$(git rev-parse --show-toplevel)}"
 
 BINDIR="${ROOT}/bin"
 
-export GO111MODULE="on"
-
 cd "${ROOT}/hack/tools"
 go build -o "${BINDIR}/client-gen" k8s.io/code-generator/cmd/client-gen
 go build -o "${BINDIR}/deepcopy-gen" k8s.io/code-generator/cmd/deepcopy-gen
@@ -31,8 +29,6 @@ go build -o "${BINDIR}/informer-gen" k8s.io/code-generator/cmd/informer-gen
 go build -o "${BINDIR}/lister-gen" k8s.io/code-generator/cmd/lister-gen
 cd "${ROOT}"
 go mod vendor
-
-export GO111MODULE="off"
 
 FAKE_GOPATH="$(mktemp -d)"
 trap 'rm -rf ${FAKE_GOPATH}' EXIT
@@ -70,7 +66,5 @@ CODEGEN_PACKAGES="${BASE_PACKAGE}/pkg/apis/aerospike/v1alpha1,${BASE_PACKAGE}/pk
     --listers-package ${BASE_PACKAGE}/pkg/client/listers \
     --output-package ${BASE_PACKAGE}/pkg/client/informers \
     --go-header-file "${FAKE_REPOPATH}/hack/custom-boilerplate.go.txt"
-
-export GO111MODULE="on"
 
 cd "${ROOT}"
