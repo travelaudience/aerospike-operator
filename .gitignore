@@ -5,6 +5,5 @@ key.json
 openapi_generated.go
 pkg/client/
 tmp/
-vendor/
 zz_generated.deepcopy.go
 .DS_Store

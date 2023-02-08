@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +37,7 @@ var (
 
 func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClient *aerospikeclientset.Clientset) error {
 	// fetch the aerospikecluster crd so we can understand if v1alpha1 is still being used as a storage version
-	asccrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.AerospikeClusterCRDName, v1.GetOptions{})
+	asccrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(context.TODO(), crd.AerospikeClusterCRDName, v1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -53,7 +55,7 @@ func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClie
 	}
 
 	// list all existing v1alpha1 aerospikecluster resources across all namespaces
-	ascs, err := aerospikeClient.AerospikeV1alpha1().AerospikeClusters(v1.NamespaceAll).List(v1.ListOptions{})
+	ascs, err := aerospikeClient.AerospikeV1alpha1().AerospikeClusters(v1.NamespaceAll).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		return nil
 	}
@@ -73,7 +75,7 @@ func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClie
 		asc.ObjectMeta.Annotations[convertedFromAnnotationKey] = v1alpha1.SchemeGroupVersion.Version
 		// perform an update on the unchanged aerospikecluster resource so it is upgraded to the current storage version
 		// https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definition-versioning/#upgrade-existing-objects-to-a-new-stored-version
-		if _, err := aerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Update(&asc); err != nil {
+		if _, err := aerospikeClient.AerospikeV1alpha1().AerospikeClusters(asc.Namespace).Update(context.TODO(), &asc, v1.UpdateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -81,7 +83,7 @@ func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClie
 	// remove "v1alpha1" from the slice of stored versions
 	asccrd.Status.StoredVersions = append(asccrd.Status.StoredVersions[:idx], asccrd.Status.StoredVersions[idx+1:]...)
 	// update the aerospikecluster crd
-	if _, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().UpdateStatus(asccrd); err != nil {
+	if _, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().UpdateStatus(context.TODO(), asccrd, v1.UpdateOptions{}); err != nil {
 		return err
 	}
 

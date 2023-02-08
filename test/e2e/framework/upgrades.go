@@ -17,6 +17,9 @@ limitations under the License.
 package framework
 
 import (
+	"context"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
@@ -27,7 +30,7 @@ func (tf *TestFramework) UpgradeClusterAndWait(aerospikeCluster *aerospikev1alph
 	// change Aerospike cluster version
 	aerospikeCluster.Spec.Version = targetVersion
 	// update the Aerospike cluster
-	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Update(aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Update(context.TODO(), aerospikeCluster, v1.UpdateOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -72,9 +72,10 @@ func (r *CRDRegistry) RegisterCRDs() error {
 }
 
 func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error {
+	ctx := context.TODO()
 	// attempt to register the crd as instructed
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("registering crd")
-	_, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	_, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
 	if err == nil {
 		// registration was successful
 		return nil
@@ -90,7 +91,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd is already registered")
 
 	// fetch the latest version of the crd
-	d, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.Name, metav1.GetOptions{})
+	d, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
 	if err != nil {
 		// we've failed to fetch the latest version of the crd
 		return nil
@@ -106,7 +107,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	d.Spec = crd.Spec
 
 	// attempt to update the crd
-	if _, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(d); err != nil {
+	if _, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(ctx, d, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -131,11 +132,11 @@ func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition, timeou
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.FieldSelector = selectors.ObjectByCoordinates(crd.Namespace, crd.Name).String()
-			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(options)
+			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(context.TODO(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
 			options.FieldSelector = selectors.ObjectByCoordinates(crd.Namespace, crd.Name).String()
-			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(options)
+			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(context.TODO(), options)
 		},
 	}
 

@@ -17,6 +17,7 @@ limitations under the License.
 package backuprestore
 
 import (
+	"context"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
@@ -113,7 +114,7 @@ func (h *AerospikeBackupRestoreHandler) createJob(obj aerospikev1alpha2.BackupRe
 		},
 	}
 
-	res, err := h.kubeclientset.BatchV1().Jobs(obj.GetObjectMeta().Namespace).Create(&job)
+	res, err := h.kubeclientset.BatchV1().Jobs(obj.GetObjectMeta().Namespace).Create(context.TODO(), &job, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}

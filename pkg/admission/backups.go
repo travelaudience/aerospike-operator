@@ -17,6 +17,7 @@ limitations under the License.
 package admission
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -90,7 +91,7 @@ func (s *ValidatingAdmissionWebhook) admitAerospikeNamespaceRestore(ar av1beta1.
 
 func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj aerospikev1alpha2.BackupRestoreObject) error {
 	// make sure that the target cluster exists
-	aerospikeCluster, err := s.aerospikeClient.AerospikeV1alpha2().AerospikeClusters(obj.GetNamespace()).Get(obj.GetTarget().Cluster, v1.GetOptions{})
+	aerospikeCluster, err := s.aerospikeClient.AerospikeV1alpha2().AerospikeClusters(obj.GetNamespace()).Get(context.TODO(), obj.GetTarget().Cluster, v1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -116,7 +117,7 @@ func (s *ValidatingAdmissionWebhook) validateBackupRestoreObj(obj aerospikev1alp
 	// make sure that the secret containing cloud storage credentials exists and
 	// matches the expected format
 	secretNamespace := storageSpec.GetSecretNamespace(obj.GetNamespace())
-	secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(storageSpec.GetSecret(), v1.GetOptions{})
+	secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(context.TODO(), storageSpec.GetSecret(), v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return fmt.Errorf("secret %q not found in namespace %q", storageSpec.GetSecret(), secretNamespace)

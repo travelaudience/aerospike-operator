@@ -17,6 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -91,7 +92,7 @@ func (r *AerospikeClusterReconciler) createNamespaceBackup(aerospikeCluster *aer
 		},
 	}
 
-	_, err := r.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(aerospikeCluster.Namespace).Create(&backup)
+	_, err := r.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(aerospikeCluster.Namespace).Create(context.TODO(), &backup, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

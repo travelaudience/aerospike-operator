@@ -28,10 +28,9 @@ go build -o "${BINDIR}/deepcopy-gen" k8s.io/code-generator/cmd/deepcopy-gen
 go build -o "${BINDIR}/informer-gen" k8s.io/code-generator/cmd/informer-gen
 go build -o "${BINDIR}/lister-gen" k8s.io/code-generator/cmd/lister-gen
 cd "${ROOT}"
-go mod vendor
 
 FAKE_GOPATH="$(mktemp -d)"
-trap 'rm -rf ${FAKE_GOPATH}' EXIT
+trap 'chmod -R u+w ${FAKE_GOPATH}; rm -rf ${FAKE_GOPATH}' EXIT
 
 FAKE_REPOPATH="${FAKE_GOPATH}/src/github.com/travelaudience/aerospike-operator"
 mkdir -p "$(dirname "${FAKE_REPOPATH}")" && ln -s "${ROOT}" "${FAKE_REPOPATH}"

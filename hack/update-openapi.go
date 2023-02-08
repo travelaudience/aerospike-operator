@@ -47,8 +47,10 @@ func main() {
 			Title:       aerospikev1alpha2.SchemeGroupVersion.Group,
 			Version:     aerospikev1alpha2.SchemeGroupVersion.Version,
 			License: &spec.License{
-				Name: "Apache 2.0",
-				URL:  "https://www.apache.org/licenses/LICENSE-2.0.html",
+				LicenseProps: spec.LicenseProps{
+					Name: "Apache 2.0",
+					URL:  "https://www.apache.org/licenses/LICENSE-2.0.html",
+				},
 			},
 		},
 		OpenAPIDefinitions: []common.GetOpenAPIDefinitions{

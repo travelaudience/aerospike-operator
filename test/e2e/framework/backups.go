@@ -125,11 +125,11 @@ func (tf *TestFramework) WaitForBackupRestoreCondition(obj aerospikev1alpha2.Bac
 		lw = &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				options.FieldSelector = fs.String()
-				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).List(options)
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
 				options.FieldSelector = fs.String()
-				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).Watch(options)
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).Watch(context.TODO(), options)
 			},
 		}
 		lt = &aerospikev1alpha2.AerospikeNamespaceBackup{}
@@ -137,11 +137,11 @@ func (tf *TestFramework) WaitForBackupRestoreCondition(obj aerospikev1alpha2.Bac
 		lw = &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				options.FieldSelector = fs.String()
-				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).List(options)
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
 				options.FieldSelector = fs.String()
-				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).Watch(options)
+				return tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).Watch(context.TODO(), options)
 			},
 		}
 		lt = &aerospikev1alpha2.AerospikeNamespaceRestore{}

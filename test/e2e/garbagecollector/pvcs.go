@@ -17,6 +17,7 @@ limitations under the License.
 package garbagecollector
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -34,13 +35,13 @@ func testDeleteExpiredPVC(tf *framework.TestFramework, ns *v1.Namespace, finalNo
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
 	aerospikeCluster.Spec.NodeCount = finalNodecount + 1
 	aerospikeCluster.Spec.Namespaces[0].Storage.PersistentVolumeClaimTTL = &ttl
-	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(context.TODO(), &aerospikeCluster, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
-	lastPod, err := tf.KubeClient.CoreV1().Pods(asc.Namespace).Get(fmt.Sprintf("%s-%d", asc.Name, finalNodecount), metav1.GetOptions{})
+	lastPod, err := tf.KubeClient.CoreV1().Pods(asc.Namespace).Get(context.TODO(), fmt.Sprintf("%s-%d", asc.Name, finalNodecount), metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	// get the PVC used by the last pod of the aerospikecluster
@@ -48,7 +49,7 @@ func testDeleteExpiredPVC(tf *framework.TestFramework, ns *v1.Namespace, finalNo
 	var lastPVC *v1.PersistentVolumeClaim
 	for _, pvc := range lastPod.Spec.Volumes {
 		if pvc.PersistentVolumeClaim != nil {
-			lastPVC, err = tf.KubeClient.CoreV1().PersistentVolumeClaims(lastPod.Namespace).Get(pvc.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+			lastPVC, err = tf.KubeClient.CoreV1().PersistentVolumeClaims(lastPod.Namespace).Get(context.TODO(), pvc.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
 	}
@@ -56,7 +57,7 @@ func testDeleteExpiredPVC(tf *framework.TestFramework, ns *v1.Namespace, finalNo
 	err = tf.ScaleCluster(asc, finalNodecount)
 	Expect(err).NotTo(HaveOccurred())
 
-	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(asc.Namespace).Get(asc.Name, metav1.GetOptions{})
+	asc, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(asc.Namespace).Get(context.TODO(), asc.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(asc.Status.NodeCount).To(Equal(finalNodecount))
 
@@ -78,7 +79,7 @@ func testDeleteExpiredPVC(tf *framework.TestFramework, ns *v1.Namespace, finalNo
 		for {
 			select {
 			case <-ticker.C:
-				if _, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(lastPVC.Namespace).Get(lastPVC.Name, metav1.GetOptions{}); errors.IsNotFound(err) {
+				if _, err := tf.KubeClient.CoreV1().PersistentVolumeClaims(lastPVC.Namespace).Get(context.TODO(), lastPVC.Name, metav1.GetOptions{}); errors.IsNotFound(err) {
 					errCh <- nil
 					return
 				}

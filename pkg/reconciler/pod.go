@@ -17,6 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -313,7 +314,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						},
 					},
 					ReadinessProbe: &corev1.Probe{
-						Handler: corev1.Handler{
+						ProbeHandler: corev1.ProbeHandler{
 							TCPSocket: &corev1.TCPSocketAction{
 								Port: intstr.IntOrString{
 									IntVal: ServicePort,
@@ -347,7 +348,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 						},
 					},
 					LivenessProbe: &corev1.Probe{
-						Handler: corev1.Handler{
+						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/metrics",
 								Port: intstr.IntOrString{
@@ -487,7 +488,7 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 	}
 
 	// create the pod
-	res, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).Create(pod)
+	res, err := r.kubeclientset.CoreV1().Pods(aerospikeCluster.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -568,7 +569,7 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 	// mark the pod PVCs as unmounted with an annotation
 	for _, volume := range pod.Spec.Volumes {
 		if claim := volume.PersistentVolumeClaim; claim != nil {
-			pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(pod.Namespace).Get(claim.ClaimName, metav1.GetOptions{})
+			pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(pod.Namespace).Get(context.TODO(), claim.ClaimName, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -578,7 +579,7 @@ func (r *AerospikeClusterReconciler) deletePod(aerospikeCluster *aerospikev1alph
 		}
 	}
 	// delete the pod
-	err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{
+	err := r.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{
 		GracePeriodSeconds: pointers.NewInt64FromFloat64(terminationGracePeriod.Seconds()),
 	})
 	if err != nil {

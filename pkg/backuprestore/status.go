@@ -17,7 +17,10 @@ limitations under the License.
 package backuprestore
 
 import (
+	"context"
+
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
@@ -27,9 +30,9 @@ func (h *AerospikeBackupRestoreHandler) updateStatus(obj aerospikev1alpha2.Backu
 	var err error
 	switch obj.GetOperationType() {
 	case common.OperationTypeBackup:
-		_, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).UpdateStatus(obj.(*aerospikev1alpha2.AerospikeNamespaceBackup))
+		_, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(obj.GetNamespace()).UpdateStatus(context.TODO(), obj.(*aerospikev1alpha2.AerospikeNamespaceBackup), v1.UpdateOptions{})
 	case common.OperationTypeRestore:
-		_, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).UpdateStatus(obj.(*aerospikev1alpha2.AerospikeNamespaceRestore))
+		_, err = h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceRestores(obj.GetNamespace()).UpdateStatus(context.TODO(), obj.(*aerospikev1alpha2.AerospikeNamespaceRestore), v1.UpdateOptions{})
 	}
 	return err
 }

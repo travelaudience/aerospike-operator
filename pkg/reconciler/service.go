@@ -17,6 +17,8 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -77,7 +79,7 @@ func (r *AerospikeClusterReconciler) ensureService(aerospikeCluster *aerospikev1
 		},
 	}
 
-	if _, err := r.kubeclientset.CoreV1().Services(aerospikeCluster.Namespace).Create(service); err != nil {
+	if _, err := r.kubeclientset.CoreV1().Services(aerospikeCluster.Namespace).Create(context.TODO(), service, metav1.CreateOptions{}); err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return err
 		}

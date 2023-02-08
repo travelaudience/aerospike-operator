@@ -17,6 +17,7 @@ limitations under the License.
 package garbagecollector
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -32,14 +33,14 @@ import (
 
 func testDeleteExpiredAerospikeNamespaceBackup(tf *framework.TestFramework, ns *v1.Namespace, ttl string) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(context.TODO(), &aerospikeCluster, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, pointers.NewString(ttl))
-	backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
+	backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Create(context.TODO(), &asBackup, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	backupDuration, err := astime.ParseDuration(ttl)
@@ -58,7 +59,7 @@ func testDeleteExpiredAerospikeNamespaceBackup(tf *framework.TestFramework, ns *
 		for {
 			select {
 			case <-ticker.C:
-				if _, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(backup.Namespace).Get(backup.Name, metav1.GetOptions{}); errors.IsNotFound(err) {
+				if _, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(backup.Namespace).Get(context.TODO(), backup.Name, metav1.GetOptions{}); errors.IsNotFound(err) {
 					errCh <- nil
 					return
 				}
@@ -73,14 +74,14 @@ func testDeleteExpiredAerospikeNamespaceBackup(tf *framework.TestFramework, ns *
 
 func testDoNotDeleteAerospikeNamespaceBackupWithoutTTL(tf *framework.TestFramework, ns *v1.Namespace) {
 	aerospikeCluster := tf.NewAerospikeClusterWithDefaults()
-	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(&aerospikeCluster)
+	asc, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(ns.Name).Create(context.TODO(), &aerospikeCluster, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	err = tf.WaitForClusterNodeCount(asc, aerospikeCluster.Spec.NodeCount)
 	Expect(err).NotTo(HaveOccurred())
 
 	asBackup := tf.NewAerospikeNamespaceBackupGCS(asc, asc.Spec.Namespaces[0].Name, nil)
-	backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Create(&asBackup)
+	backup, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(ns.Name).Create(context.TODO(), &asBackup, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	// wait to make sure the aerospikenamespacebackup is not deleted
@@ -93,7 +94,7 @@ func testDoNotDeleteAerospikeNamespaceBackupWithoutTTL(tf *framework.TestFramewo
 		for {
 			select {
 			case <-ticker.C:
-				if _, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(backup.Namespace).Get(backup.Name, metav1.GetOptions{}); err != nil {
+				if _, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeNamespaceBackups(backup.Namespace).Get(context.TODO(), backup.Name, metav1.GetOptions{}); err != nil {
 					errCh <- err
 					return
 				}

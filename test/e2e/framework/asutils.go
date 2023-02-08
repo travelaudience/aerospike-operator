@@ -48,7 +48,7 @@ func NewAerospikeClient(aerospikeCluster *aerospikev1alpha2.AerospikeCluster) (*
 	c.DefaultPolicy.SleepBetweenRetries = 1 * time.Second
 	c.DefaultWritePolicy.SocketTimeout = 0
 
-	c.DefaultWritePolicy.Timeout = 3 * time.Second
+	c.DefaultWritePolicy.TotalTimeout = 3 * time.Second
 	c.DefaultWritePolicy.MaxRetries = 2
 	c.DefaultWritePolicy.SleepBetweenRetries = 1 * time.Second
 
@@ -104,7 +104,7 @@ func (ac *AerospikeClient) GetNodeNames() []string {
 }
 
 func (ac *AerospikeClient) GetNamespaceStorageEngine(namespace string) (string, error) {
-	c, err := as.NewConnection(fmt.Sprintf("%s:%d", ac.host, reconciler.ServicePort), 10*time.Second)
+	c, err := as.NewConnection(&as.ClientPolicy{Timeout: 10 * time.Second}, &as.Host{Name: ac.host, Port: reconciler.ServicePort})
 	if err != nil {
 		return "", err
 	}
@@ -130,7 +130,7 @@ func (ac *AerospikeClient) GetNamespaceStorageEngine(namespace string) (string, 
 }
 
 func (ac *AerospikeClient) IsDataInMemoryEnabled(namespace string) (bool, error) {
-	c, err := as.NewConnection(fmt.Sprintf("%s:%d", ac.host, reconciler.ServicePort), 10*time.Second)
+	c, err := as.NewConnection(&as.ClientPolicy{Timeout: 10 * time.Second}, &as.Host{Name: ac.host, Port: reconciler.ServicePort})
 	if err != nil {
 		return false, err
 	}

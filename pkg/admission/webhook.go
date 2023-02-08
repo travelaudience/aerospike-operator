@@ -213,7 +213,7 @@ func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*v1.Secret, error) {
 		Bytes: sig,
 	})
 	// create a kubernetes secret holding the certificate and private key
-	sec, err := s.kubeClient.CoreV1().Secrets(s.namespace).Create(&v1.Secret{
+	sec, err := s.kubeClient.CoreV1().Secrets(s.namespace).Create(context.TODO(), &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: tlsSecretName,
 			Labels: map[string]string{
@@ -226,14 +226,14 @@ func (s *ValidatingAdmissionWebhook) ensureTLSSecret() (*v1.Secret, error) {
 			v1.TLSCertKey:       sigBytes,
 			v1.TLSPrivateKeyKey: keyBytes,
 		},
-	})
+	}, metav1.CreateOptions{})
 	// if creation was successful, return the created secret
 	if err == nil {
 		return sec, nil
 	}
 	// a secret may already exist, in which case we should resuse it
 	if errors.IsAlreadyExists(err) {
-		return s.kubeClient.CoreV1().Secrets(s.namespace).Get(tlsSecretName, metav1.GetOptions{})
+		return s.kubeClient.CoreV1().Secrets(s.namespace).Get(context.TODO(), tlsSecretName, metav1.GetOptions{})
 	}
 	// the secret doesn't exist, but we couldn't create it and should fail
 	return nil, err
@@ -245,7 +245,7 @@ func (s *ValidatingAdmissionWebhook) ensureWebhookConfig(caBundle []byte) error 
 		ObjectMeta: metav1.ObjectMeta{
 			Name: aerospikeOperatorWebhookName,
 		},
-		Webhooks: []admissionregistrationv1beta1.Webhook{
+		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{
 			{
 				Name: crd.AerospikeClusterCRDName,
 				Rules: []admissionregistrationv1beta1.RuleWithOperations{
@@ -343,7 +343,7 @@ func (s *ValidatingAdmissionWebhook) ensureWebhookConfig(caBundle []byte) error 
 	}
 
 	// attempt to register the webhook
-	_, err := s.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(vwConfig)
+	_, err := s.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(context.TODO(), vwConfig, metav1.CreateOptions{})
 	if err == nil {
 		// registration was successful
 		return nil
@@ -357,7 +357,7 @@ func (s *ValidatingAdmissionWebhook) ensureWebhookConfig(caBundle []byte) error 
 	// as such, we must do our best to update it.
 
 	// fetch the latest version of the config
-	currCfg, err := s.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(aerospikeOperatorWebhookName, metav1.GetOptions{})
+	currCfg, err := s.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(context.TODO(), aerospikeOperatorWebhookName, metav1.GetOptions{})
 	if err != nil {
 		// we've failed to fetch the latest version of the config
 		return err
@@ -371,7 +371,7 @@ func (s *ValidatingAdmissionWebhook) ensureWebhookConfig(caBundle []byte) error 
 	currCfg.Webhooks = vwConfig.Webhooks
 
 	// attempt to update the config
-	if _, err := s.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Update(currCfg); err != nil {
+	if _, err := s.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Update(context.TODO(), currCfg, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -456,7 +456,7 @@ func (s *ValidatingAdmissionWebhook) WaitReady() error {
 
 // isReady returns a value indicating whether the aerospike-operator service's endpoints contain at least one endpoint.
 func (s *ValidatingAdmissionWebhook) isReady() (bool, error) {
-	endpoints, err := s.kubeClient.CoreV1().Endpoints(s.namespace).Get(serviceName, metav1.GetOptions{})
+	endpoints, err := s.kubeClient.CoreV1().Endpoints(s.namespace).Get(context.TODO(), serviceName, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}

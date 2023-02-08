@@ -17,6 +17,7 @@ limitations under the License.
 package admission
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -130,7 +131,7 @@ func (s *ValidatingAdmissionWebhook) validateAerospikeCluster(aerospikeCluster *
 	if aerospikeCluster.Spec.BackupSpec != nil {
 		secretNamespace := aerospikeCluster.Spec.BackupSpec.Storage.GetSecretNamespace(aerospikeCluster.Namespace)
 		secretName := aerospikeCluster.Spec.BackupSpec.Storage.GetSecret()
-		secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(secretName, v1.GetOptions{})
+		secret, err := s.kubeClient.CoreV1().Secrets(secretNamespace).Get(context.TODO(), secretName, v1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
 				return fmt.Errorf("secret %q not found in namespace %q", secretName, secretNamespace)
