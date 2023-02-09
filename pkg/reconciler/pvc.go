@@ -194,7 +194,7 @@ func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluste
 // getIndexBasedDevicePath returns the device path for the namespace
 // with the specified index (e.g. 0 --> /dev/xvda, 1 --> /dev/xvdb, ...).
 func getIndexBasedDevicePath(index int) string {
-	return fmt.Sprintf("%s%s", defaultDevicePathPrefix, string('a'+index))
+	return fmt.Sprintf("%s%s", defaultDevicePathPrefix, fmt.Sprint('a'+index))
 }
 
 func (r *AerospikeClusterReconciler) signalMounted(pvc *v1.PersistentVolumeClaim) error {
