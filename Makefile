@@ -1,5 +1,5 @@
 # VERSION holds the current version of aerospike-operator.
-VERSION?=0.12.0
+VERSION?=1.0.0
 
 build: BIN?=operator
 build: OUT?=bin/aerospike-operator
