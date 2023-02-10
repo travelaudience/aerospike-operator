@@ -153,7 +153,8 @@ func (s *ValidatingAdmissionWebhook) Run(stopCh chan struct{}) {
 	// shutdown the server when stopCh is closed
 	go func() {
 		<-stopCh
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 		srv.Shutdown(ctx)
 		log.Debugf("admission webhook has been shutdown")
 	}()

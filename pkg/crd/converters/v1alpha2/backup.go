@@ -31,7 +31,7 @@ import (
 
 func convertAerospikeNamespaceBackups(extsClient *extsclientset.Clientset, aerospikeClient *aerospikeclientset.Clientset) error {
 	// fetch the aerospikenamespacebackup crd so we can understand if v1alpha1 is still being used as a storage version
-	asnbcrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(context.TODO(), crd.AerospikeNamespaceBackupCRDName, v1.GetOptions{})
+	asnbcrd, err := extsClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crd.AerospikeNamespaceBackupCRDName, v1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -77,7 +77,7 @@ func convertAerospikeNamespaceBackups(extsClient *extsclientset.Clientset, aeros
 	// remove "v1alpha1" from the slice of stored versions
 	asnbcrd.Status.StoredVersions = append(asnbcrd.Status.StoredVersions[:idx], asnbcrd.Status.StoredVersions[idx+1:]...)
 	// update the aerospikenamespacebackup crd
-	if _, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().UpdateStatus(context.TODO(), asnbcrd, v1.UpdateOptions{}); err != nil {
+	if _, err := extsClient.ApiextensionsV1().CustomResourceDefinitions().UpdateStatus(context.TODO(), asnbcrd, v1.UpdateOptions{}); err != nil {
 		return err
 	}
 

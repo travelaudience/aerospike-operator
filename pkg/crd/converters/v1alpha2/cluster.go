@@ -37,7 +37,7 @@ var (
 
 func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClient *aerospikeclientset.Clientset) error {
 	// fetch the aerospikecluster crd so we can understand if v1alpha1 is still being used as a storage version
-	asccrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(context.TODO(), crd.AerospikeClusterCRDName, v1.GetOptions{})
+	asccrd, err := extsClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crd.AerospikeClusterCRDName, v1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -83,7 +83,7 @@ func convertAerospikeClusters(extsClient *extsclientset.Clientset, aerospikeClie
 	// remove "v1alpha1" from the slice of stored versions
 	asccrd.Status.StoredVersions = append(asccrd.Status.StoredVersions[:idx], asccrd.Status.StoredVersions[idx+1:]...)
 	// update the aerospikecluster crd
-	if _, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().UpdateStatus(context.TODO(), asccrd, v1.UpdateOptions{}); err != nil {
+	if _, err := extsClient.ApiextensionsV1().CustomResourceDefinitions().UpdateStatus(context.TODO(), asccrd, v1.UpdateOptions{}); err != nil {
 		return err
 	}
 
