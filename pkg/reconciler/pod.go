@@ -248,8 +248,9 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 			// to the list of currently active nodes
 			InitContainers: []corev1.Container{
 				{
-					Name:  "init",
-					Image: fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
+					Name:            "init",
+					Image:           fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
+					ImagePullPolicy: corev1.PullAlways,
 					Command: []string{
 						"/usr/local/bin/asinit",
 						"--node-id",
@@ -335,9 +336,8 @@ func (r *AerospikeClusterReconciler) createPodWithIndex(aerospikeCluster *aerosp
 					},
 				},
 				{
-					Name:            "asprom",
-					Image:           fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
-					ImagePullPolicy: corev1.PullAlways,
+					Name:  "asprom",
+					Image: fmt.Sprintf("%s:%s", "quay.io/travelaudience/aerospike-operator-tools", versioning.OperatorVersion),
 					Command: []string{
 						"asprom",
 					},
