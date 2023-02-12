@@ -72,10 +72,9 @@ func (r *CRDRegistry) RegisterCRDs() error {
 }
 
 func (r *CRDRegistry) createCRD(crd *extsv1.CustomResourceDefinition) error {
-	ctx := context.TODO()
 	// attempt to register the crd as instructed
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("registering crd")
-	_, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
+	_, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), crd, metav1.CreateOptions{})
 	if err == nil {
 		// registration was successful
 		return nil
@@ -91,7 +90,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1.CustomResourceDefinition) error {
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd is already registered")
 
 	// fetch the latest version of the crd
-	d, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+	d, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crd.Name, metav1.GetOptions{})
 	if err != nil {
 		// we've failed to fetch the latest version of the crd
 		return nil
@@ -107,7 +106,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1.CustomResourceDefinition) error {
 	d.Spec = crd.Spec
 
 	// attempt to update the crd
-	if _, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, d, metav1.UpdateOptions{}); err != nil {
+	if _, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Update(context.TODO(), d, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
