@@ -19,10 +19,8 @@ RUN CGO_ENABLED=0 go build \
 
 FROM aerospike/aerospike-tools:8.1.0 AS astools
 
-FROM ubuntu:16.04
-RUN apt update && \
-    apt install -y ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+FROM gcr.io/distroless/static
+USER 65532:65532
 COPY --from=builder /asinit /usr/local/bin/asinit
 COPY --from=builder /asprom /usr/local/bin/asprom
 COPY --from=builder /backup /usr/local/bin/backup
