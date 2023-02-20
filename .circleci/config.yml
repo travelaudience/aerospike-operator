@@ -99,33 +99,3 @@ workflows:
           registry: QUAY_IO_REGISTRY
           docker-username: QUAY_IO_USERNAME
           docker-password: QUAY_IO_PASSWORD
-
-      # Staging
-      - ta-deploy/gitops_deploy:
-          requires:
-            - docker_tag_operator
-            - docker_tag_tools
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore: /.*/
-          context: git-push-config
-          releases_repo_name: releases-staging
-          app: aerospike-operator
-          pr_auto_merge: true
-
-      # Production
-      - ta-deploy/gitops_deploy:
-          requires:
-            - docker_tag_operator
-            - docker_tag_tools
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore: /.*/
-          context: git-push-config
-          releases_repo_name: releases-production
-          app: aerospike-operator
-          pr_auto_merge: false
