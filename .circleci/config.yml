@@ -1,0 +1,125 @@
+version: 2.1
+
+orbs:
+  ta-go: travelaudience/go@0.9
+  ta-helm: travelaudience/helm@0.2
+  ta-docker: travelaudience/docker@2.1
+  ta-deploy: travelaudience/deploy@0.3
+
+# Defining a top level executor (docker image) with the needed ENV variables
+executors:
+  golang-executor:
+    docker:
+      - image: cimg/go:1.20.0
+    environment:
+      GIT_TERMINAL_PROMPT: 1
+      # This environment variable is needed from go 1.13 for private repos.
+      GOPRIVATE: "github.com/travelaudience/*"
+
+workflows:
+
+  build_and_test:
+    jobs:
+
+#TODO: fix the tests/build steps
+#      - ta-go/checks:
+#          exec: golang-executor
+#          run_make_gen: true
+#      - ta-go/test_and_coverage:
+#          exec: golang-executor
+#          run_make_gen: true
+#
+#      - ta-go/build:
+#          exec: golang-executor
+#          run_make_gen: true
+#          requires:
+#            - ta-go/checks
+#            - ta-go/test_and_coverage
+
+      - ta-docker/build_and_push:
+          name: docker_push_operator
+#TODO: un-comment this once the above build job is fixed
+#          requires:
+#            - ta-go/build
+          image-name: "aerospike-operator"
+          context: docker-registry-access
+          registry: QUAY_IO_REGISTRY
+          docker-username: QUAY_IO_USERNAME
+          docker-password: QUAY_IO_PASSWORD
+      - ta-docker/build_and_push:
+          name: docker_push_tools
+#TODO: un-comment this once the above build job is fixed
+#          requires:
+#            - ta-go/build
+          context: docker-registry-access
+          registry: QUAY_IO_REGISTRY
+          docker-username: QUAY_IO_USERNAME
+          docker-password: QUAY_IO_PASSWORD
+          dockerfile: Dockerfile.tools
+          image-name: "aerospike-operator-tools"
+
+#TODO: fix the scan
+#      - ta-docker/docker_scan:
+#          context: docker-registry-access
+#          requires:
+#            - docker_push_operator
+#            - docker_push_tools
+
+      - ta-helm/validate
+      - ta-helm/package_and_push:
+          requires:
+            - ta-helm/validate
+          context: git-push-config
+          chart_git_repo: git@github.com:travelaudience/helm-repository.git
+
+  tag_deploy:
+    jobs:
+
+      - ta-docker/docker_git_tag:
+          name: docker_tag_operator
+          context: docker-registry-access
+          image-name: "aerospike-operator"
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+      - ta-docker/docker_git_tag:
+          name: docker_tag_tools
+          context: docker-registry-access
+          image-name: "aerospike-operator-tools"
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+
+      # Staging
+      - ta-deploy/gitops_deploy:
+          requires:
+            - docker_tag_operator
+            - docker_tag_tools
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+          context: git-push-config
+          releases_repo_name: releases-staging
+          app: aerospike-operator
+          pr_auto_merge: true
+
+      # Production
+      - ta-deploy/gitops_deploy:
+          requires:
+            - docker_tag_operator
+            - docker_tag_tools
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+          context: git-push-config
+          releases_repo_name: releases-production
+          app: aerospike-operator
+          pr_auto_merge: false

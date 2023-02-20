@@ -1,0 +1,5 @@
+helm-extra-args: --timeout 600
+validate-chart-schema: false
+validate-maintainers: false
+chart-dirs: helm
+target-branch: master

@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,7 +31,7 @@ import (
 
 func convertAerospikeNamespaceRestores(extsClient *extsclientset.Clientset, aerospikeClient *aerospikeclientset.Clientset) error {
 	// fetch the aerospikenamespacerestore crd so we can understand if v1alpha1 is still being used as a storage version
-	asnrcrd, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.AerospikeNamespaceRestoreCRDName, v1.GetOptions{})
+	asnrcrd, err := extsClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crd.AerospikeNamespaceRestoreCRDName, v1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -47,7 +49,7 @@ func convertAerospikeNamespaceRestores(extsClient *extsclientset.Clientset, aero
 	}
 
 	// list all existing v1alpha1 aerospikenamespacerestore resources across all namespaces
-	asnr, err := aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(v1.NamespaceAll).List(v1.ListOptions{})
+	asnr, err := aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(v1.NamespaceAll).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		return nil
 	}
@@ -67,7 +69,7 @@ func convertAerospikeNamespaceRestores(extsClient *extsclientset.Clientset, aero
 		asnr.ObjectMeta.Annotations[convertedFromAnnotationKey] = v1alpha1.SchemeGroupVersion.Version
 		// perform an update on the unchanged aerospikenamespacerestore resource so it is upgraded to the current storage version
 		// https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definition-versioning/#upgrade-existing-objects-to-a-new-stored-version
-		if _, err := aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(asnr.Namespace).Update(&asnr); err != nil {
+		if _, err := aerospikeClient.AerospikeV1alpha1().AerospikeNamespaceRestores(asnr.Namespace).Update(context.TODO(), &asnr, v1.UpdateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -75,7 +77,7 @@ func convertAerospikeNamespaceRestores(extsClient *extsclientset.Clientset, aero
 	// remove "v1alpha1" from the slice of stored versions
 	asnrcrd.Status.StoredVersions = append(asnrcrd.Status.StoredVersions[:idx], asnrcrd.Status.StoredVersions[idx+1:]...)
 	// update the aerospikenamespacerestore crd
-	if _, err := extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().UpdateStatus(asnrcrd); err != nil {
+	if _, err := extsClient.ApiextensionsV1().CustomResourceDefinitions().UpdateStatus(context.TODO(), asnrcrd, v1.UpdateOptions{}); err != nil {
 		return err
 	}
 

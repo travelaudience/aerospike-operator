@@ -1,4 +1,4 @@
-FROM golang:1.12.5 AS builder
+FROM golang:1.20 AS builder
 WORKDIR /src/aerospike-operator/
 COPY go.mod go.sum ./
 RUN go mod download
@@ -17,12 +17,10 @@ RUN CGO_ENABLED=0 go build \
     -installsuffix=netgo \
     -o=/asprom *.go
 
-FROM aerospike/aerospike-tools:3.15.3.14 AS astools
+FROM aerospike/aerospike-tools:8.1.0 AS astools
 
-FROM ubuntu:16.04
-RUN apt update && \
-    apt install -y ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+FROM gcr.io/distroless/static
+USER 65532:65532
 COPY --from=builder /asinit /usr/local/bin/asinit
 COPY --from=builder /asprom /usr/local/bin/asprom
 COPY --from=builder /backup /usr/local/bin/backup

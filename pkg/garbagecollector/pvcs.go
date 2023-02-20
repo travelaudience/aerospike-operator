@@ -17,6 +17,7 @@ limitations under the License.
 package garbagecollector
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -96,7 +97,7 @@ func (h *PVCsHandler) Handle(pvc *v1.PersistentVolumeClaim) error {
 	if podName, ok := pvc.Annotations[reconciler.PodAnnotation]; !ok {
 		return fmt.Errorf("could not retrieve pod-name from annotations")
 	} else {
-		if pod, err := h.kubeclientset.CoreV1().Pods(pvc.Namespace).Get(podName, metav1.GetOptions{}); err == nil {
+		if pod, err := h.kubeclientset.CoreV1().Pods(pvc.Namespace).Get(context.TODO(), podName, metav1.GetOptions{}); err == nil {
 			for _, volume := range pod.Spec.Volumes {
 				if claim := volume.PersistentVolumeClaim; claim != nil {
 					if claim.ClaimName == pvc.Name {
@@ -116,7 +117,7 @@ func (h *PVCsHandler) Handle(pvc *v1.PersistentVolumeClaim) error {
 	}
 
 	// delete pvc resource
-	if err := h.kubeclientset.CoreV1().PersistentVolumeClaims(pvc.Namespace).Delete(pvc.Name, &metav1.DeleteOptions{}); err != nil {
+	if err := h.kubeclientset.CoreV1().PersistentVolumeClaims(pvc.Namespace).Delete(context.TODO(), pvc.Name, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	log.WithFields(log.Fields{

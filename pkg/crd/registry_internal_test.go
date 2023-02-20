@@ -21,10 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
+	fakeversioned "github.com/travelaudience/aerospike-operator/pkg/client/clientset/versioned/fake"
+	kakeclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 
 	"github.com/stretchr/testify/assert"
-	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	extsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -33,32 +34,44 @@ import (
 )
 
 func TestCreateCRDFailsOnInternalError(t *testing.T) {
-	extsClient := fake.NewSimpleClientset()
+	extsClient := kakeclientset.NewSimpleClientset()
 	extsClient.PrependReactor("create", "customresourcedefinitions", func(_ kubetesting.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.NewInternalError(assert.AnError)
 	})
-	r := NewCRDRegistry(extsClient)
+	aerospikeClient := fakeversioned.NewSimpleClientset()
+	aerospikeClient.PrependReactor("create", "customresourcedefinitions", func(_ kubetesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.NewInternalError(assert.AnError)
+	})
+	r := NewCRDRegistry(extsClient, aerospikeClient)
 	err := r.createCRD(crds[0])
 	assert.Error(t, err)
 }
 
 func TestCreateCRDDoesNotFailOnAlreadyExists(t *testing.T) {
-	extsClient := fake.NewSimpleClientset()
+	extsClient := kakeclientset.NewSimpleClientset()
 	extsClient.PrependReactor("create", "customresourcedefinitions", func(_ kubetesting.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.NewAlreadyExists(schema.GroupResource{}, "")
 	})
-	r := NewCRDRegistry(extsClient)
+	aerospikeClient := fakeversioned.NewSimpleClientset()
+	aerospikeClient.PrependReactor("create", "customresourcedefinitions", func(_ kubetesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.NewInternalError(assert.AnError)
+	})
+	r := NewCRDRegistry(extsClient, aerospikeClient)
 	err := r.createCRD(crds[0])
 	assert.NoError(t, err)
 }
 
 func TestAwaitCRDWaitsForEstablishedCondition(t *testing.T) {
-	extsClient := fake.NewSimpleClientset()
+	extsClient := kakeclientset.NewSimpleClientset()
 	fw := watch.NewFake()
 	extsClient.PrependWatchReactor("customresourcedefinitions", func(_ kubetesting.Action) (bool, watch.Interface, error) {
 		return true, fw, nil
 	})
-	r := NewCRDRegistry(extsClient)
+	aerospikeClient := fakeversioned.NewSimpleClientset()
+	aerospikeClient.PrependReactor("create", "customresourcedefinitions", func(_ kubetesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.NewInternalError(assert.AnError)
+	})
+	r := NewCRDRegistry(extsClient, aerospikeClient)
 
 	var (
 		wg  sync.WaitGroup
@@ -72,7 +85,7 @@ func TestAwaitCRDWaitsForEstablishedCondition(t *testing.T) {
 	t0 = time.Now()
 	go func() {
 		defer wg.Done()
-		err = r.awaitCRD(crds[0])
+		err = r.awaitCRD(crds[0], 60)
 		t1 = time.Now()
 	}()
 	wg.Add(1)
@@ -85,11 +98,11 @@ func TestAwaitCRDWaitsForEstablishedCondition(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func establishedCRD(crd *extsv1beta1.CustomResourceDefinition) *extsv1beta1.CustomResourceDefinition {
+func establishedCRD(crd *extsv1.CustomResourceDefinition) *extsv1.CustomResourceDefinition {
 	res := crd.DeepCopy()
-	res.Status.Conditions = append(crd.Status.Conditions, extsv1beta1.CustomResourceDefinitionCondition{
-		Type:   extsv1beta1.Established,
-		Status: extsv1beta1.ConditionTrue,
+	res.Status.Conditions = append(crd.Status.Conditions, extsv1.CustomResourceDefinitionCondition{
+		Type:   extsv1.Established,
+		Status: extsv1.ConditionTrue,
 	})
 	return res
 }

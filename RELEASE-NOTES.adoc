@@ -10,6 +10,20 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
+== Changes in `1.0.0`
+
+=== Deprecations
+
+* link:https://travelaudience.atlassian.net/browse/DEVOPS-2357 Added support for GKE 1.22
+
+=== Improvements
+
+* None
+
+=== Bug Fixes
+
+* None
+
 == Changes in `0.12.0`
 
 === Deprecations

@@ -18,6 +18,7 @@ package reconciler
 
 import (
 	"bytes"
+	"context"
 	"strconv"
 	"strings"
 
@@ -40,7 +41,7 @@ func (r *AerospikeClusterReconciler) ensureConfigMap(aerospikeCluster *aerospike
 	// grab the desired configmap object
 	desiredConfigMap := buildConfigMap(aerospikeCluster)
 	// try to actually create the configmap resource
-	if createdConfigMap, err := r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Create(desiredConfigMap); err != nil {
+	if createdConfigMap, err := r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Create(context.TODO(), desiredConfigMap, metav1.CreateOptions{}); err != nil {
 		if errors.IsAlreadyExists(err) {
 			// a configmap with the same name already exists, so we need to
 			// handle an update
@@ -80,7 +81,7 @@ func (r *AerospikeClusterReconciler) updateConfigMap(aerospikeCluster *aerospike
 		logfields.ConfigMap:        desiredConfigMap.Name,
 	}).Debug("configmap exists but is outdated")
 	// update the existing configmap resource to match the desired state
-	if updatedConfigMap, err := r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Update(desiredConfigMap); err != nil {
+	if updatedConfigMap, err := r.kubeclientset.CoreV1().ConfigMaps(aerospikeCluster.Namespace).Update(context.TODO(), desiredConfigMap, metav1.UpdateOptions{}); err != nil {
 		return nil, err
 	} else {
 		log.WithFields(log.Fields{

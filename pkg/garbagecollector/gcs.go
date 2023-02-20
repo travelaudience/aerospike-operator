@@ -17,6 +17,8 @@ limitations under the License.
 package garbagecollector
 
 import (
+	"context"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	aerospikev1alpha2 "github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/v1alpha2"
@@ -27,7 +29,7 @@ import (
 func (h *AerospikeNamespaceBackupHandler) deleteBackupDataGCS(asBackup *aerospikev1alpha2.AerospikeNamespaceBackup) error {
 	// get the secret containing the credentials to access the gcs bucket
 	namespace := asBackup.Spec.Storage.GetSecretNamespace(asBackup.Namespace)
-	secret, err := h.kubeclientset.CoreV1().Secrets(namespace).Get(asBackup.Spec.Storage.GetSecret(), v1.GetOptions{})
+	secret, err := h.kubeclientset.CoreV1().Secrets(namespace).Get(context.TODO(), asBackup.Spec.Storage.GetSecret(), v1.GetOptions{})
 	if err != nil {
 		return err
 	}

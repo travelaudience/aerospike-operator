@@ -17,6 +17,7 @@ limitations under the License.
 package backuprestore
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -30,7 +31,7 @@ import (
 
 func (h *AerospikeBackupRestoreHandler) getSecret(obj aerospikev1alpha2.BackupRestoreObject) (*corev1.Secret, error) {
 	namespace := obj.GetStorage().GetSecretNamespace(obj.GetNamespace())
-	secret, err := h.kubeclientset.CoreV1().Secrets(namespace).Get(obj.GetStorage().GetSecret(), metav1.GetOptions{})
+	secret, err := h.kubeclientset.CoreV1().Secrets(namespace).Get(context.TODO(), obj.GetStorage().GetSecret(), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -41,12 +42,12 @@ func (h *AerospikeBackupRestoreHandler) getSecret(obj aerospikev1alpha2.BackupRe
 }
 
 func (h *AerospikeBackupRestoreHandler) clearSecrets(obj aerospikev1alpha2.BackupRestoreObject) error {
-	secrets, err := h.kubeclientset.CoreV1().Secrets(obj.GetNamespace()).List(listoptions.ResourcesByBackupRestoreObject(obj))
+	secrets, err := h.kubeclientset.CoreV1().Secrets(obj.GetNamespace()).List(context.TODO(), listoptions.ResourcesByBackupRestoreObject(obj))
 	if err != nil {
 		return err
 	}
 	for _, secret := range secrets.Items {
-		if err := h.kubeclientset.CoreV1().Secrets(secret.Namespace).Delete(secret.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := h.kubeclientset.CoreV1().Secrets(secret.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -54,7 +55,7 @@ func (h *AerospikeBackupRestoreHandler) clearSecrets(obj aerospikev1alpha2.Backu
 }
 
 func (h *AerospikeBackupRestoreHandler) createTempSecret(secret *corev1.Secret, obj aerospikev1alpha2.BackupRestoreObject) (*corev1.Secret, error) {
-	return h.kubeclientset.CoreV1().Secrets(obj.GetNamespace()).Create(&corev1.Secret{
+	return h.kubeclientset.CoreV1().Secrets(obj.GetNamespace()).Create(context.TODO(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-", secret.Name),
 			Labels: map[string]string{
@@ -74,5 +75,5 @@ func (h *AerospikeBackupRestoreHandler) createTempSecret(secret *corev1.Secret, 
 		},
 		Data: secret.Data,
 		Type: secret.Type,
-	})
+	}, metav1.CreateOptions{})
 }

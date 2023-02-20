@@ -23,7 +23,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	extsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,10 +71,10 @@ func (r *CRDRegistry) RegisterCRDs() error {
 	return nil
 }
 
-func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error {
+func (r *CRDRegistry) createCRD(crd *extsv1.CustomResourceDefinition) error {
 	// attempt to register the crd as instructed
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("registering crd")
-	_, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	_, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), crd, metav1.CreateOptions{})
 	if err == nil {
 		// registration was successful
 		return nil
@@ -90,7 +90,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	log.WithField(logfields.Kind, crd.Spec.Names.Kind).Debug("crd is already registered")
 
 	// fetch the latest version of the crd
-	d, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crd.Name, metav1.GetOptions{})
+	d, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crd.Name, metav1.GetOptions{})
 	if err != nil {
 		// we've failed to fetch the latest version of the crd
 		return nil
@@ -106,7 +106,7 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	d.Spec = crd.Spec
 
 	// attempt to update the crd
-	if _, err := r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(d); err != nil {
+	if _, err := r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Update(context.TODO(), d, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -115,10 +115,10 @@ func (r *CRDRegistry) createCRD(crd *extsv1beta1.CustomResourceDefinition) error
 	return nil
 }
 
-func isCRDEstablished(crd *extsv1beta1.CustomResourceDefinition) bool {
+func isCRDEstablished(crd *extsv1.CustomResourceDefinition) bool {
 	for _, cond := range crd.Status.Conditions {
-		if cond.Type == extsv1beta1.Established {
-			if cond.Status == extsv1beta1.ConditionTrue {
+		if cond.Type == extsv1.Established {
+			if cond.Status == extsv1.ConditionTrue {
 				return true
 			}
 		}
@@ -126,16 +126,16 @@ func isCRDEstablished(crd *extsv1beta1.CustomResourceDefinition) bool {
 	return false
 }
 
-func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition, timeout time.Duration) error {
+func (r *CRDRegistry) awaitCRD(crd *extsv1.CustomResourceDefinition, timeout time.Duration) error {
 	// Grab a ListerWatcher with which we can watch the CustomResourceDefinition resource.
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.FieldSelector = selectors.ObjectByCoordinates(crd.Namespace, crd.Name).String()
-			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(options)
+			return r.extsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.TODO(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
 			options.FieldSelector = selectors.ObjectByCoordinates(crd.Namespace, crd.Name).String()
-			return r.extsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(options)
+			return r.extsClient.ApiextensionsV1().CustomResourceDefinitions().Watch(context.TODO(), options)
 		},
 	}
 
@@ -144,9 +144,9 @@ func (r *CRDRegistry) awaitCRD(crd *extsv1beta1.CustomResourceDefinition, timeou
 	// Watch for updates to the specified CustomResourceDefinition resource until it reaches the "Established" condition or until "waitCRDReadyTimeout" elapses.
 	ctx, fn := context.WithTimeout(context.Background(), watchTimeout)
 	defer fn()
-	last, err := watch.UntilWithSync(ctx, lw, &extsv1beta1.CustomResourceDefinition{}, nil, func(event watchapi.Event) (bool, error) {
+	last, err := watch.UntilWithSync(ctx, lw, &extsv1.CustomResourceDefinition{}, nil, func(event watchapi.Event) (bool, error) {
 		// Grab the current resource from the event.
-		obj := event.Object.(*extsv1beta1.CustomResourceDefinition)
+		obj := event.Object.(*extsv1.CustomResourceDefinition)
 		// Return true if and only if the CustomResourceDefinition resource has reached the "Established" condition.
 		return isCRDEstablished(obj), nil
 	})

@@ -17,6 +17,7 @@ limitations under the License.
 package garbagecollector
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -59,7 +60,7 @@ func (h *AerospikeNamespaceBackupHandler) Handle(asBackup *aerospikev1alpha2.Aer
 	}).Debug("checking whether aerospikenamespacebackup has expired")
 
 	// get the corresponding aerospikecluster object
-	aerospikeCluster, err := h.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(asBackup.Namespace).Get(asBackup.Spec.Target.Cluster, v1.GetOptions{})
+	aerospikeCluster, err := h.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(asBackup.Namespace).Get(context.TODO(), asBackup.Spec.Target.Cluster, v1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -117,7 +118,7 @@ func (h *AerospikeNamespaceBackupHandler) Handle(asBackup *aerospikev1alpha2.Aer
 		}
 
 		// delete AerospikeNamespaceBackup resource
-		if err := h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(asBackup.Namespace).Delete(asBackup.Name, &v1.DeleteOptions{}); err != nil {
+		if err := h.aerospikeclientset.AerospikeV1alpha2().AerospikeNamespaceBackups(asBackup.Namespace).Delete(context.TODO(), asBackup.Name, v1.DeleteOptions{}); err != nil {
 			return err
 		}
 		log.WithFields(log.Fields{

@@ -103,11 +103,11 @@ func (r *AerospikeClusterReconciler) waitForPodCondition(pod *v1.Pod, fn watch.C
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.FieldSelector = fs.String()
-			return r.kubeclientset.CoreV1().Pods(pod.Namespace).List(options)
+			return r.kubeclientset.CoreV1().Pods(pod.Namespace).List(context.TODO(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
 			options.FieldSelector = fs.String()
-			return r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(options)
+			return r.kubeclientset.CoreV1().Pods(pod.Namespace).Watch(context.TODO(), options)
 		},
 	}
 	ctx, cfn := context.WithTimeout(context.Background(), timeout)
@@ -155,8 +155,7 @@ func waitForMigrationsToFinishOnPod(pod *v1.Pod) error {
 }
 
 func runInfoCommandOnPod(pod *v1.Pod, command string) (map[string]string, error) {
-	addr := fmt.Sprintf("%s:%d", pod.Status.PodIP, ServicePort)
-	conn, err := as.NewConnection(addr, aerospikeClientTimeout)
+	conn, err := as.NewConnection(&as.ClientPolicy{Timeout: aerospikeClientTimeout}, &as.Host{Name: pod.Status.PodIP, Port: ServicePort})
 	if err != nil {
 		return nil, err
 	}

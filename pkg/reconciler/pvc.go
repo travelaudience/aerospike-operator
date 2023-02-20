@@ -17,6 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -173,7 +174,7 @@ func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluste
 		claim.Spec.StorageClassName = namespace.Storage.StorageClassName
 	}
 
-	pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(claim.Namespace).Create(claim)
+	pvc, err := r.kubeclientset.CoreV1().PersistentVolumeClaims(claim.Namespace).Create(context.TODO(), claim, metav1.CreateOptions{})
 	if err != nil {
 		log.WithFields(log.Fields{
 			logfields.AerospikeCluster:      meta.Key(aerospikeCluster),
@@ -193,7 +194,7 @@ func (r *AerospikeClusterReconciler) createPersistentVolumeClaim(aerospikeCluste
 // getIndexBasedDevicePath returns the device path for the namespace
 // with the specified index (e.g. 0 --> /dev/xvda, 1 --> /dev/xvdb, ...).
 func getIndexBasedDevicePath(index int) string {
-	return fmt.Sprintf("%s%s", defaultDevicePathPrefix, string('a'+index))
+	return fmt.Sprintf("%s%s", defaultDevicePathPrefix, fmt.Sprint('a'+index))
 }
 
 func (r *AerospikeClusterReconciler) signalMounted(pvc *v1.PersistentVolumeClaim) error {
@@ -237,7 +238,7 @@ func (r *AerospikeClusterReconciler) patchPVC(old, new *v1.PersistentVolumeClaim
 	if err != nil {
 		return err
 	}
-	_, err = r.kubeclientset.CoreV1().PersistentVolumeClaims(old.Namespace).Patch(old.Name, types.MergePatchType, patchBytes)
+	_, err = r.kubeclientset.CoreV1().PersistentVolumeClaims(old.Namespace).Patch(context.TODO(), old.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}

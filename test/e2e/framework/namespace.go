@@ -17,6 +17,8 @@ limitations under the License.
 package framework
 
 import (
+	"context"
+
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -26,13 +28,13 @@ const (
 )
 
 func (tf *TestFramework) CreateRandomNamespace() (*v1.Namespace, error) {
-	return tf.KubeClient.CoreV1().Namespaces().Create(&v1.Namespace{
+	return tf.KubeClient.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: randomNamespacePrefix,
 		},
-	})
+	}, metav1.CreateOptions{})
 }
 
 func (tf *TestFramework) DeleteNamespace(ns *v1.Namespace) error {
-	return tf.KubeClient.CoreV1().Namespaces().Delete(ns.Name, metav1.NewDeleteOptions(0))
+	return tf.KubeClient.CoreV1().Namespaces().Delete(context.TODO(), ns.Name, *metav1.NewDeleteOptions(0))
 }

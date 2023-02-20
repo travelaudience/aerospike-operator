@@ -131,7 +131,7 @@ func main() {
 
 	// setup a resourcelock for leader election
 	rl, _ := resourcelock.New(
-		resourcelock.EndpointsResourceLock,
+		resourcelock.EndpointsLeasesResourceLock,
 		namespace,
 		"aerospike-operator",
 		kubeClient.CoreV1(),

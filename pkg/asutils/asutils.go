@@ -28,7 +28,7 @@ import (
 const timeout = 10 * time.Second
 
 func GetClusterSize(host string, port int) (int, error) {
-	c, err := as.NewConnection(fmt.Sprintf("%s:%d", host, port), timeout)
+	c, err := as.NewConnection(&as.ClientPolicy{Timeout: timeout}, &as.Host{Name: host, Port: port})
 	if err != nil {
 		return 0, err
 	}

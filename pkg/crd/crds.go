@@ -19,7 +19,8 @@ package crd
 import (
 	"fmt"
 
-	extsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	extsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/travelaudience/aerospike-operator/pkg/apis/aerospike/common"
@@ -54,12 +55,12 @@ var (
 )
 
 var (
-	backupStorageSpecProps = extsv1beta1.JSONSchemaProps{
+	backupStorageSpecProps = extsv1.JSONSchemaProps{
 		Type: "object",
-		Properties: map[string]extsv1beta1.JSONSchemaProps{
+		Properties: map[string]extsv1.JSONSchemaProps{
 			"type": {
 				Type: "string",
-				Enum: []extsv1beta1.JSON{
+				Enum: []extsv1.JSON{
 					{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeGCS))},
 				},
 			},
@@ -87,9 +88,9 @@ var (
 		},
 	}
 
-	backupRestoreTargetProps = extsv1beta1.JSONSchemaProps{
+	backupRestoreTargetProps = extsv1.JSONSchemaProps{
 		Type: "object",
-		Properties: map[string]extsv1beta1.JSONSchemaProps{
+		Properties: map[string]extsv1.JSONSchemaProps{
 			"cluster": {
 				Type:      "string",
 				MinLength: pointers.NewInt64(1),
@@ -105,157 +106,289 @@ var (
 		},
 	}
 
-	crds = []*extsv1beta1.CustomResourceDefinition{
+	crds = []*extsv1.CustomResourceDefinition{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: AerospikeClusterCRDName,
 			},
-			Spec: extsv1beta1.CustomResourceDefinitionSpec{
+			Spec: extsv1.CustomResourceDefinitionSpec{
 				Group: aerospikev1alpha2.SchemeGroupVersion.Group,
-				Versions: []extsv1beta1.CustomResourceDefinitionVersion{
+				Versions: []extsv1.CustomResourceDefinitionVersion{
 					{
 						Name:    aerospikev1alpha2.SchemeGroupVersion.Version,
 						Served:  true,
 						Storage: true,
+						Schema: &extsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &extsv1.JSONSchemaProps{
+								Type: "object",
+								Properties: map[string]extsv1.JSONSchemaProps{
+									"spec": {
+										Type: "object",
+										Properties: map[string]extsv1.JSONSchemaProps{
+											"nodeCount": {
+												Type:    "integer",
+												Maximum: pointers.NewFloat64(8),
+												Minimum: pointers.NewFloat64(1),
+											},
+											"version": {
+												Type:    "string",
+												Pattern: `^\d+\.\d+\.\d+(\.\d+)?$`,
+											},
+											"namespaces": {
+												Type: "array",
+												Items: &extsv1.JSONSchemaPropsOrArray{
+													Schema: &extsv1.JSONSchemaProps{
+														Title: "namespace",
+														Type:  "object",
+														Properties: map[string]extsv1.JSONSchemaProps{
+															"name": {
+																Type:      "string",
+																MinLength: pointers.NewInt64(1),
+															},
+															"replicationFactor": {
+																Type:    "integer",
+																Minimum: pointers.NewFloat64(1),
+																Maximum: pointers.NewFloat64(8),
+															},
+															"memorySize": {
+																Type:    "string",
+																Pattern: `^\d+G$`,
+															},
+															"defaultTTL": {
+																Type:    "string",
+																Pattern: `^\d+s$`,
+															},
+															"storage": {
+																Type: "object",
+																Properties: map[string]extsv1.JSONSchemaProps{
+																	"type": {
+																		Type: "string",
+																		Enum: []extsv1.JSON{
+																			{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeFile))},
+																			{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeDevice))},
+																		},
+																	},
+																	"size": {
+																		Type:    "string",
+																		Pattern: `^(20{3}|1?\d{1,3}|[1-9])G$`,
+																	},
+																	"storageClassName": {
+																		Type: "string",
+																	},
+																	"persistentVolumeClaimTTL": {
+																		Type:    "string",
+																		Pattern: ttlPattern,
+																	},
+																	"dataInMemory": {
+																		Type: "boolean",
+																	},
+																},
+																Required: []string{
+																	"type",
+																	"size",
+																},
+															},
+														},
+														Required: []string{
+															"name",
+															"storage",
+														},
+													},
+												},
+											},
+											"backupSpec": {
+												Type: "object",
+												Properties: map[string]extsv1.JSONSchemaProps{
+													"ttl": {
+														Type:    "string",
+														Pattern: ttlPattern,
+													},
+													"storage": backupStorageSpecProps,
+												},
+												Required: []string{
+													"storage",
+												},
+											},
+										},
+										Required: []string{
+											"nodeCount",
+											"version",
+											"namespaces",
+										},
+									},
+								},
+							},
+						},
+						Subresources: &extsv1.CustomResourceSubresources{
+							Status: &extsv1.CustomResourceSubresourceStatus{},
+							Scale: &extsv1.CustomResourceSubresourceScale{
+								SpecReplicasPath:   ".spec.nodeCount",
+								StatusReplicasPath: ".status.nodeCount",
+								LabelSelectorPath:  nil,
+							},
+						},
+						AdditionalPrinterColumns: []extsv1.CustomResourceColumnDefinition{
+							{
+								Name:        "Version",
+								Type:        "string",
+								Description: "The Aerospike version running in the Aerospike cluster",
+								JSONPath:    ".status.version",
+							},
+							{
+								Name:        "Node Count",
+								Type:        "integer",
+								Description: "The number of nodes in the Aerospike cluster",
+								JSONPath:    ".status.nodeCount",
+							},
+							{
+								Name:        "Age",
+								Type:        "date",
+								Description: "Time elapsed since the resource was created",
+								JSONPath:    ".metadata.creationTimestamp",
+							},
+						},
 					},
 					{
 						Name:    aerospikev1alpha1.SchemeGroupVersion.Version,
 						Served:  true,
 						Storage: false,
-					},
-				},
-				Scope: extsv1beta1.NamespaceScoped,
-				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural:     AerospikeClusterPlural,
-					Kind:       AerospikeClusterKind,
-					ShortNames: []string{AerospikeClusterShort},
-				},
-				Validation: &extsv1beta1.CustomResourceValidation{
-					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
-						Properties: map[string]extsv1beta1.JSONSchemaProps{
-							"spec": {
-								Properties: map[string]extsv1beta1.JSONSchemaProps{
-									"nodeCount": {
-										Type:    "integer",
-										Maximum: pointers.NewFloat64(8),
-										Minimum: pointers.NewFloat64(1),
-									},
-									"version": {
-										Type:    "string",
-										Pattern: `^\d+\.\d+\.\d+(\.\d+)?$`,
-									},
-									"namespaces": {
-										Type: "array",
-										Items: &extsv1beta1.JSONSchemaPropsOrArray{
-											Schema: &extsv1beta1.JSONSchemaProps{
-												Title: "namespace",
-												Type:  "object",
-												Properties: map[string]extsv1beta1.JSONSchemaProps{
-													"name": {
-														Type:      "string",
-														MinLength: pointers.NewInt64(1),
-													},
-													"replicationFactor": {
-														Type:    "integer",
-														Minimum: pointers.NewFloat64(1),
-														Maximum: pointers.NewFloat64(8),
-													},
-													"memorySize": {
-														Type:    "string",
-														Pattern: `^\d+G$`,
-													},
-													"defaultTTL": {
-														Type:    "string",
-														Pattern: `^\d+s$`,
-													},
-													"storage": {
-														Type: "object",
-														Properties: map[string]extsv1beta1.JSONSchemaProps{
-															"type": {
-																Type: "string",
-																Enum: []extsv1beta1.JSON{
-																	{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeFile))},
-																	{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeDevice))},
+						Schema: &extsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &extsv1.JSONSchemaProps{
+								Type: "object",
+								Properties: map[string]extsv1.JSONSchemaProps{
+									"spec": {
+										Type: "object",
+										Properties: map[string]extsv1.JSONSchemaProps{
+											"nodeCount": {
+												Type:    "integer",
+												Maximum: pointers.NewFloat64(8),
+												Minimum: pointers.NewFloat64(1),
+											},
+											"version": {
+												Type:    "string",
+												Pattern: `^\d+\.\d+\.\d+(\.\d+)?$`,
+											},
+											"namespaces": {
+												Type: "array",
+												Items: &extsv1.JSONSchemaPropsOrArray{
+													Schema: &extsv1.JSONSchemaProps{
+														Title: "namespace",
+														Type:  "object",
+														Properties: map[string]extsv1.JSONSchemaProps{
+															"name": {
+																Type:      "string",
+																MinLength: pointers.NewInt64(1),
+															},
+															"replicationFactor": {
+																Type:    "integer",
+																Minimum: pointers.NewFloat64(1),
+																Maximum: pointers.NewFloat64(8),
+															},
+															"memorySize": {
+																Type:    "string",
+																Pattern: `^\d+G$`,
+															},
+															"defaultTTL": {
+																Type:    "string",
+																Pattern: `^\d+s$`,
+															},
+															"storage": {
+																Type: "object",
+																Properties: map[string]extsv1.JSONSchemaProps{
+																	"type": {
+																		Type: "string",
+																		Enum: []extsv1.JSON{
+																			{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeFile))},
+																			{Raw: []byte(asstrings.DoubleQuoted(common.StorageTypeDevice))},
+																		},
+																	},
+																	"size": {
+																		Type:    "string",
+																		Pattern: `^(20{3}|1?\d{1,3}|[1-9])G$`,
+																	},
+																	"storageClassName": {
+																		Type: "string",
+																	},
+																	"persistentVolumeClaimTTL": {
+																		Type:    "string",
+																		Pattern: ttlPattern,
+																	},
+																	"dataInMemory": {
+																		Type: "boolean",
+																	},
 																},
-															},
-															"size": {
-																Type:    "string",
-																Pattern: `^(20{3}|1?\d{1,3}|[1-9])G$`,
-															},
-															"storageClassName": {
-																Type: "string",
-															},
-															"persistentVolumeClaimTTL": {
-																Type:    "string",
-																Pattern: ttlPattern,
-															},
-															"dataInMemory": {
-																Type: "boolean",
+																Required: []string{
+																	"type",
+																	"size",
+																},
 															},
 														},
 														Required: []string{
-															"type",
-															"size",
+															"name",
+															"storage",
 														},
 													},
 												},
+											},
+											"backupSpec": {
+												Type: "object",
+												Properties: map[string]extsv1.JSONSchemaProps{
+													"ttl": {
+														Type:    "string",
+														Pattern: ttlPattern,
+													},
+													"storage": backupStorageSpecProps,
+												},
 												Required: []string{
-													"name",
 													"storage",
 												},
 											},
 										},
-									},
-									"backupSpec": {
-										Type: "object",
-										Properties: map[string]extsv1beta1.JSONSchemaProps{
-											"ttl": {
-												Type:    "string",
-												Pattern: ttlPattern,
-											},
-											"storage": backupStorageSpecProps,
-										},
 										Required: []string{
-											"storage",
+											"nodeCount",
+											"version",
+											"namespaces",
 										},
 									},
 								},
-								Required: []string{
-									"nodeCount",
-									"version",
-									"namespaces",
-								},
+							},
+						},
+						Subresources: &extsv1.CustomResourceSubresources{
+							Status: &extsv1.CustomResourceSubresourceStatus{},
+							Scale: &extsv1.CustomResourceSubresourceScale{
+								SpecReplicasPath:   ".spec.nodeCount",
+								StatusReplicasPath: ".status.nodeCount",
+								LabelSelectorPath:  nil,
+							},
+						},
+						AdditionalPrinterColumns: []extsv1.CustomResourceColumnDefinition{
+							{
+								Name:        "Version",
+								Type:        "string",
+								Description: "The Aerospike version running in the Aerospike cluster",
+								JSONPath:    ".status.version",
+							},
+							{
+								Name:        "Node Count",
+								Type:        "integer",
+								Description: "The number of nodes in the Aerospike cluster",
+								JSONPath:    ".status.nodeCount",
+							},
+							{
+								Name:        "Age",
+								Type:        "date",
+								Description: "Time elapsed since the resource was created",
+								JSONPath:    ".metadata.creationTimestamp",
 							},
 						},
 					},
 				},
-				Subresources: &extsv1beta1.CustomResourceSubresources{
-					Status: &extsv1beta1.CustomResourceSubresourceStatus{},
-					Scale: &extsv1beta1.CustomResourceSubresourceScale{
-						SpecReplicasPath:   ".spec.nodeCount",
-						StatusReplicasPath: ".status.nodeCount",
-						LabelSelectorPath:  nil,
-					},
-				},
-				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
-					{
-						Name:        "Version",
-						Type:        "string",
-						Description: "The Aerospike version running in the Aerospike cluster",
-						JSONPath:    ".status.version",
-					},
-					{
-						Name:        "Node Count",
-						Type:        "integer",
-						Description: "The number of nodes in the Aerospike cluster",
-						JSONPath:    ".status.nodeCount",
-					},
-					{
-						Name:        "Age",
-						Type:        "date",
-						Description: "Time elapsed since the resource was created",
-						JSONPath:    ".metadata.creationTimestamp",
-					},
+				Scope: extsv1.NamespaceScoped,
+				Names: extsv1.CustomResourceDefinitionNames{
+					Plural: AerospikeClusterPlural,
+					Kind:   AerospikeClusterKind,
+
+					ShortNames: []string{AerospikeClusterShort},
 				},
 			},
 		},
@@ -263,67 +396,113 @@ var (
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("%s.%s", "aerospikenamespacebackups", aerospikev1alpha2.SchemeGroupVersion.Group),
 			},
-			Spec: extsv1beta1.CustomResourceDefinitionSpec{
+			Spec: extsv1.CustomResourceDefinitionSpec{
 				Group: aerospikev1alpha2.SchemeGroupVersion.Group,
-				Versions: []extsv1beta1.CustomResourceDefinitionVersion{
+				Versions: []extsv1.CustomResourceDefinitionVersion{
 					{
 						Name:    aerospikev1alpha2.SchemeGroupVersion.Version,
 						Served:  true,
 						Storage: true,
+						Schema: &extsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &extsv1.JSONSchemaProps{
+								Type: "object",
+								Properties: map[string]extsv1.JSONSchemaProps{
+									"spec": {
+										Type: "object",
+										Properties: map[string]extsv1.JSONSchemaProps{
+											"target":  backupRestoreTargetProps,
+											"storage": backupStorageSpecProps,
+											"ttl": {
+												Type:    "string",
+												Pattern: ttlPattern,
+											},
+										},
+										Required: []string{
+											"target",
+										},
+									},
+								},
+							},
+						},
+						Subresources: &extsv1.CustomResourceSubresources{
+							Status: &extsv1.CustomResourceSubresourceStatus{},
+						},
+						AdditionalPrinterColumns: []extsv1.CustomResourceColumnDefinition{
+							{
+								Name:        "Target Cluster",
+								Type:        "string",
+								Description: "The name of the Aerospike cluster targeted by the backup operation",
+								JSONPath:    ".status.target.cluster",
+							},
+							{
+								Name:        "Target Namespace",
+								Type:        "string",
+								Description: "The name of the Aerospike namespace targeted by the backup operation",
+								JSONPath:    ".status.target.namespace",
+							},
+							{
+								Name:        "Age",
+								Type:        "date",
+								Description: "Time elapsed since the resource was created",
+								JSONPath:    ".metadata.creationTimestamp",
+							},
+						},
 					},
 					{
 						Name:    aerospikev1alpha1.SchemeGroupVersion.Version,
 						Served:  true,
 						Storage: false,
-					},
-				},
-				Scope: extsv1beta1.NamespaceScoped,
-				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural:     AerospikeNamespaceBackupPlural,
-					Kind:       AerospikeNamespaceBackupKind,
-					ShortNames: []string{AerospikeNamespaceBackupShort},
-				},
-				Validation: &extsv1beta1.CustomResourceValidation{
-					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
-						Properties: map[string]extsv1beta1.JSONSchemaProps{
-							"spec": {
-								Properties: map[string]extsv1beta1.JSONSchemaProps{
-									"target":  backupRestoreTargetProps,
-									"storage": backupStorageSpecProps,
-									"ttl": {
-										Type:    "string",
-										Pattern: ttlPattern,
+						Schema: &extsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &extsv1.JSONSchemaProps{
+								Type: "object",
+								Properties: map[string]extsv1.JSONSchemaProps{
+									"spec": {
+										Type: "object",
+										Properties: map[string]extsv1.JSONSchemaProps{
+											"target":  backupRestoreTargetProps,
+											"storage": backupStorageSpecProps,
+											"ttl": {
+												Type:    "string",
+												Pattern: ttlPattern,
+											},
+										},
+										Required: []string{
+											"target",
+										},
 									},
 								},
-								Required: []string{
-									"target",
-								},
+							},
+						},
+						Subresources: &extsv1.CustomResourceSubresources{
+							Status: &extsv1.CustomResourceSubresourceStatus{},
+						},
+						AdditionalPrinterColumns: []extsv1.CustomResourceColumnDefinition{
+							{
+								Name:        "Target Cluster",
+								Type:        "string",
+								Description: "The name of the Aerospike cluster targeted by the backup operation",
+								JSONPath:    ".status.target.cluster",
+							},
+							{
+								Name:        "Target Namespace",
+								Type:        "string",
+								Description: "The name of the Aerospike namespace targeted by the backup operation",
+								JSONPath:    ".status.target.namespace",
+							},
+							{
+								Name:        "Age",
+								Type:        "date",
+								Description: "Time elapsed since the resource was created",
+								JSONPath:    ".metadata.creationTimestamp",
 							},
 						},
 					},
 				},
-				Subresources: &extsv1beta1.CustomResourceSubresources{
-					Status: &extsv1beta1.CustomResourceSubresourceStatus{},
-				},
-				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
-					{
-						Name:        "Target Cluster",
-						Type:        "string",
-						Description: "The name of the Aerospike cluster targeted by the backup operation",
-						JSONPath:    ".status.target.cluster",
-					},
-					{
-						Name:        "Target Namespace",
-						Type:        "string",
-						Description: "The name of the Aerospike namespace targeted by the backup operation",
-						JSONPath:    ".status.target.namespace",
-					},
-					{
-						Name:        "Age",
-						Type:        "date",
-						Description: "Time elapsed since the resource was created",
-						JSONPath:    ".metadata.creationTimestamp",
-					},
+				Scope: extsv1.NamespaceScoped,
+				Names: extsv1.CustomResourceDefinitionNames{
+					Plural:     AerospikeNamespaceBackupPlural,
+					Kind:       AerospikeNamespaceBackupKind,
+					ShortNames: []string{AerospikeNamespaceBackupShort},
 				},
 			},
 		},
@@ -331,63 +510,105 @@ var (
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("%s.%s", "aerospikenamespacerestores", aerospikev1alpha2.SchemeGroupVersion.Group),
 			},
-			Spec: extsv1beta1.CustomResourceDefinitionSpec{
+			Spec: extsv1.CustomResourceDefinitionSpec{
 				Group: aerospikev1alpha2.SchemeGroupVersion.Group,
-				Versions: []extsv1beta1.CustomResourceDefinitionVersion{
+				Versions: []extsv1.CustomResourceDefinitionVersion{
 					{
 						Name:    aerospikev1alpha2.SchemeGroupVersion.Version,
 						Served:  true,
 						Storage: true,
+						Schema: &extsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &extsv1.JSONSchemaProps{
+								Type: "object",
+								Properties: map[string]extsv1.JSONSchemaProps{
+									"spec": {
+										Type: "object",
+										Properties: map[string]extsv1.JSONSchemaProps{
+											"target":  backupRestoreTargetProps,
+											"storage": backupStorageSpecProps,
+										},
+										Required: []string{
+											"target",
+										},
+									},
+								},
+							},
+						},
+						Subresources: &extsv1.CustomResourceSubresources{
+							Status: &extsv1.CustomResourceSubresourceStatus{},
+						},
+						AdditionalPrinterColumns: []extsv1.CustomResourceColumnDefinition{
+							{
+								Name:        "Target Cluster",
+								Type:        "string",
+								Description: "The name of the Aerospike cluster targeted by the restore operation",
+								JSONPath:    ".status.target.cluster",
+							},
+							{
+								Name:        "Target Namespace",
+								Type:        "string",
+								Description: "The name of the Aerospike namespace targeted by the restore operation",
+								JSONPath:    ".status.target.namespace",
+							},
+							{
+								Name:        "Age",
+								Type:        "date",
+								Description: "Time elapsed since the resource was created",
+								JSONPath:    ".metadata.creationTimestamp",
+							},
+						},
 					},
 					{
 						Name:    aerospikev1alpha1.SchemeGroupVersion.Version,
 						Served:  true,
 						Storage: false,
-					},
-				},
-				Scope: extsv1beta1.NamespaceScoped,
-				Names: extsv1beta1.CustomResourceDefinitionNames{
-					Plural:     AerospikeNamespaceRestorePlural,
-					Kind:       AerospikeNamespaceRestoreKind,
-					ShortNames: []string{AerospikeNamespaceRestoreShort},
-				},
-				Validation: &extsv1beta1.CustomResourceValidation{
-					OpenAPIV3Schema: &extsv1beta1.JSONSchemaProps{
-						Properties: map[string]extsv1beta1.JSONSchemaProps{
-							"spec": {
-								Properties: map[string]extsv1beta1.JSONSchemaProps{
-									"target":  backupRestoreTargetProps,
-									"storage": backupStorageSpecProps,
+						Schema: &extsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &extsv1.JSONSchemaProps{
+								Type: "object",
+								Properties: map[string]extsv1.JSONSchemaProps{
+									"spec": {
+										Type: "object",
+										Properties: map[string]extsv1.JSONSchemaProps{
+											"target":  backupRestoreTargetProps,
+											"storage": backupStorageSpecProps,
+										},
+										Required: []string{
+											"target",
+										},
+									},
 								},
-								Required: []string{
-									"target",
-								},
+							},
+						},
+						Subresources: &extsv1.CustomResourceSubresources{
+							Status: &extsv1.CustomResourceSubresourceStatus{},
+						},
+						AdditionalPrinterColumns: []extsv1.CustomResourceColumnDefinition{
+							{
+								Name:        "Target Cluster",
+								Type:        "string",
+								Description: "The name of the Aerospike cluster targeted by the restore operation",
+								JSONPath:    ".status.target.cluster",
+							},
+							{
+								Name:        "Target Namespace",
+								Type:        "string",
+								Description: "The name of the Aerospike namespace targeted by the restore operation",
+								JSONPath:    ".status.target.namespace",
+							},
+							{
+								Name:        "Age",
+								Type:        "date",
+								Description: "Time elapsed since the resource was created",
+								JSONPath:    ".metadata.creationTimestamp",
 							},
 						},
 					},
 				},
-				Subresources: &extsv1beta1.CustomResourceSubresources{
-					Status: &extsv1beta1.CustomResourceSubresourceStatus{},
-				},
-				AdditionalPrinterColumns: []extsv1beta1.CustomResourceColumnDefinition{
-					{
-						Name:        "Target Cluster",
-						Type:        "string",
-						Description: "The name of the Aerospike cluster targeted by the restore operation",
-						JSONPath:    ".status.target.cluster",
-					},
-					{
-						Name:        "Target Namespace",
-						Type:        "string",
-						Description: "The name of the Aerospike namespace targeted by the restore operation",
-						JSONPath:    ".status.target.namespace",
-					},
-					{
-						Name:        "Age",
-						Type:        "date",
-						Description: "Time elapsed since the resource was created",
-						JSONPath:    ".metadata.creationTimestamp",
-					},
+				Scope: extsv1.NamespaceScoped,
+				Names: extsv1.CustomResourceDefinitionNames{
+					Plural:     AerospikeNamespaceRestorePlural,
+					Kind:       AerospikeNamespaceRestoreKind,
+					ShortNames: []string{AerospikeNamespaceRestoreShort},
 				},
 			},
 		},

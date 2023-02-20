@@ -17,11 +17,13 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
@@ -61,7 +63,7 @@ func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha2.Ae
 	}
 	// grab the status changes before patching
 	newStatus := new.Status
-	new, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(old.Namespace).Patch(old.Name, types.MergePatchType, patchBytes)
+	new, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(old.Namespace).Patch(context.TODO(), old.Name, types.MergePatchType, patchBytes, v1.PatchOptions{})
 	if err != nil {
 		return err
 	}
@@ -72,7 +74,7 @@ func (r *AerospikeClusterReconciler) patchCluster(old, new *aerospikev1alpha2.Ae
 	// update the status subresource
 	if !reflect.DeepEqual(new.Status, newStatus) {
 		new.Status = newStatus
-		new, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(new.Namespace).UpdateStatus(new)
+		new, err = r.aerospikeclientset.AerospikeV1alpha2().AerospikeClusters(new.Namespace).UpdateStatus(context.TODO(), new, v1.UpdateOptions{})
 		if err != nil {
 			return err
 		}

@@ -90,11 +90,11 @@ func (tf *TestFramework) WaitForClusterCondition(aerospikeCluster *aerospikev1al
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.FieldSelector = fs.String()
-			return tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).List(options)
+			return tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).List(context.TODO(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watchapi.Interface, error) {
 			options.FieldSelector = fs.String()
-			return tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Watch(options)
+			return tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Watch(context.TODO(), options)
 		},
 	}
 	ctx, cfn := context.WithTimeout(context.Background(), timeout)
@@ -123,12 +123,12 @@ func (tf *TestFramework) WaitForClusterNodeCount(aerospikeCluster *aerospikev1al
 }
 
 func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, nodeCount int32) error {
-	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Get(context.TODO(), aerospikeCluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	res.Spec.NodeCount = nodeCount
-	res, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(res.Namespace).Update(res)
+	res, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(res.Namespace).Update(context.TODO(), res, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -136,13 +136,13 @@ func (tf *TestFramework) ScaleCluster(aerospikeCluster *aerospikev1alpha2.Aerosp
 }
 
 func (tf *TestFramework) ChangeNamespaceMemorySizeAndScaleClusterAndWait(aerospikeCluster *aerospikev1alpha2.AerospikeCluster, newMemorySizeGB int, nodeCount int32) error {
-	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Get(aerospikeCluster.Name, metav1.GetOptions{})
+	res, err := tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(aerospikeCluster.Namespace).Get(context.TODO(), aerospikeCluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	res.Spec.Namespaces[0].MemorySize = pointers.NewString(fmt.Sprintf("%dG", newMemorySizeGB))
 	res.Spec.NodeCount = nodeCount
-	if _, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(res.Namespace).Update(res); err != nil {
+	if _, err = tf.AerospikeClient.AerospikeV1alpha2().AerospikeClusters(res.Namespace).Update(context.TODO(), res, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	return tf.WaitForClusterNodeCount(res, nodeCount)
