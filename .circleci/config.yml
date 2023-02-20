@@ -84,6 +84,9 @@ workflows:
               only: /.*/
             branches:
               ignore: /.*/
+          registry: QUAY_IO_REGISTRY
+          docker-username: QUAY_IO_USERNAME
+          docker-password: QUAY_IO_PASSWORD
       - ta-docker/docker_git_tag:
           name: docker_tag_tools
           context: docker-registry-access
@@ -93,6 +96,9 @@ workflows:
               only: /.*/
             branches:
               ignore: /.*/
+          registry: QUAY_IO_REGISTRY
+          docker-username: QUAY_IO_USERNAME
+          docker-password: QUAY_IO_PASSWORD
 
       # Staging
       - ta-deploy/gitops_deploy:
