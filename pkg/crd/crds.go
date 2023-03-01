@@ -130,6 +130,62 @@ var (
 												Maximum: pointers.NewFloat64(8),
 												Minimum: pointers.NewFloat64(1),
 											},
+											"nodeSelector": {
+												Type:                   "object",
+												XPreserveUnknownFields: pointers.NewBool(true),
+											},
+											"resources": {
+												Type: "object",
+												Properties: map[string]extsv1.JSONSchemaProps{
+													"limits": {
+														Type: "object",
+														Properties: map[string]extsv1.JSONSchemaProps{
+															"cpu": {
+																Type: "string",
+															},
+															"memory": {
+																Type: "string",
+															},
+														},
+													},
+													"requests": {
+														Type: "object",
+														Properties: map[string]extsv1.JSONSchemaProps{
+															"cpu": {
+																Type: "string",
+															},
+															"memory": {
+																Type: "string",
+															},
+														},
+													},
+												},
+											},
+											"tolerations": {
+												Type: "array",
+												Items: &extsv1.JSONSchemaPropsOrArray{
+													Schema: &extsv1.JSONSchemaProps{
+														Type: "object",
+														Properties: map[string]extsv1.JSONSchemaProps{
+															"effect": {
+																Type: "string",
+															},
+															"key": {
+																Type: "string",
+															},
+															"operator": {
+																Type: "string",
+															},
+															"tolerationSeconds": {
+																Type: "integer",
+															},
+															"value": {
+																Type: "string",
+															},
+														},
+													},
+												},
+											},
 											"version": {
 												Type:    "string",
 												Pattern: `^\d+\.\d+\.\d+(\.\d+)?$`,
