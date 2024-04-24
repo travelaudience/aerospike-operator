@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  ta-go: travelaudience/go@0.9
+  ta-go: travelaudience/go@0.9.3
   ta-helm: travelaudience/helm@0.2
   ta-docker: travelaudience/docker@2.1
   ta-deploy: travelaudience/deploy@0.3
