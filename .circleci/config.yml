@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   ta-go: travelaudience/go@0.9
   ta-helm: travelaudience/helm@0.2
-  ta-docker: travelaudience/docker@2.1
+  ta-docker: travelaudience/docker@3.2
   ta-deploy: travelaudience/deploy@0.3
 
 # Defining a top level executor (docker image) with the needed ENV variables
