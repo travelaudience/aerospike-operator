@@ -3,6 +3,7 @@ version: 2.1
 parameters:
   dirs:
     type: string
+    default: foo
 
 jobs:
   print_dirs:
