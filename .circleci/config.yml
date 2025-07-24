@@ -18,5 +18,7 @@ workflows:
     jobs:
       - get_dirs
       - continuation/continue:
+          requires:
+            - get_dirs
           configuration_path: .circleci/continue_config.yml
           parameters: parameters.json
