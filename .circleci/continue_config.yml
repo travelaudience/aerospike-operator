@@ -9,7 +9,7 @@ jobs:
   print_dirs:
     parameters:
         dirs: string
-        default: foo
+        default: bar
     docker:
       - image: cimg/base:2024.10
     steps:
