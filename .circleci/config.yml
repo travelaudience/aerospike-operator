@@ -40,7 +40,7 @@ jobs:
     docker:
       - image: cimg/base:2024.10
     steps:
-      run: echo << parameters.dirs >>
+      - run: echo << parameters.dirs >>
 
 workflows:
   print:
