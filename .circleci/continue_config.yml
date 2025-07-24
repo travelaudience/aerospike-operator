@@ -2,7 +2,7 @@ version: 2.1
 
 parameters:
   dirs:
-      type: string
+    type: string
 
 jobs:
   print_dirs:
@@ -17,5 +17,5 @@ jobs:
 workflows:
   print:
     jobs:
-      - print_dirs
-        dirs: << parameters.dirs >>
+      - print_dirs:
+          dirs: << parameters.dirs >>
