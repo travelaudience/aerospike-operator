@@ -1,13 +1,14 @@
 version: 2.1
 
+setup: true
+
 orbs:
   continuation: circleci/continuation@2.1
 
 jobs:
   get_dirs:
     steps:
-      run:
-        command: |
+      - run: |
           find . -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | jq -R '{ "dirs": [ inputs ] | join(" ") }' >parameters.json
 
 workflows:
