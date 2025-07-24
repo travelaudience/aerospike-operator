@@ -1,0 +1,19 @@
+version: 2.1
+
+parameters:
+  dirs:
+      type: string
+
+jobs:
+  print_dirs:
+    parameters:
+      dirs:
+          type: string
+    steps:
+      run: echo << parameters.dirs >>
+
+workflows:
+  print:
+    jobs:
+      - print_dirs
+        dirs: << parameters.dirs >>
