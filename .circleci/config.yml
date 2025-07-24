@@ -6,7 +6,9 @@ orbs:
 jobs:
   get_dirs:
     steps:
-      run: find . -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | jq -R '{ "dirs": [ inputs ] | join(" ") }' >parameters.json
+      run:
+        command: |
+          find . -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | jq -R '{ "dirs": [ inputs ] | join(" ") }' >parameters.json
 
 workflows:
   setup:
