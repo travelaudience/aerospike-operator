@@ -3,15 +3,20 @@ version: 2.1
 parameters:
   dirs:
     type: string
+    default: foo
 
 jobs:
   print_dirs:
+    parameters:
+        dirs: string
+        default: foo
     docker:
       - image: cimg/base:2024.10
     steps:
-      - run: echo << pipeline.parameters.dirs >>
+      - run: echo << parameters.dirs >>
 
 workflows:
   print:
     jobs:
-      - print_dirs
+      - print_dirs:
+          dirs: << pipeline.parameters.dirs >>
