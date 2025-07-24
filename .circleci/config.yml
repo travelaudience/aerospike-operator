@@ -4,6 +4,7 @@ setup: true
 
 orbs:
   continuation: circleci/continuation@2.0
+    G
 
 jobs:
   get_dirs:
@@ -18,4 +19,5 @@ workflows:
     jobs:
       - get_dirs
       - continuation/continue:
+          configuration_path: .circleci/continue_config.yml
           parameters: parameters.json
