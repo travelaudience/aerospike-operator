@@ -4,7 +4,6 @@ setup: true
 
 orbs:
   continuation: circleci/continuation@2.0
-    G
 
 jobs:
   get_dirs:
