@@ -1,45 +1,24 @@
-#version: 2.1
-#
-#setup: true
-#
-#orbs:
-#  continuation: circleci/continuation@2.0
-#
-#jobs:
-#  get_dirs:
-#    docker:
-#      - image: cimg/base:2024.10
-#    steps:
-#      - run: |
-#          find . -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | jq -R '{ "dirs": [ inputs ] | join(" ") }' >parameters.json
-#
-#workflows:
-#  setup:
-#    jobs:
-#      - get_dirs
-#      - continuation/continue:
-#          requires:
-#            - get_dirs
-#          configuration_path: .circleci/continue_config.yml
-#          parameters: parameters.json
-
-
-
 version: 2.1
 
-parameters:
-  dirs:
-    type: string
-    default: foo
+setup: true
+
+orbs:
+  continuation: circleci/continuation@2.0
 
 jobs:
-  print_dirs:
+  get_dirs:
     docker:
       - image: cimg/base:2024.10
     steps:
-      - run: echo << pipeline.parameters.dirs >>
+      - run: |
+          find . -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | jq -R '{ "dirs": [ inputs ] | join(" ") }' >parameters.json
 
 workflows:
-  print:
+  setup:
     jobs:
-      - print_dirs
+      - get_dirs
+      - continuation/continue:
+          requires:
+            - get_dirs
+          configuration_path: .circleci/continue_config.yml
+          parameters: parameters.json

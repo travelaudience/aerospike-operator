@@ -7,16 +7,12 @@ parameters:
 
 jobs:
   print_dirs:
-    parameters:
-      dirs:
-          type: string
     docker:
       - image: cimg/base:2024.10
     steps:
-      run: echo << parameters.dirs >>
+      - run: echo << pipeline.parameters.dirs >>
 
 workflows:
   print:
     jobs:
-      - print_dirs:
-          dirs: << parameters.dirs >>
+      - print_dirs
