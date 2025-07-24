@@ -3,7 +3,7 @@ version: 2.1
 setup: true
 
 orbs:
-  continuation: circleci/continuation@2.1
+  continuation: circleci/continuation@2.0
 
 jobs:
   get_dirs:

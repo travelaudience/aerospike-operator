@@ -9,6 +9,8 @@ jobs:
     parameters:
       dirs:
           type: string
+    docker:
+      - image: cimg/base:2024.10
     steps:
       run: echo << parameters.dirs >>
 
