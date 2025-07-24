@@ -12,6 +12,11 @@ jobs:
     steps:
       - run: |
           find . -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | jq -R '{ "dirs": [ inputs ] | join(" ") }' >parameters.json
+      - run: |
+          ls -l parameters.json
+          cat parameters.json
+          ls -l .circleci/continue_config.yml
+          cat .circleci/continue_config.yml
       - continuation/continue:
           configuration_path: .circleci/continue_config.yml
           parameters: parameters.json
