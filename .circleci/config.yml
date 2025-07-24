@@ -18,4 +18,4 @@ workflows:
     jobs:
       - get_dirs
       - continuation/continue:
-        parameters: parameters.json
+          parameters: parameters.json
